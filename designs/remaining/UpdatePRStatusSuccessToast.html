@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Purchase Request Detail - SCM Architect</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "on-tertiary-container": "#f3f8ff",
+                        "on-tertiary": "#ffffff",
+                        "surface-tint": "#bf0715",
+                        "on-error-container": "#93000a",
+                        "surface-container": "#e9edff",
+                        "on-error": "#ffffff",
+                        "on-tertiary-fixed-variant": "#004b71",
+                        "secondary-container": "#fd786c",
+                        "surface-dim": "#d3daef",
+                        "surface-container-lowest": "#ffffff",
+                        "primary": "#b70011",
+                        "primary-container": "#dc2626",
+                        "on-primary-container": "#fff6f5",
+                        "on-secondary-container": "#700f0f",
+                        "outline": "#916f6b",
+                        "inverse-on-surface": "#edf0ff",
+                        "on-secondary": "#ffffff",
+                        "secondary-fixed": "#ffdad6",
+                        "surface": "#f9f9ff",
+                        "secondary-fixed-dim": "#ffb4ab",
+                        "surface-container-high": "#e1e8fd",
+                        "surface-container-highest": "#dce2f7",
+                        "outline-variant": "#e6bdb8",
+                        "on-surface": "#141b2b",
+                        "inverse-surface": "#293040",
+                        "on-surface-variant": "#5c403c",
+                        "error-container": "#ffdad6",
+                        "on-tertiary-fixed": "#001e30",
+                        "on-primary-fixed-variant": "#93000b",
+                        "surface-variant": "#dce2f7",
+                        "tertiary-fixed-dim": "#90cdff",
+                        "secondary": "#a73831",
+                        "background": "#f9f9ff",
+                        "surface-container-low": "#f1f3ff",
+                        "tertiary-fixed": "#cbe6ff",
+                        "on-primary": "#ffffff",
+                        "on-secondary-fixed-variant": "#86211c",
+                        "error": "#ba1a1a",
+                        "on-primary-fixed": "#410002",
+                        "on-secondary-fixed": "#410002",
+                        "primary-fixed": "#ffdad6",
+                        "on-background": "#141b2b",
+                        "inverse-primary": "#ffb4ab",
+                        "tertiary-container": "#0078b2",
+                        "tertiary": "#005e8d",
+                        "surface-bright": "#f9f9ff",
+                        "primary-fixed-dim": "#ffb4ab"
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    fontFamily: {
+                        "headline": ["Inter", "sans-serif"],
+                        "body": ["Inter", "sans-serif"],
+                        "label": ["Inter", "sans-serif"]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        /* Custom Ambient Shadow for floating elements based on design system */
+        .shadow-ambient {
+            box-shadow: 0 12px 32px rgba(20, 27, 43, 0.08);
+        }
+        /* Ghost border utility */
+        .ghost-border {
+            box-shadow: inset 0 0 0 1px rgba(230, 189, 184, 0.2); /* outline-variant at 20% */
+        }
+        /* Primary CTA Gradient */
+        .bg-primary-gradient {
+            background: linear-gradient(135deg, #b70011 0%, #dc2626 100%);
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background font-body min-h-screen flex overflow-hidden">
+<!-- SideNavBar (Shared Component) -->
+<nav class="h-screen w-64 fixed left-0 top-0 flex flex-col py-6 border-r border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-900 font-['Inter'] text-sm font-medium z-40">
+<!-- Header -->
+<div class="px-6 mb-8">
+<h1 class="text-lg font-bold text-slate-900 dark:text-slate-50 tracking-tight">Industrial SCM</h1>
+<p class="text-slate-500 dark:text-slate-400 text-xs mt-1">v4.2.0-Alpha</p>
+</div>
+<!-- CTA -->
+<div class="px-6 mb-6">
+<button class="w-full py-2.5 px-4 bg-red-700 text-white rounded-md font-medium shadow-sm hover:bg-red-800 transition-colors flex justify-center items-center gap-2">
+<span class="material-symbols-outlined text-sm">add</span>
+                New Request
+            </button>
+</div>
+<!-- Main Nav Tabs -->
+<div class="flex-1 overflow-y-auto flex flex-col space-y-1 px-3">
+<!-- Dashboard -->
+<a class="flex items-center gap-3 px-3 py-2 rounded-r-md text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span>Dashboard</span>
+</a>
+<!-- Purchase Requests (ACTIVE) -->
+<a class="flex items-center gap-3 px-3 py-2 bg-white dark:bg-slate-800 text-red-700 dark:text-red-400 shadow-sm rounded-l-none border-l-4 border-red-700 Active: scale-[0.98]" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">receipt_long</span>
+<span class="font-bold">Purchase Requests</span>
+</a>
+<!-- Inventory -->
+<a class="flex items-center gap-3 px-3 py-2 rounded-r-md text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors" href="#">
+<span class="material-symbols-outlined">inventory_2</span>
+<span>Inventory</span>
+</a>
+<!-- Logistics -->
+<a class="flex items-center gap-3 px-3 py-2 rounded-r-md text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors" href="#">
+<span class="material-symbols-outlined">local_shipping</span>
+<span>Logistics</span>
+</a>
+<!-- Analytics -->
+<a class="flex items-center gap-3 px-3 py-2 rounded-r-md text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors" href="#">
+<span class="material-symbols-outlined">analytics</span>
+<span>Analytics</span>
+</a>
+</div>
+<!-- Footer Nav Tabs -->
+<div class="mt-auto px-3 pt-4 border-t border-slate-200 dark:border-slate-800 space-y-1">
+<a class="flex items-center gap-3 px-3 py-2 rounded-r-md text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors" href="#">
+<span class="material-symbols-outlined">headset_mic</span>
+<span>Support</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-r-md text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors" href="#">
+<span class="material-symbols-outlined">manage_accounts</span>
+<span>Account</span>
+</a>
+</div>
+</nav>
+<!-- Main Content Wrapper -->
+<div class="flex-1 ml-64 flex flex-col h-screen overflow-hidden">
+<!-- TopAppBar (Shared Component) -->
+<header class="docked full-width top-0 z-30 bg-slate-50 dark:bg-slate-950 font-['Inter'] antialiased tracking-tight">
+<div class="flex justify-between items-center w-full px-6 py-3">
+<!-- Brand/Logo Area -->
+<div class="flex items-center">
+<span class="text-xl font-black tracking-tighter text-red-700 dark:text-red-500 uppercase">SCM Architect</span>
+</div>
+<!-- Actions Area -->
+<div class="flex items-center gap-4">
+<!-- Search Bar (Right aligned) -->
+<div class="relative hidden md:block w-64">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">search</span>
+<input class="w-full bg-slate-200/50 dark:bg-slate-800/50 border-none rounded-md pl-9 pr-4 py-1.5 text-sm focus:ring-1 focus:ring-red-700 transition-colors outline-none text-slate-900 dark:text-white placeholder-slate-500" placeholder="Search..." type="text"/>
+</div>
+<!-- Trailing Icons -->
+<div class="flex items-center gap-1">
+<button class="p-2 text-slate-600 dark:text-slate-400 hover:text-slate-900 hover:bg-slate-200/50 dark:hover:bg-slate-800/50 transition-colors rounded-full flex items-center justify-center">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<button class="p-2 text-slate-600 dark:text-slate-400 hover:text-slate-900 hover:bg-slate-200/50 dark:hover:bg-slate-800/50 transition-colors rounded-full flex items-center justify-center">
+<span class="material-symbols-outlined">help_outline</span>
+</button>
+<button class="p-2 text-slate-600 dark:text-slate-400 hover:text-slate-900 hover:bg-slate-200/50 dark:hover:bg-slate-800/50 transition-colors rounded-full flex items-center justify-center">
+<span class="material-symbols-outlined">settings</span>
+</button>
+</div>
+<!-- Profile Image -->
+<div class="w-8 h-8 rounded-full bg-slate-300 dark:bg-slate-700 overflow-hidden flex-shrink-0 cursor-pointer ml-2">
+<img alt="User Profile" class="w-full h-full object-cover" data-alt="Professional corporate headshot of an executive in a well-lit office" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCCzKGDoSfmBgnI3vtlbCo5i6OTvaEQfdEEN7pnlsif4k97vCLelGsLXIxXPc2rb77_OwaOPsyUGEplqrMMmMwCREFVzaiZchwy0dBTHVsGDv4pA2F-y3xLn1h83RfeOxZD98gTYFZc3rVpEchJZBpde4zjoXDHXG-4LrvANTFZ5kn0WXZcpHmiNsq-o_UtLo5MNnbqq-OY2CZapwLAqkePfcrpoUcBEVg59VPVH95z6px_ahK-MYr9Lm49jo7A41TFoMTDgqtABfB_"/>
+</div>
+</div>
+</div>
+<!-- Separation Logic -->
+<div class="bg-slate-200/50 dark:bg-slate-800/50 h-[1px] w-full"></div>
+</header>
+<!-- Canvas Area (PR Detail View) -->
+<main class="flex-1 overflow-y-auto bg-background p-8">
+<!-- Contextual Breadcrumbs -->
+<nav class="flex text-label-md text-on-surface-variant mb-4 font-label">
+<a class="hover:text-primary transition-colors" href="#">Purchase Requests</a>
+<span class="mx-2 material-symbols-outlined text-sm">chevron_right</span>
+<span class="text-on-surface">PR-2023-8942</span>
+</nav>
+<!-- Detail Header (Editorial Authority) -->
+<div class="flex justify-between items-start mb-8">
+<div>
+<h2 class="text-4xl font-headline font-bold text-on-surface tracking-tight mb-2">High-Capacity Conveyor Motors</h2>
+<div class="flex items-center gap-4 text-on-surface-variant text-sm font-label">
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-sm">tag</span> PR-2023-8942</span>
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-sm">person</span> Requested by J. Sterling</span>
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-sm">calendar_today</span> Oct 24, 2023</span>
+</div>
+</div>
+<div class="flex gap-3">
+<button class="px-4 py-2 rounded-md ghost-border text-on-surface font-medium text-sm flex items-center gap-2 hover:bg-surface-container transition-colors">
+<span class="material-symbols-outlined text-sm">print</span>
+                        Export
+                    </button>
+<!-- Status indicator representing the 'Pending CFO' state -->
+<div class="px-4 py-2 rounded-md bg-tertiary-container text-on-tertiary-container font-medium text-sm flex items-center gap-2">
+<span class="material-symbols-outlined text-sm">pending_actions</span>
+                        Pending CFO Approval
+                    </div>
+</div>
+</div>
+<!-- Bento Grid Layout for Data Density -->
+<div class="grid grid-cols-12 gap-6">
+<!-- Left Column (Wider - Details & Items) -->
+<div class="col-span-12 xl:col-span-8 flex flex-col gap-6">
+<!-- Meta Overview Card -->
+<div class="bg-surface-container-lowest rounded-lg ghost-border p-6 relative overflow-hidden">
+<!-- Logistics Status Strip -->
+<div class="absolute left-0 top-0 bottom-0 w-1 bg-tertiary"></div>
+<h3 class="text-title-md font-headline font-bold text-on-surface mb-4">Request Metadata</h3>
+<div class="grid grid-cols-3 gap-6">
+<div>
+<p class="text-label-md text-on-surface-variant mb-1 uppercase tracking-wider">Department</p>
+<p class="text-body-md text-on-surface font-medium">Heavy Assembly (A4)</p>
+</div>
+<div>
+<p class="text-label-md text-on-surface-variant mb-1 uppercase tracking-wider">Project Code</p>
+<p class="text-body-md text-on-surface font-medium">PROJ-X7-EXP</p>
+</div>
+<div>
+<p class="text-label-md text-on-surface-variant mb-1 uppercase tracking-wider">Required By</p>
+<p class="text-body-md text-on-surface font-medium text-primary">Nov 15, 2023</p>
+</div>
+<div class="col-span-3 mt-2">
+<p class="text-label-md text-on-surface-variant mb-1 uppercase tracking-wider">Business Justification</p>
+<p class="text-body-md text-on-surface leading-relaxed max-w-3xl">Current line 4 motors are operating at 94% thermal capacity during peak runs, predicting MTBF failure within 45 days. Replacement is required to maintain Q4 production targets.</p>
+</div>
+</div>
+</div>
+<!-- Line Items (Tonal Layering, No 1px borders) -->
+<div class="bg-surface-container-low rounded-lg p-6">
+<h3 class="text-title-md font-headline font-bold text-on-surface mb-4">Line Items</h3>
+<!-- Header Row -->
+<div class="grid grid-cols-12 gap-4 px-4 py-2 text-label-md text-on-surface-variant uppercase tracking-wider border-b-2 border-surface-container-highest mb-2">
+<div class="col-span-5">Description</div>
+<div class="col-span-2 text-right">Qty</div>
+<div class="col-span-2 text-right">Unit Price</div>
+<div class="col-span-3 text-right">Total</div>
+</div>
+<!-- Rows (Zebra striping with tones) -->
+<div class="flex flex-col gap-2">
+<div class="grid grid-cols-12 gap-4 px-4 py-4 bg-surface-container-lowest rounded-md items-center ghost-border">
+<div class="col-span-5 flex items-center gap-3">
+<div class="w-10 h-10 bg-surface-container-highest rounded flex items-center justify-center text-on-surface-variant">
+<span class="material-symbols-outlined">settings_suggest</span>
+</div>
+<div>
+<p class="font-medium text-on-surface text-sm">Industrial Servo Motor (7.5kW)</p>
+<p class="text-xs text-on-surface-variant">SKU: SM-7500-HD</p>
+</div>
+</div>
+<div class="col-span-2 text-right font-medium text-on-surface text-sm">4</div>
+<div class="col-span-2 text-right text-on-surface-variant text-sm">$4,250.00</div>
+<div class="col-span-3 text-right font-bold text-on-surface text-sm">$17,000.00</div>
+</div>
+<div class="grid grid-cols-12 gap-4 px-4 py-4 bg-surface rounded-md items-center">
+<div class="col-span-5 flex items-center gap-3">
+<div class="w-10 h-10 bg-surface-container-highest rounded flex items-center justify-center text-on-surface-variant">
+<span class="material-symbols-outlined">precision_manufacturing</span>
+</div>
+<div>
+<p class="font-medium text-on-surface text-sm">Mounting Bracket Assy (Type C)</p>
+<p class="text-xs text-on-surface-variant">SKU: MB-C-ASSY</p>
+</div>
+</div>
+<div class="col-span-2 text-right font-medium text-on-surface text-sm">4</div>
+<div class="col-span-2 text-right text-on-surface-variant text-sm">$320.00</div>
+<div class="col-span-3 text-right font-bold text-on-surface text-sm">$1,280.00</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Right Column (Narrower - Financials & Workflow) -->
+<div class="col-span-12 xl:col-span-4 flex flex-col gap-6">
+<!-- Financial Summary -->
+<div class="bg-surface-container-lowest rounded-lg ghost-border p-6">
+<h3 class="text-title-md font-headline font-bold text-on-surface mb-6">Financial Summary</h3>
+<div class="space-y-3 text-sm">
+<div class="flex justify-between text-on-surface-variant">
+<span>Subtotal</span>
+<span class="font-medium text-on-surface">$18,280.00</span>
+</div>
+<div class="flex justify-between text-on-surface-variant">
+<span>Estimated Freight</span>
+<span class="font-medium text-on-surface">$450.00</span>
+</div>
+<div class="flex justify-between text-on-surface-variant">
+<span>Tax (8.5%)</span>
+<span class="font-medium text-on-surface">$1,553.80</span>
+</div>
+<div class="pt-4 mt-4 border-t-2 border-surface-container-highest">
+<div class="flex justify-between items-end">
+<span class="text-title-md font-bold text-on-surface">Total Cost</span>
+<span class="text-headline-lg font-headline font-black text-primary tracking-tight">$20,283.80</span>
+</div>
+<p class="text-xs text-right mt-1 text-on-surface-variant">Requires Level 3 Authorization (&gt; $10k)</p>
+</div>
+</div>
+</div>
+<!-- Workflow/Approval Tracker -->
+<div class="bg-surface-container-lowest rounded-lg ghost-border p-6 flex-1">
+<h3 class="text-title-md font-headline font-bold text-on-surface mb-6">Approval Workflow</h3>
+<div class="relative border-l-2 border-surface-container-highest ml-3 space-y-8">
+<!-- Step 1: Created -->
+<div class="relative pl-6">
+<div class="absolute -left-[9px] top-1 w-4 h-4 rounded-full bg-tertiary shadow-[0_0_0_4px_white]"></div>
+<p class="text-sm font-bold text-on-surface">Request Drafted</p>
+<p class="text-xs text-on-surface-variant mt-1">Oct 24, 09:12 AM - J. Sterling</p>
+</div>
+<!-- Step 2: Dept Head Approved -->
+<div class="relative pl-6">
+<div class="absolute -left-[9px] top-1 w-4 h-4 rounded-full bg-tertiary shadow-[0_0_0_4px_white]"></div>
+<p class="text-sm font-bold text-on-surface">Department Head</p>
+<p class="text-xs text-on-surface-variant mt-1">Oct 24, 11:45 AM - M. Vance</p>
+<div class="mt-2 inline-flex items-center gap-1 px-2 py-1 bg-surface-container text-on-surface-variant rounded text-xs font-medium">
+<span class="material-symbols-outlined text-[14px]">check_circle</span>
+                                    Approved
+                                </div>
+</div>
+<!-- Step 3: CFO Pending (The recently updated state) -->
+<div class="relative pl-6">
+<!-- Pulsing indicator for active step -->
+<div class="absolute -left-[9px] top-1 w-4 h-4 rounded-full bg-primary shadow-[0_0_0_4px_white]"></div>
+<p class="text-sm font-bold text-on-surface">Chief Financial Officer</p>
+<p class="text-xs text-on-surface-variant mt-1 text-primary font-medium">Notification Sent - Pending Review</p>
+</div>
+<!-- Step 4: PO Generation (Future) -->
+<div class="relative pl-6 opacity-40">
+<div class="absolute -left-[9px] top-1 w-4 h-4 rounded-full bg-surface-container-highest shadow-[0_0_0_4px_white]"></div>
+<p class="text-sm font-bold text-on-surface">PO Generation</p>
+<p class="text-xs text-on-surface-variant mt-1">Procurement Desk</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Bottom padding for scroll clearance -->
+<div class="h-24"></div>
+</main>
+</div>
+<!-- Success Toast Overlay (Strictly adhering to prompt's 'Green background' request using standard tailwind for exact match to user instruction, positioned bottom-right) -->
+<div class="fixed bottom-8 right-8 z-50 flex items-center gap-3 bg-green-600 text-white px-4 py-3 rounded-md shadow-ambient animate-slide-up">
+<span class="material-symbols-outlined font-bold">check_circle</span>
+<span class="text-sm font-medium tracking-wide">Status updated. CFO has been notified.</span>
+<button class="ml-4 opacity-80 hover:opacity-100 transition-opacity flex items-center">
+<span class="material-symbols-outlined text-sm">close</span>
+</button>
+</div>
+<!-- Simple animation style for the toast -->
+<style>
+        @keyframes slideUp {
+            from { transform: translateY(20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        .animate-slide-up {
+            animation: slideUp 0.3s ease-out forwards;
+        }
+    </style>
+</body></html>

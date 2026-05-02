@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>SCM Enterprise - Purchase Requests</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-dim": "#d3daef",
+                        "on-surface": "#141b2b",
+                        "inverse-on-surface": "#edf0ff",
+                        "primary-container": "#dc2626",
+                        "surface-container-high": "#e1e8fd",
+                        "on-primary-container": "#fff6f5",
+                        "on-error-container": "#93000a",
+                        "on-primary": "#ffffff",
+                        "primary": "#b70011",
+                        "on-secondary-fixed": "#410002",
+                        "tertiary": "#005e8d",
+                        "on-error": "#ffffff",
+                        "on-tertiary": "#ffffff",
+                        "tertiary-fixed-dim": "#90cdff",
+                        "surface-container": "#e9edff",
+                        "error": "#ba1a1a",
+                        "background": "#f9f9ff",
+                        "on-secondary": "#ffffff",
+                        "tertiary-container": "#0078b2",
+                        "surface-tint": "#bf0715",
+                        "primary-fixed": "#ffdad6",
+                        "on-tertiary-container": "#f3f8ff",
+                        "on-surface-variant": "#5c403c",
+                        "inverse-surface": "#293040",
+                        "on-secondary-fixed-variant": "#86211c",
+                        "surface-bright": "#f9f9ff",
+                        "primary-fixed-dim": "#ffb4ab",
+                        "outline": "#916f6b",
+                        "on-primary-fixed-variant": "#93000b",
+                        "on-primary-fixed": "#410002",
+                        "error-container": "#ffdad6",
+                        "surface-container-highest": "#dce2f7",
+                        "secondary-fixed-dim": "#ffb4ab",
+                        "surface": "#f9f9ff",
+                        "surface-container-low": "#f1f3ff",
+                        "outline-variant": "#e6bdb8",
+                        "tertiary-fixed": "#cbe6ff",
+                        "surface-variant": "#dce2f7",
+                        "secondary-fixed": "#ffdad6",
+                        "on-tertiary-fixed": "#001e30",
+                        "on-tertiary-fixed-variant": "#004b71",
+                        "on-background": "#141b2b",
+                        "inverse-primary": "#ffb4ab",
+                        "secondary-container": "#fd786c",
+                        "on-secondary-container": "#700f0f",
+                        "surface-container-lowest": "#ffffff",
+                        "secondary": "#a73831"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "fontFamily": {
+                        "headline": ["Inter"],
+                        "display": ["Inter"],
+                        "body": ["Inter"],
+                        "label": ["Inter"]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .grid-pattern {
+            background-size: 40px 40px;
+            background-image: 
+                linear-gradient(to right, rgba(20, 27, 43, 0.05) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(20, 27, 43, 0.05) 1px, transparent 1px);
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background font-body antialiased flex h-screen overflow-hidden">
+<!-- SideNavBar -->
+<nav class="fixed left-0 top-0 h-full flex flex-col z-40 bg-slate-50 w-64 border-r-0 bg-slate-100 tonal-shift-only flat-no-shadows">
+<!-- Header / Switcher -->
+<div class="p-4 flex items-center justify-between">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-DEFAULT bg-surface-container-highest flex items-center justify-center overflow-hidden">
+<span class="material-symbols-outlined text-primary text-xl" data-icon="factory">factory</span>
+</div>
+<div>
+<h1 class="text-lg font-bold text-slate-900 leading-tight">Industrial Architect</h1>
+<p class="text-xs text-on-surface-variant font-medium">SCM Enterprise</p>
+</div>
+</div>
+<button class="text-on-surface-variant hover:text-on-surface transition-colors">
+<span class="material-symbols-outlined text-sm" data-icon="unfold_more">unfold_more</span>
+</button>
+</div>
+<!-- Navigation Modules -->
+<div class="flex-1 overflow-y-auto py-4 font-inter text-[14px] leading-tight font-medium">
+<!-- MAIN -->
+<div class="mb-6">
+<h2 class="px-4 mb-2 text-[11px] uppercase tracking-wider text-on-surface-variant font-bold">Main</h2>
+<a class="flex items-center gap-3 px-4 py-2 text-slate-600 border-l-[3px] border-transparent hover:bg-slate-200 transition-colors duration-200" href="#">
+<span class="material-symbols-outlined text-[20px]" data-icon="dashboard">dashboard</span>
+                    Dashboard
+                </a>
+</div>
+<!-- PROCUREMENT -->
+<div class="mb-6">
+<h2 class="px-4 mb-2 text-[11px] uppercase tracking-wider text-on-surface-variant font-bold">Procurement</h2>
+<a class="flex items-center gap-3 px-4 py-2 text-red-600 bg-red-50 border-l-[3px] border-red-600 opacity-90 transition-all duration-150" href="#">
+<span class="material-symbols-outlined text-[20px]" data-icon="shopping_cart" style="font-variation-settings: 'FILL' 1;">shopping_cart</span>
+                    Purchase Requests
+                </a>
+<a class="flex items-center gap-3 px-4 py-2 text-slate-600 border-l-[3px] border-transparent hover:bg-slate-200 transition-colors duration-200" href="#">
+<span class="material-symbols-outlined text-[20px]" data-icon="request_quote">request_quote</span>
+                    Quotations
+                </a>
+<a class="flex items-center gap-3 px-4 py-2 text-slate-600 border-l-[3px] border-transparent hover:bg-slate-200 transition-colors duration-200" href="#">
+<span class="material-symbols-outlined text-[20px]" data-icon="shopping_bag">shopping_bag</span>
+                    Purchase Orders
+                </a>
+</div>
+<!-- GOODS & FINANCE -->
+<div class="mb-6">
+<h2 class="px-4 mb-2 text-[11px] uppercase tracking-wider text-on-surface-variant font-bold">Goods &amp; Finance</h2>
+<a class="flex items-center gap-3 px-4 py-2 text-slate-600 border-l-[3px] border-transparent hover:bg-slate-200 transition-colors duration-200" href="#">
+<span class="material-symbols-outlined text-[20px]" data-icon="inventory">inventory</span>
+                    GRN
+                </a>
+<a class="flex items-center gap-3 px-4 py-2 text-slate-600 border-l-[3px] border-transparent hover:bg-slate-200 transition-colors duration-200" href="#">
+<span class="material-symbols-outlined text-[20px]" data-icon="warehouse">warehouse</span>
+                    Inventory
+                </a>
+<a class="flex items-center gap-3 px-4 py-2 text-slate-600 border-l-[3px] border-transparent hover:bg-slate-200 transition-colors duration-200" href="#">
+<span class="material-symbols-outlined text-[20px]" data-icon="receipt_long">receipt_long</span>
+                    Invoices
+                </a>
+<a class="flex items-center gap-3 px-4 py-2 text-slate-600 border-l-[3px] border-transparent hover:bg-slate-200 transition-colors duration-200" href="#">
+<span class="material-symbols-outlined text-[20px]" data-icon="payments">payments</span>
+                    Payments
+                </a>
+</div>
+<!-- MASTERS -->
+<div class="mb-6">
+<h2 class="px-4 mb-2 text-[11px] uppercase tracking-wider text-on-surface-variant font-bold">Masters</h2>
+<a class="flex items-center gap-3 px-4 py-2 text-slate-600 border-l-[3px] border-transparent hover:bg-slate-200 transition-colors duration-200" href="#">
+<span class="material-symbols-outlined text-[20px]" data-icon="category">category</span>
+                    Items
+                </a>
+<a class="flex items-center gap-3 px-4 py-2 text-slate-600 border-l-[3px] border-transparent hover:bg-slate-200 transition-colors duration-200" href="#">
+<span class="material-symbols-outlined text-[20px]" data-icon="group">group</span>
+                    Vendors
+                </a>
+<a class="flex items-center gap-3 px-4 py-2 text-slate-600 border-l-[3px] border-transparent hover:bg-slate-200 transition-colors duration-200" href="#">
+<span class="material-symbols-outlined text-[20px]" data-icon="grid_view">grid_view</span>
+                    Categories
+                </a>
+<a class="flex items-center gap-3 px-4 py-2 text-slate-600 border-l-[3px] border-transparent hover:bg-slate-200 transition-colors duration-200" href="#">
+<span class="material-symbols-outlined text-[20px]" data-icon="business">business</span>
+                    Companies
+                </a>
+</div>
+<!-- SETTINGS -->
+<div>
+<h2 class="px-4 mb-2 text-[11px] uppercase tracking-wider text-on-surface-variant font-bold">System</h2>
+<a class="flex items-center gap-3 px-4 py-2 text-slate-600 border-l-[3px] border-transparent hover:bg-slate-200 transition-colors duration-200" href="#">
+<span class="material-symbols-outlined text-[20px]" data-icon="settings">settings</span>
+                    Settings
+                </a>
+</div>
+</div>
+<!-- Collapse Menu CTA -->
+<div class="p-4 border-t border-surface-variant/30">
+<button class="flex items-center gap-3 w-full px-4 py-2 text-slate-600 hover:bg-slate-200 transition-colors duration-200 font-inter text-[14px] leading-tight font-medium rounded-DEFAULT">
+<span class="material-symbols-outlined text-[20px]" data-icon="keyboard_double_arrow_left">keyboard_double_arrow_left</span>
+                 Collapse Menu
+            </button>
+</div>
+</nav>
+<!-- Main Content Canvas (Empty Workspace) -->
+<main class="flex-1 ml-64 grid-pattern relative flex items-center justify-center">
+<!-- Optional: A subtle central element to emphasize the empty state, though the prompt asked for an empty workspace. Keeping it minimal. -->
+</main>
+</body></html>

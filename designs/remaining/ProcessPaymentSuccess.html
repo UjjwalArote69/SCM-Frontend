@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Payment Successful - Industrial SCM</title>
+<!-- Google Fonts: Inter -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "surface-container-low": "#f1f3ff",
+                    "surface-container": "#e9edff",
+                    "on-primary-fixed-variant": "#93000b",
+                    "on-surface": "#141b2b",
+                    "secondary-fixed": "#ffdad6",
+                    "primary-fixed": "#ffdad6",
+                    "tertiary-fixed": "#cbe6ff",
+                    "on-tertiary-fixed-variant": "#004b71",
+                    "outline-variant": "#e6bdb8",
+                    "tertiary": "#005e8d",
+                    "surface-dim": "#d3daef",
+                    "error": "#ba1a1a",
+                    "surface-variant": "#dce2f7",
+                    "primary-fixed-dim": "#ffb4ab",
+                    "on-primary-fixed": "#410002",
+                    "on-secondary-fixed": "#410002",
+                    "on-error-container": "#93000a",
+                    "on-tertiary": "#ffffff",
+                    "tertiary-fixed-dim": "#90cdff",
+                    "surface-bright": "#f9f9ff",
+                    "surface": "#f9f9ff",
+                    "on-secondary-container": "#700f0f",
+                    "secondary-container": "#fd786c",
+                    "primary-container": "#dc2626",
+                    "on-error": "#ffffff",
+                    "background": "#f9f9ff",
+                    "on-surface-variant": "#5c403c",
+                    "on-primary": "#ffffff",
+                    "tertiary-container": "#0078b2",
+                    "outline": "#916f6b",
+                    "on-background": "#141b2b",
+                    "primary": "#b70011",
+                    "surface-container-lowest": "#ffffff",
+                    "secondary": "#a73831",
+                    "on-primary-container": "#fff6f5",
+                    "secondary-fixed-dim": "#ffb4ab",
+                    "inverse-surface": "#293040",
+                    "inverse-primary": "#ffb4ab",
+                    "on-tertiary-fixed": "#001e30",
+                    "surface-container-highest": "#dce2f7",
+                    "surface-container-high": "#e1e8fd",
+                    "error-container": "#ffdad6",
+                    "surface-tint": "#bf0715",
+                    "on-secondary-fixed-variant": "#86211c",
+                    "on-tertiary-container": "#f3f8ff",
+                    "inverse-on-surface": "#edf0ff",
+                    "on-secondary": "#ffffff"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.125rem",
+                    "lg": "0.25rem",
+                    "xl": "0.5rem",
+                    "full": "0.75rem"
+            },
+            "spacing": {},
+            "fontFamily": {
+                    "headline": [
+                            "Inter"
+                    ],
+                    "body": [
+                            "Inter"
+                    ],
+                    "label": [
+                            "Inter"
+                    ]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        .ghost-border {
+            border: 1px solid rgba(230, 189, 184, 0.2); /* outline-variant at 20% */
+        }
+    </style>
+</head>
+<body class="bg-background min-h-screen flex items-center justify-center font-body text-on-surface p-4">
+<!-- Success Card Container -->
+<main class="bg-surface-container-lowest rounded-xl shadow-[0_12px_32px_rgba(20,27,43,0.08)] max-w-md w-full p-10 flex flex-col items-center text-center relative overflow-hidden">
+<!-- Top accent edge indicating status (Asymmetric design system rule) -->
+<div class="absolute top-0 left-0 w-full h-1 bg-tertiary"></div>
+<!-- Restrained Success Icon -->
+<div class="mb-8 relative flex items-center justify-center">
+<div class="absolute w-20 h-20 bg-surface-container rounded-full opacity-50"></div>
+<span class="material-symbols-outlined text-[4rem] text-tertiary relative z-10" style="font-variation-settings: 'FILL' 0, 'wght' 300;">
+                check_circle
+            </span>
+</div>
+<!-- Headline -->
+<h1 class="font-headline text-3xl font-light tracking-tight text-on-background mb-3">
+            Payment Successful
+        </h1>
+<!-- Details -->
+<p class="font-body text-sm text-on-surface-variant leading-relaxed mb-10 max-w-[280px]">
+            Payment of <span class="font-medium text-on-surface">₹1,24,500</span> recorded. Vendor notified via email.
+        </p>
+<!-- Actions -->
+<div class="flex flex-col w-full gap-4">
+<!-- Secondary Button -->
+<button class="w-full ghost-border rounded-DEFAULT py-3 px-6 font-label text-sm font-medium text-on-surface hover:bg-surface-container-low transition-colors duration-200 flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-lg" style="font-variation-settings: 'FILL' 0, 'wght' 400;">
+                    receipt_long
+                </span>
+                View Receipt
+            </button>
+<!-- Tertiary Button -->
+<button class="w-full py-3 px-6 font-label text-sm font-bold text-primary hover:text-primary-container transition-colors duration-200 mt-2">
+                Back to list
+            </button>
+</div>
+</main>
+</body></html>

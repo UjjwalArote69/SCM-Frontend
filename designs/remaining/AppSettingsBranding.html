@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Settings - Branding | Industrial Architect SCM</title>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-tertiary": "#ffffff",
+                        "error-container": "#ffdad6",
+                        "outline-variant": "#e6bdb8",
+                        "secondary": "#a73831",
+                        "on-primary": "#ffffff",
+                        "surface-dim": "#d3daef",
+                        "on-tertiary-fixed": "#001e30",
+                        "on-secondary-fixed": "#410002",
+                        "on-primary-fixed": "#410002",
+                        "surface-variant": "#dce2f7",
+                        "surface-bright": "#f9f9ff",
+                        "on-background": "#141b2b",
+                        "secondary-fixed": "#ffdad6",
+                        "error": "#ba1a1a",
+                        "primary-fixed-dim": "#ffb4ab",
+                        "on-surface-variant": "#5c403c",
+                        "on-primary-container": "#fff6f5",
+                        "primary-container": "#dc2626",
+                        "surface-tint": "#bf0715",
+                        "outline": "#916f6b",
+                        "tertiary-container": "#0078b2",
+                        "surface-container-high": "#e1e8fd",
+                        "background": "#f9f9ff",
+                        "tertiary-fixed": "#cbe6ff",
+                        "tertiary-fixed-dim": "#90cdff",
+                        "secondary-fixed-dim": "#ffb4ab",
+                        "on-secondary-fixed-variant": "#86211c",
+                        "primary": "#b70011",
+                        "on-tertiary-fixed-variant": "#004b71",
+                        "surface-container-low": "#f1f3ff",
+                        "surface-container-highest": "#dce2f7",
+                        "secondary-container": "#fd786c",
+                        "on-tertiary-container": "#f3f8ff",
+                        "surface": "#f9f9ff",
+                        "inverse-surface": "#293040",
+                        "inverse-primary": "#ffb4ab",
+                        "on-primary-fixed-variant": "#93000b",
+                        "on-error": "#ffffff",
+                        "primary-fixed": "#ffdad6",
+                        "on-surface": "#141b2b",
+                        "surface-container-lowest": "#ffffff",
+                        "on-error-container": "#93000a",
+                        "tertiary": "#005e8d",
+                        "on-secondary": "#ffffff",
+                        "inverse-on-surface": "#edf0ff",
+                        "surface-container": "#e9edff",
+                        "on-secondary-container": "#700f0f"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "fontFamily": {
+                        "headline": ["Inter"],
+                        "body": ["Inter"],
+                        "label": ["Inter"]
+                    }
+                },
+            },
+        }
+    </script>
+<style type="text/tailwindcss">
+        @layer utilities {
+            .gradient-primary {
+                @apply bg-gradient-to-br from-primary to-primary-container;
+            }
+            .ambient-shadow {
+                box-shadow: 0 12px 32px rgba(20, 27, 43, 0.08);
+            }
+            .ghost-border {
+                @apply border border-outline-variant/20;
+            }
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background font-body antialiased min-h-screen flex selection:bg-primary-container selection:text-on-primary-container">
+<!-- SideNavBar Component -->
+<nav class="h-screen w-64 fixed left-0 top-0 flex flex-col py-6 border-r border-slate-200/20 dark:border-slate-800/20 bg-slate-50 dark:bg-slate-950 z-40">
+<!-- Header -->
+<div class="px-6 mb-8">
+<h1 class="text-base font-black text-slate-900 dark:text-slate-100">Industrial Architect SCM</h1>
+</div>
+<div class="px-6 mb-4">
+<h2 class="font-headline text-lg font-bold text-on-surface tracking-tight">Settings</h2>
+<p class="font-label text-sm text-on-surface-variant font-medium">System Configuration</p>
+</div>
+<!-- Main Navigation Tabs -->
+<div class="flex-1 flex flex-col gap-1 px-2 overflow-y-auto">
+<a class="flex items-center gap-3 text-slate-500 dark:text-slate-400 px-4 py-3 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all duration-200 active:translate-x-1 font-sans text-xs font-semibold uppercase tracking-widest rounded-DEFAULT" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">tune</span>
+                General
+            </a>
+<a class="flex items-center gap-3 bg-white dark:bg-slate-900 text-red-700 dark:text-red-500 font-bold px-4 py-3 border-l-4 border-red-700 dark:border-red-500 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all duration-200 active:translate-x-1 font-sans text-xs uppercase tracking-widest rounded-r-DEFAULT shadow-sm" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">palette</span>
+                Branding
+            </a>
+<a class="flex items-center gap-3 text-slate-500 dark:text-slate-400 px-4 py-3 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all duration-200 active:translate-x-1 font-sans text-xs font-semibold uppercase tracking-widest rounded-DEFAULT" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">shield_lock</span>
+                Security
+            </a>
+<a class="flex items-center gap-3 text-slate-500 dark:text-slate-400 px-4 py-3 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all duration-200 active:translate-x-1 font-sans text-xs font-semibold uppercase tracking-widest rounded-DEFAULT" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">extension</span>
+                Integrations
+            </a>
+<a class="flex items-center gap-3 text-slate-500 dark:text-slate-400 px-4 py-3 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all duration-200 active:translate-x-1 font-sans text-xs font-semibold uppercase tracking-widest rounded-DEFAULT" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">payments</span>
+                Billing
+            </a>
+<a class="flex items-center gap-3 text-slate-500 dark:text-slate-400 px-4 py-3 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all duration-200 active:translate-x-1 font-sans text-xs font-semibold uppercase tracking-widest rounded-DEFAULT" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">groups</span>
+                Team
+            </a>
+</div>
+<!-- Footer Navigation -->
+<div class="mt-auto px-2 pt-4 border-t border-slate-200/20 dark:border-slate-800/20">
+<a class="flex items-center gap-3 text-slate-500 dark:text-slate-400 px-4 py-3 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all duration-200 active:translate-x-1 font-sans text-xs font-semibold uppercase tracking-widest rounded-DEFAULT" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">help</span>
+                Help Center
+            </a>
+</div>
+</nav>
+<!-- Main Content Area -->
+<main class="ml-64 flex-1 flex flex-col bg-background min-h-screen">
+<!-- Top App Bar (Mocked structure for alignment, content hidden as per "Destination" rules or focus, but keeping structure for layout integrity) -->
+<header class="h-14 flex items-center justify-end px-8 z-30 sticky top-0 bg-background/80 backdrop-blur-md">
+<!-- Trailing actions placeholder -->
+<div class="flex items-center gap-4">
+<button class="text-on-surface-variant hover:text-primary transition-colors focus:outline-none">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<div class="w-8 h-8 rounded-full bg-surface-variant overflow-hidden ghost-border">
+<img alt="User profile avatar" class="w-full h-full object-cover" data-alt="Corporate headshot of a smiling man in a blue shirt against a neutral background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBkpUw6O907Ru7i074gGO3sDmqv2IMNx2zzPg0iyqFc9lhadxcOqW2VLlEJAZc3Gu7tbFLtk6XQ1w3BhExZ7VHac-snVu-SZrxKw3IbX1Mp3a6Q42wqIaSRtcjwcIafeeYE5zkxiSOFR6WmCblwX5A9_M-rSEOX8V5WnQRd7jqYzPNzWK42JSKqCbAfZLfTrDYo4YqaPmwagb5O6zyReAnFH9o6S4Yikk9Mh05tzzYsS_-z5SSA6d7dZUvan3WK0BOhm2GgQSktdf3D"/>
+</div>
+</div>
+</header>
+<!-- Canvas Content -->
+<div class="p-8 max-w-5xl mx-auto w-full flex-1">
+<div class="mb-10 flex items-center justify-between">
+<div>
+<h2 class="font-headline text-3xl font-extrabold text-on-surface tracking-tight">Branding Configuration</h2>
+<p class="font-body text-sm text-on-surface-variant mt-2 max-w-2xl">Manage the visual identity of your supply chain portal. These settings affect the global appearance across all modules.</p>
+</div>
+<div class="flex gap-3">
+<button class="px-5 py-2 font-label text-sm font-semibold rounded-lg ghost-border text-on-surface hover:bg-surface-variant transition-colors focus:ring-2 focus:ring-primary focus:outline-none">
+                        Discard
+                    </button>
+<button class="px-6 py-2 font-label text-sm font-semibold rounded-lg gradient-primary text-on-primary hover:opacity-90 transition-opacity focus:ring-2 focus:ring-offset-2 focus:ring-primary focus:outline-none shadow-sm flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px]">save</span>
+                        Save Changes
+                    </button>
+</div>
+</div>
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+<!-- Left Column: Colors -->
+<div class="lg:col-span-1 flex flex-col gap-8">
+<!-- Color Palette Section -->
+<section class="bg-surface-container-low rounded-xl p-6 relative overflow-hidden">
+<!-- Subtle background architectural lines -->
+<div class="absolute inset-0 opacity-5 pointer-events-none" style="background-image: repeating-linear-gradient(45deg, transparent, transparent 10px, #141b2b 10px, #141b2b 11px);"></div>
+<div class="relative z-10">
+<h3 class="font-headline text-lg font-bold text-on-surface mb-1">Color Palette</h3>
+<p class="font-body text-xs text-on-surface-variant mb-6">Define the primary structural colors.</p>
+<div class="space-y-6">
+<!-- Primary Color Input -->
+<div>
+<label class="block font-label text-sm font-semibold text-on-surface mb-2">Primary Accent</label>
+<div class="flex items-center gap-3 bg-surface-container-lowest p-2 rounded-lg ghost-border focus-within:border-primary transition-colors">
+<div class="w-8 h-8 rounded-md bg-[#DC2626] border border-black/10 shadow-inner flex items-center justify-center">
+<!-- Color preview -->
+</div>
+<input aria-label="Primary Color Hex Code" class="bg-transparent border-none focus:ring-0 text-on-surface font-body text-sm font-medium w-full uppercase" type="text" value="#DC2626"/>
+</div>
+<p class="font-body text-xs text-on-surface-variant mt-2">Used for major actions, active states, and critical highlights.</p>
+</div>
+<!-- Secondary Color Input -->
+<div>
+<label class="block font-label text-sm font-semibold text-on-surface mb-2">Secondary Interface</label>
+<div class="flex items-center gap-3 bg-surface-container-lowest p-2 rounded-lg ghost-border focus-within:border-primary transition-colors">
+<div class="w-8 h-8 rounded-md bg-tertiary border border-black/10 shadow-inner flex items-center justify-center">
+<!-- Color preview -->
+</div>
+<input aria-label="Secondary Color Hex Code" class="bg-transparent border-none focus:ring-0 text-on-surface font-body text-sm font-medium w-full uppercase" type="text" value="#005E8D"/>
+</div>
+<p class="font-body text-xs text-on-surface-variant mt-2">Used for informational links and secondary structural elements.</p>
+</div>
+</div>
+</div>
+</section>
+</div>
+<!-- Right Column: Assets -->
+<div class="lg:col-span-2 flex flex-col gap-8">
+<!-- Logo Assets Section -->
+<section class="bg-surface-container-low rounded-xl p-6">
+<h3 class="font-headline text-lg font-bold text-on-surface mb-1">Brand Assets</h3>
+<p class="font-body text-xs text-on-surface-variant mb-6">Upload high-resolution vector assets for optimal display across densities.</p>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+<!-- Light Mode Logo -->
+<div class="bg-surface-container-lowest rounded-lg p-5 ghost-border flex flex-col">
+<div class="flex justify-between items-center mb-4">
+<label class="font-label text-sm font-semibold text-on-surface">Light Mode Logo</label>
+<span class="bg-surface-variant text-on-surface-variant text-[10px] font-bold px-2 py-1 rounded-sm uppercase tracking-wider">Required</span>
+</div>
+<div class="flex-1 border-2 border-dashed border-outline-variant/50 hover:border-primary/50 transition-colors rounded-lg bg-surface-bright flex flex-col items-center justify-center p-6 text-center cursor-pointer group">
+<div class="w-12 h-12 bg-surface-container rounded-full flex items-center justify-center mb-3 group-hover:bg-primary/10 transition-colors">
+<span class="material-symbols-outlined text-tertiary group-hover:text-primary">cloud_upload</span>
+</div>
+<p class="font-body text-sm font-medium text-on-surface mb-1">Click or drag SVG here</p>
+<p class="font-body text-xs text-on-surface-variant">Max 2MB. Recommended dimensions 400x120px.</p>
+</div>
+<div class="mt-3 flex items-center justify-between text-xs">
+<span class="text-on-surface-variant truncate max-w-[150px]">industrial_logo_dark.svg</span>
+<button class="text-primary font-semibold hover:underline focus:outline-none">Replace</button>
+</div>
+</div>
+<!-- Dark Mode Logo -->
+<div class="bg-surface-container-lowest rounded-lg p-5 ghost-border flex flex-col">
+<div class="flex justify-between items-center mb-4">
+<label class="font-label text-sm font-semibold text-on-surface">Dark Mode Logo</label>
+</div>
+<div class="flex-1 border-2 border-dashed border-outline-variant/50 hover:border-primary/50 transition-colors rounded-lg bg-inverse-surface flex flex-col items-center justify-center p-6 text-center cursor-pointer group">
+<div class="w-12 h-12 bg-white/10 rounded-full flex items-center justify-center mb-3 group-hover:bg-white/20 transition-colors">
+<span class="material-symbols-outlined text-inverse-on-surface">cloud_upload</span>
+</div>
+<p class="font-body text-sm font-medium text-inverse-on-surface mb-1">Click or drag SVG here</p>
+<p class="font-body text-xs text-inverse-on-surface/70">Optimized for dark backgrounds.</p>
+</div>
+<div class="mt-3 flex items-center justify-between text-xs">
+<span class="text-on-surface-variant italic">No file selected. Fallback active.</span>
+</div>
+</div>
+</div>
+<!-- Favicon Section -->
+<div class="mt-6 pt-6 border-t border-outline-variant/20">
+<h4 class="font-label text-sm font-semibold text-on-surface mb-4">Application Icon (Favicon)</h4>
+<div class="flex items-start gap-6">
+<!-- Current Favicon Preview -->
+<div class="w-16 h-16 bg-surface-container-lowest rounded-lg ghost-border flex items-center justify-center shrink-0 shadow-sm">
+<div class="w-8 h-8 bg-primary-container rounded-sm flex items-center justify-center text-on-primary font-bold text-lg font-headline">IA</div>
+</div>
+<div class="flex-1">
+<div class="border-2 border-dashed border-outline-variant/50 hover:border-primary/50 transition-colors rounded-lg bg-surface-bright flex flex-col items-center justify-center p-4 text-center cursor-pointer group">
+<p class="font-body text-sm font-medium text-on-surface">Upload new .ico or .png</p>
+<p class="font-body text-xs text-on-surface-variant mt-1">Must be square. Minimum 32x32px.</p>
+</div>
+</div>
+</div>
+</div>
+</section>
+</div>
+</div>
+</div>
+</main>
+</body></html>

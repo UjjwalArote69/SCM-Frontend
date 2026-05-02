@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Purchase Order Detail - SCM Portal</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "primary": "#b70011",
+            "primary-fixed-dim": "#ffb4ab",
+            "error-container": "#ffdad6",
+            "outline": "#916f6b",
+            "secondary-fixed": "#ffdad6",
+            "surface": "#f9f9ff",
+            "surface-variant": "#dce2f7",
+            "on-error": "#ffffff",
+            "on-tertiary-fixed-variant": "#004b71",
+            "on-secondary-container": "#700f0f",
+            "on-tertiary-fixed": "#001e30",
+            "on-surface-variant": "#5c403c",
+            "on-secondary-fixed-variant": "#86211c",
+            "on-secondary": "#ffffff",
+            "tertiary-container": "#0078b2",
+            "surface-container": "#e9edff",
+            "on-surface": "#141b2b",
+            "tertiary": "#005e8d",
+            "surface-tint": "#bf0715",
+            "surface-container-lowest": "#ffffff",
+            "surface-bright": "#f9f9ff",
+            "secondary-container": "#fd786c",
+            "tertiary-fixed": "#cbe6ff",
+            "surface-container-highest": "#dce2f7",
+            "on-secondary-fixed": "#410002",
+            "on-primary-fixed": "#410002",
+            "secondary-fixed-dim": "#ffb4ab",
+            "inverse-primary": "#ffb4ab",
+            "tertiary-fixed-dim": "#90cdff",
+            "outline-variant": "#e6bdb8",
+            "on-tertiary-container": "#f3f8ff",
+            "surface-container-high": "#e1e8fd",
+            "inverse-surface": "#293040",
+            "on-background": "#141b2b",
+            "on-primary": "#ffffff",
+            "background": "#f9f9ff",
+            "on-tertiary": "#ffffff",
+            "secondary": "#a73831",
+            "error": "#ba1a1a",
+            "primary-container": "#dc2626",
+            "on-error-container": "#93000a",
+            "primary-fixed": "#ffdad6",
+            "on-primary-container": "#fff6f5",
+            "on-primary-fixed-variant": "#93000b",
+            "inverse-on-surface": "#edf0ff",
+            "surface-dim": "#d3daef",
+            "surface-container-low": "#f1f3ff"
+          },
+          "borderRadius": {
+            "DEFAULT": "0.125rem",
+            "lg": "0.25rem",
+            "xl": "0.5rem",
+            "full": "0.75rem"
+          },
+          "fontFamily": {
+            "headline": ["Inter"],
+            "body": ["Inter"],
+            "label": ["Inter"]
+          }
+        }
+      }
+    }
+  </script>
+<style>
+    body { font-family: 'Inter', sans-serif; }
+    .btn-primary { background: linear-gradient(135deg, #b70011, #dc2626); }
+  </style>
+</head>
+<body class="bg-background text-on-background antialiased flex h-screen overflow-hidden">
+<!-- SideNavBar -->
+<aside class="fixed left-0 top-0 h-full w-64 z-40 bg-zinc-100 dark:bg-zinc-950 flex flex-col py-6 px-4 gap-y-2 ease-in-out duration-200 shadow-none border-none hidden md:flex">
+<div class="mb-8 px-2 flex items-center gap-3">
+<div class="w-10 h-10 rounded-full bg-surface-container-highest flex items-center justify-center overflow-hidden">
+<img alt="Organization Logo" class="w-full h-full object-cover" data-alt="minimalist modern corporate building logo white background high contrast" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBTS0DtodSoNbxyTXO1p1XQX4pBvD-np86dJrQl8oK3aR3zmzk_xkTPjo_0UBksATRgOxH9vNoCPMPK7xp--yy3hAzUdE-ypOpMSvEHuy1yyQePwRIUXisQOeEKPrpMJMykJPMlNRdhpduq3Z8tIR1io1tEMMcpJ0TJCiPp68jiX_36G7R9X8WA6_HgYUlMEWFtn5AytFMZQMhzOo34x3kouT-7KYaylwjtg_z9udn0jb290vrfdZ6yAJXbquFLl0zOnRGUHkzsbktB"/>
+</div>
+<div>
+<h1 class="text-lg font-black text-zinc-900 dark:text-white leading-tight">SCM Portal</h1>
+<p class="text-xs text-zinc-500 font-medium">Vendor Network</p>
+</div>
+</div>
+<button class="w-full mb-6 btn-primary text-on-primary font-bold py-2 px-4 rounded-md shadow-sm transition-transform active:scale-95 flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-[20px]">add</span>
+      Create New Order
+    </button>
+<nav class="flex-1 flex flex-col gap-1">
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-DEFAULT text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-200 dark:hover:bg-zinc-800 transition-colors font-sans text-sm tracking-wide uppercase font-bold" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+        Dashboard
+      </a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-DEFAULT text-red-700 dark:text-red-500 bg-zinc-50 dark:bg-zinc-900 font-extrabold font-sans text-sm tracking-wide uppercase" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">receipt_long</span>
+        Purchase Orders
+      </a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-DEFAULT text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-200 dark:hover:bg-zinc-800 transition-colors font-sans text-sm tracking-wide uppercase font-bold" href="#">
+<span class="material-symbols-outlined">payments</span>
+        Invoices
+      </a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-DEFAULT text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-200 dark:hover:bg-zinc-800 transition-colors font-sans text-sm tracking-wide uppercase font-bold" href="#">
+<span class="material-symbols-outlined">local_shipping</span>
+        Shipments
+      </a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-DEFAULT text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-200 dark:hover:bg-zinc-800 transition-colors font-sans text-sm tracking-wide uppercase font-bold" href="#">
+<span class="material-symbols-outlined">analytics</span>
+        Analytics
+      </a>
+</nav>
+<div class="mt-auto flex flex-col gap-1 pt-4 border-t border-zinc-200/50 dark:border-zinc-800/50">
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-DEFAULT text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-200 dark:hover:bg-zinc-800 transition-colors font-sans text-sm tracking-wide uppercase font-bold" href="#">
+<span class="material-symbols-outlined">settings</span>
+        Settings
+      </a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-DEFAULT text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-200 dark:hover:bg-zinc-800 transition-colors font-sans text-sm tracking-wide uppercase font-bold" href="#">
+<span class="material-symbols-outlined">contact_support</span>
+        Support
+      </a>
+</div>
+</aside>
+<!-- Main Content Wrapper -->
+<div class="flex-1 flex flex-col ml-0 md:ml-64 h-full overflow-hidden">
+<!-- TopAppBar -->
+<header class="bg-zinc-50 dark:bg-zinc-900 font-sans antialiased tracking-tight text-sm font-medium docked full-width top-0 sticky z-50 bg-zinc-100 dark:bg-zinc-800 shadow-none flat no shadows flex justify-between items-center w-full px-6 py-2 h-16">
+<div class="flex items-center gap-4">
+<button class="md:hidden text-zinc-500 p-2 rounded-md hover:bg-zinc-200/50 transition-all">
+<span class="material-symbols-outlined">menu</span>
+</button>
+<span class="text-xl font-black tracking-tighter text-red-700 dark:text-red-500 hidden sm:block">Industrial Architect</span>
+<div class="relative ml-4">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 text-sm">search</span>
+<input class="pl-9 pr-4 py-1.5 bg-surface-container-lowest border-b-2 border-outline-variant focus:border-primary focus:ring-0 text-sm w-64 rounded-t-DEFAULT transition-colors" placeholder="Search orders..." type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-2">
+<button class="p-2 text-zinc-500 dark:text-zinc-400 hover:bg-zinc-200/50 dark:hover:bg-zinc-800/50 transition-all rounded-full scale-95 active:scale-100">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<button class="p-2 text-zinc-500 dark:text-zinc-400 hover:bg-zinc-200/50 dark:hover:bg-zinc-800/50 transition-all rounded-full scale-95 active:scale-100">
+<span class="material-symbols-outlined">help</span>
+</button>
+<button class="p-2 text-zinc-500 dark:text-zinc-400 hover:bg-zinc-200/50 dark:hover:bg-zinc-800/50 transition-all rounded-full scale-95 active:scale-100">
+<span class="material-symbols-outlined">apps</span>
+</button>
+<div class="w-8 h-8 rounded-full overflow-hidden ml-2 border border-outline-variant/30">
+<img alt="User profile" class="w-full h-full object-cover" data-alt="professional headshot of man in business attire plain light background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBW8w8uGv9FKvdEUMT_q02cPN5ZtGCbd7pCJIR1-JPIMqS9GPts-nJx2eH0rmSrSZhQaBDVMac4anr42GuvnV86HOyf24COGRoX70ZrbvB7U_teI9ehpF4tLT18nHDqQ2Zg_qb-b37-0bvp8VpS2P8kfVhAWZiU9JBRQ51tZKVnW0BrA2-j82igZ8wZ8YUCnwo19GcrwHRPPV00htTY4UrBv7HnBHrTUFbG6tq091UL1nn1TRKW11RxZQFZu_m0UiF4QGEGyduZQnAo"/>
+</div>
+</div>
+</header>
+<!-- Canvas -->
+<main class="flex-1 overflow-y-auto p-6 lg:p-8 bg-background">
+<div class="max-w-6xl mx-auto space-y-8">
+<!-- Header Section -->
+<div class="flex flex-col md:flex-row md:items-start justify-between gap-6">
+<div class="flex items-center gap-6">
+<div class="w-16 h-16 bg-surface-container-lowest border border-outline-variant/20 rounded-md flex items-center justify-center p-2 shadow-sm">
+<img alt="Meka Group Logo" class="max-w-full max-h-full object-contain" data-alt="simple abstract geometric corporate logo letter M dark blue" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDcEw68CpPDHs-4y18dV4uEk2kKag5Taw-YdEwBdUBsxpd53U8ropeHugaD8bJjXqMxdmOx0ylET3Kn09w1XWEeyHiR9_h0-LfGYSein0knjJEMXQWBLTmgF5Whuyx01sA5xSKsQAt5eKuqXbPaNkrICXVbF_V0ImsIoVnUVYcZ8pBzqzQRT2SVni2xwnADWBcD18MPuQSpDqGu6cll67dc7BZe5UK9MGnENolG_GaoqmaYYlHVO1nRWcZ_P8xx8fvuxNygc_VZ50Ml"/>
+</div>
+<div>
+<div class="flex items-center gap-3 mb-1">
+<h1 class="text-headline-lg font-bold text-on-surface tracking-tight">PO-2023-8901</h1>
+<span class="px-2.5 py-0.5 rounded-full bg-surface-container-highest text-on-surface-variant text-xs font-bold uppercase tracking-wider">Pending Acceptance</span>
+</div>
+<p class="text-title-md text-on-surface-variant">Meka Group International</p>
+</div>
+</div>
+<div class="text-left md:text-right">
+<p class="text-label-md text-on-surface-variant uppercase tracking-wider mb-1">Total Amount</p>
+<p class="text-headline-lg font-black text-on-surface">$145,890.00</p>
+</div>
+</div>
+<!-- Primary Actions -->
+<div class="flex flex-wrap items-center gap-4 py-4 border-y border-outline-variant/20 border-dashed">
+<button class="btn-primary text-on-primary px-8 py-3 rounded-md font-bold text-sm tracking-wide shadow-sm hover:opacity-90 transition-opacity flex items-center gap-2">
+<span class="material-symbols-outlined text-[20px]">check_circle</span>
+            Accept Purchase Order
+          </button>
+<button class="px-6 py-3 rounded-md font-semibold text-on-surface border border-outline-variant/20 bg-surface-container-lowest hover:bg-surface-container transition-colors flex items-center gap-2 text-sm">
+<span class="material-symbols-outlined text-[20px]">upload_file</span>
+            Upload Invoice
+          </button>
+<button class="px-6 py-3 rounded-md font-semibold text-on-surface border border-outline-variant/20 bg-surface-container-lowest hover:bg-surface-container transition-colors flex items-center gap-2 text-sm">
+<span class="material-symbols-outlined text-[20px]">download</span>
+            Download Payment Receipt
+          </button>
+</div>
+<!-- Details Grid -->
+<div class="bg-surface-container-low p-6 rounded-lg relative overflow-hidden">
+<div class="absolute left-0 top-0 bottom-0 w-1 bg-surface-tint opacity-50"></div>
+<h2 class="text-title-md font-bold text-on-surface mb-6 flex items-center gap-2">
+<span class="material-symbols-outlined text-on-surface-variant">info</span>
+            Order Information
+          </h2>
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-y-6 gap-x-8">
+<div>
+<p class="text-label-md text-on-surface-variant uppercase tracking-wider mb-1">PO Date</p>
+<p class="text-body-lg font-medium text-on-surface">Oct 24, 2023</p>
+</div>
+<div>
+<p class="text-label-md text-on-surface-variant uppercase tracking-wider mb-1">Reference No</p>
+<p class="text-body-lg font-medium text-on-surface">REQ-992-A</p>
+</div>
+<div class="xl:col-span-1">
+<p class="text-label-md text-on-surface-variant uppercase tracking-wider mb-1">Payment Terms</p>
+<p class="text-body-lg font-medium text-on-surface">Net 45</p>
+</div>
+<div class="xl:col-span-1">
+<p class="text-label-md text-on-surface-variant uppercase tracking-wider mb-1">Delivery Terms</p>
+<p class="text-body-lg font-medium text-on-surface">FOB Destination</p>
+</div>
+<div class="md:col-span-2 lg:col-span-3 xl:col-span-1">
+<p class="text-label-md text-on-surface-variant uppercase tracking-wider mb-1">Subject</p>
+<p class="text-body-lg font-medium text-on-surface truncate" title="Q4 Industrial Conveyor System Components">Q4 Industrial Conveyor System Components</p>
+</div>
+</div>
+</div>
+<!-- Line Items -->
+<div>
+<h2 class="text-title-md font-bold text-on-surface mb-4">Line Items</h2>
+<div class="bg-surface-container-lowest rounded-lg border border-outline-variant/20 overflow-hidden">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-surface-container-low border-b border-outline-variant/20">
+<th class="py-3 px-4 text-label-md font-bold text-on-surface-variant uppercase tracking-wider w-12">#</th>
+<th class="py-3 px-4 text-label-md font-bold text-on-surface-variant uppercase tracking-wider">Item Code</th>
+<th class="py-3 px-4 text-label-md font-bold text-on-surface-variant uppercase tracking-wider">Description</th>
+<th class="py-3 px-4 text-label-md font-bold text-on-surface-variant uppercase tracking-wider text-right">Qty</th>
+<th class="py-3 px-4 text-label-md font-bold text-on-surface-variant uppercase tracking-wider">UOM</th>
+<th class="py-3 px-4 text-label-md font-bold text-on-surface-variant uppercase tracking-wider text-right">Rate</th>
+<th class="py-3 px-4 text-label-md font-bold text-on-surface-variant uppercase tracking-wider text-right">Amount</th>
+</tr>
+</thead>
+<tbody class="text-body-sm text-on-surface">
+<tr class="border-b border-outline-variant/10 hover:bg-surface-container-low/50 transition-colors">
+<td class="py-4 px-4 text-on-surface-variant">1</td>
+<td class="py-4 px-4 font-mono text-xs">MTR-75HP-IE3</td>
+<td class="py-4 px-4 font-medium">75 HP Industrial Electric Motor, High Efficiency</td>
+<td class="py-4 px-4 text-right">12</td>
+<td class="py-4 px-4 text-on-surface-variant">EA</td>
+<td class="py-4 px-4 text-right">$4,500.00</td>
+<td class="py-4 px-4 text-right font-medium">$54,000.00</td>
+</tr>
+<tr class="border-b border-outline-variant/10 bg-surface-container-low/20 hover:bg-surface-container-low/50 transition-colors">
+<td class="py-4 px-4 text-on-surface-variant">2</td>
+<td class="py-4 px-4 font-mono text-xs">VFD-100KW-A</td>
+<td class="py-4 px-4 font-medium">Variable Frequency Drive, 100kW Capacity</td>
+<td class="py-4 px-4 text-right">10</td>
+<td class="py-4 px-4 text-on-surface-variant">EA</td>
+<td class="py-4 px-4 text-right">$6,200.00</td>
+<td class="py-4 px-4 text-right font-medium">$62,000.00</td>
+</tr>
+<tr class="border-b border-outline-variant/10 hover:bg-surface-container-low/50 transition-colors">
+<td class="py-4 px-4 text-on-surface-variant">3</td>
+<td class="py-4 px-4 font-mono text-xs">PL-BRG-250M</td>
+<td class="py-4 px-4 font-medium">Pillow Block Bearing, 250mm Heavy Duty</td>
+<td class="py-4 px-4 text-right">48</td>
+<td class="py-4 px-4 text-on-surface-variant">EA</td>
+<td class="py-4 px-4 text-right">$450.00</td>
+<td class="py-4 px-4 text-right font-medium">$21,600.00</td>
+</tr>
+<tr class="border-b border-outline-variant/10 bg-surface-container-low/20 hover:bg-surface-container-low/50 transition-colors">
+<td class="py-4 px-4 text-on-surface-variant">4</td>
+<td class="py-4 px-4 font-mono text-xs">SRV-INST-L1</td>
+<td class="py-4 px-4 font-medium">On-site Installation Supervision &amp; Calibration</td>
+<td class="py-4 px-4 text-right">1</td>
+<td class="py-4 px-4 text-on-surface-variant">LOT</td>
+<td class="py-4 px-4 text-right">$8,290.00</td>
+<td class="py-4 px-4 text-right font-medium">$8,290.00</td>
+</tr>
+</tbody>
+<tfoot class="bg-surface-container-highest border-t-2 border-outline-variant/50">
+<tr>
+<td colspan="5"></td>
+<td class="py-4 px-4 text-right text-label-md font-bold text-on-surface-variant uppercase">Subtotal</td>
+<td class="py-4 px-4 text-right font-bold text-on-surface">$145,890.00</td>
+</tr>
+<tr>
+<td colspan="5"></td>
+<td class="py-2 px-4 text-right text-label-md font-bold text-on-surface-variant uppercase">Tax (0%)</td>
+<td class="py-2 px-4 text-right text-on-surface">$0.00</td>
+</tr>
+<tr>
+<td colspan="5"></td>
+<td class="py-4 px-4 text-right text-label-lg font-black text-on-background uppercase">Grand Total</td>
+<td class="py-4 px-4 text-right text-title-lg font-black text-on-background">$145,890.00</td>
+</tr>
+</tfoot>
+</table>
+</div>
+</div>
+<!-- Terms & Attachments -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+<div class="lg:col-span-2 space-y-4">
+<h2 class="text-title-md font-bold text-on-surface">Terms &amp; Conditions</h2>
+<div class="bg-surface-container-lowest p-5 rounded-lg border border-outline-variant/20 text-body-sm text-on-surface-variant whitespace-pre-line leading-relaxed">
+1. Warranty: All mechanical components guaranteed for 24 months from date of installation or 30 months from delivery, whichever occurs first.
+2. Compliance: Vendor must ensure all items meet ISO 9001:2015 standards and provide certification upon delivery.
+3. Penalties: Late delivery subject to 0.5% penalty per week, capped at 5% of total PO value.
+             </div>
+</div>
+<div class="space-y-4">
+<h2 class="text-title-md font-bold text-on-surface">Attachments</h2>
+<div class="flex flex-col gap-2">
+<a class="flex items-center justify-between p-3 bg-surface-container-lowest border border-outline-variant/20 rounded-md hover:bg-surface-container-low transition-colors group" href="#">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-tertiary">picture_as_pdf</span>
+<span class="text-body-sm font-medium text-on-surface group-hover:text-tertiary transition-colors">Tech_Specs_Motors.pdf</span>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant text-sm">download</span>
+</a>
+<a class="flex items-center justify-between p-3 bg-surface-container-lowest border border-outline-variant/20 rounded-md hover:bg-surface-container-low transition-colors group" href="#">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-tertiary">description</span>
+<span class="text-body-sm font-medium text-on-surface group-hover:text-tertiary transition-colors">Vendor_Compliance_Form.docx</span>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant text-sm">download</span>
+</a>
+</div>
+</div>
+</div>
+<!-- PO History Timeline -->
+<div class="mt-12 pt-8 border-t border-outline-variant/20">
+<h2 class="text-title-md font-bold text-on-surface mb-6 text-on-surface-variant">PO History</h2>
+<div class="relative pl-6 space-y-6 before:absolute before:inset-y-0 before:left-[11px] before:w-[2px] before:bg-surface-container-highest">
+<div class="relative">
+<div class="absolute -left-6 w-[10px] h-[10px] rounded-full bg-surface-container-lowest border-2 border-primary top-1.5 z-10"></div>
+<div class="flex items-center justify-between">
+<div>
+<p class="text-body-md font-medium text-on-surface">Viewed by Vendor</p>
+<p class="text-label-sm text-on-surface-variant">System</p>
+</div>
+<span class="text-label-sm text-on-surface-variant font-mono">Today, 09:42 AM</span>
+</div>
+</div>
+<div class="relative opacity-60">
+<div class="absolute -left-6 w-[10px] h-[10px] rounded-full bg-surface-container-highest top-1.5 z-10"></div>
+<div class="flex items-center justify-between">
+<div>
+<p class="text-body-md font-medium text-on-surface">PO Issued</p>
+<p class="text-label-sm text-on-surface-variant">Sarah Jenkins (Buyer)</p>
+</div>
+<span class="text-label-sm text-on-surface-variant font-mono">Oct 24, 2023, 14:30 PM</span>
+</div>
+</div>
+<div class="relative opacity-60">
+<div class="absolute -left-6 w-[10px] h-[10px] rounded-full bg-surface-container-highest top-1.5 z-10"></div>
+<div class="flex items-center justify-between">
+<div>
+<p class="text-body-md font-medium text-on-surface">Draft Created</p>
+<p class="text-label-sm text-on-surface-variant">System</p>
+</div>
+<span class="text-label-sm text-on-surface-variant font-mono">Oct 22, 2023, 11:15 AM</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+</body></html>

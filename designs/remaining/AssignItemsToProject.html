@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Assign Items to Project - Industrial Architect SCM</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "tertiary-container": "#0078b2",
+                        "on-primary-container": "#fff6f5",
+                        "inverse-surface": "#293040",
+                        "tertiary-fixed-dim": "#90cdff",
+                        "error": "#ba1a1a",
+                        "inverse-primary": "#ffb4ab",
+                        "secondary": "#a73831",
+                        "surface-bright": "#f9f9ff",
+                        "primary-fixed": "#ffdad6",
+                        "primary-fixed-dim": "#ffb4ab",
+                        "primary": "#b70011",
+                        "on-tertiary-container": "#f3f8ff",
+                        "secondary-fixed-dim": "#ffb4ab",
+                        "on-primary-fixed-variant": "#93000b",
+                        "inverse-on-surface": "#edf0ff",
+                        "background": "#f9f9ff",
+                        "on-secondary-fixed": "#410002",
+                        "secondary-fixed": "#ffdad6",
+                        "outline-variant": "#e6bdb8",
+                        "on-tertiary": "#ffffff",
+                        "on-tertiary-fixed-variant": "#004b71",
+                        "on-surface-variant": "#5c403c",
+                        "on-secondary-container": "#700f0f",
+                        "on-background": "#141b2b",
+                        "primary-container": "#dc2626",
+                        "outline": "#916f6b",
+                        "surface-variant": "#dce2f7",
+                        "surface-dim": "#d3daef",
+                        "surface-tint": "#bf0715",
+                        "secondary-container": "#fd786c",
+                        "surface-container-low": "#f1f3ff",
+                        "on-secondary-fixed-variant": "#86211c",
+                        "tertiary-fixed": "#cbe6ff",
+                        "error-container": "#ffdad6",
+                        "on-primary": "#ffffff",
+                        "surface-container": "#e9edff",
+                        "on-secondary": "#ffffff",
+                        "surface-container-highest": "#dce2f7",
+                        "on-error": "#ffffff",
+                        "on-error-container": "#93000a",
+                        "on-tertiary-fixed": "#001e30",
+                        "on-surface": "#141b2b",
+                        "on-primary-fixed": "#410002",
+                        "surface": "#f9f9ff",
+                        "surface-container-lowest": "#ffffff",
+                        "tertiary": "#005e8d",
+                        "surface-container-high": "#e1e8fd"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {},
+                    "fontFamily": {
+                        "headline": ["Inter"],
+                        "body": ["Inter"],
+                        "label": ["Inter"]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        body { font-family: 'Inter', sans-serif; }
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+        .material-symbols-outlined.fill { font-variation-settings: 'FILL' 1; }
+        .ghost-border { border: 1px solid rgba(230, 189, 184, 0.2); }
+        .btn-primary { background: linear-gradient(135deg, #b70011 0%, #dc2626 100%); }
+    </style>
+</head>
+<body class="bg-background text-on-background min-h-screen flex font-body">
+<!-- SideNavBar (from JSON) -->
+<nav class="bg-zinc-100 dark:bg-zinc-900 h-screen w-64 flex flex-col fixed left-0 top-0 z-40 hidden md:flex border-r border-zinc-200 dark:border-zinc-800">
+<div class="p-6">
+<h1 class="font-black text-red-700 dark:text-red-600 text-2xl uppercase tracking-widest">Operations</h1>
+<p class="text-xs text-zinc-500 uppercase tracking-wider font-semibold mt-1">Precision Control</p>
+</div>
+<div class="px-4 pb-4">
+<button class="w-full btn-primary text-on-primary py-3 rounded-md font-medium text-sm flex items-center justify-center gap-2 hover:opacity-90 transition-opacity">
+<span class="material-symbols-outlined text-lg">add</span>
+                New Request
+            </button>
+</div>
+<div class="flex-1 overflow-y-auto mt-2">
+<ul class="space-y-1 px-3">
+<li>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-md text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-800 transition-all font-sans text-sm font-medium" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+                        Dashboard
+                    </a>
+</li>
+<li>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-md text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-800 transition-all font-sans text-sm font-medium" href="#">
+<span class="material-symbols-outlined">inventory_2</span>
+                        Inventory
+                    </a>
+</li>
+<li>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-md bg-white dark:bg-zinc-950 text-red-700 dark:text-red-500 border-l-4 border-red-700 dark:border-red-600 font-sans text-sm font-medium shadow-sm" href="#">
+<span class="material-symbols-outlined fill">precision_manufacturing</span>
+                        Project Manager
+                    </a>
+</li>
+<li>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-md text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-800 transition-all font-sans text-sm font-medium" href="#">
+<span class="material-symbols-outlined">local_shipping</span>
+                        Logistics
+                    </a>
+</li>
+<li>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-md text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-800 transition-all font-sans text-sm font-medium" href="#">
+<span class="material-symbols-outlined">insights</span>
+                        Analytics
+                    </a>
+</li>
+<li>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-md text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-800 transition-all font-sans text-sm font-medium" href="#">
+<span class="material-symbols-outlined">settings</span>
+                        Settings
+                    </a>
+</li>
+</ul>
+</div>
+<div class="p-4 bg-zinc-200 dark:bg-zinc-800 mt-auto">
+<ul class="space-y-1">
+<li>
+<a class="flex items-center gap-3 px-3 py-2 rounded-md text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-all font-sans text-sm font-medium" href="#">
+<span class="material-symbols-outlined text-[20px]">contact_support</span>
+                        Support
+                    </a>
+</li>
+<li>
+<a class="flex items-center gap-3 px-3 py-2 rounded-md text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-all font-sans text-sm font-medium" href="#">
+<span class="material-symbols-outlined text-[20px]">menu_book</span>
+                        Documentation
+                    </a>
+</li>
+</ul>
+</div>
+</nav>
+<!-- Main Content Area -->
+<main class="flex-1 md:ml-64 flex flex-col min-h-screen bg-background">
+<!-- TopNavBar (from JSON) -->
+<header class="flex justify-between items-center w-full px-6 h-16 bg-zinc-50 dark:bg-zinc-950 border-b border-zinc-200 dark:border-zinc-800 docked full-width top-0 z-30 sticky">
+<div class="flex items-center gap-4">
+<button class="md:hidden text-zinc-500 hover:text-zinc-900">
+<span class="material-symbols-outlined">menu</span>
+</button>
+<div class="hidden md:flex items-center text-sm font-medium text-zinc-500">
+<a class="hover:text-zinc-900 transition-colors" href="#">Project Manager</a>
+<span class="material-symbols-outlined text-sm mx-1">chevron_right</span>
+<span class="text-zinc-900">Assign Items</span>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<button class="text-zinc-500 hover:text-red-700 hover:bg-zinc-200 p-2 rounded-full transition-all">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<button class="text-zinc-500 hover:text-red-700 hover:bg-zinc-200 p-2 rounded-full transition-all">
+<span class="material-symbols-outlined">history</span>
+</button>
+<button class="text-zinc-500 hover:text-red-700 hover:bg-zinc-200 p-2 rounded-full transition-all">
+<span class="material-symbols-outlined">help_outline</span>
+</button>
+<div class="h-8 w-8 rounded-full bg-surface-variant overflow-hidden ml-2 ghost-border">
+<img alt="User profile" class="h-full w-full object-cover" data-alt="professional headshot of a man in a modern office setting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDXMsQ0jY7VDyhamf_mxYkz_YF6PBC61oV_p9oqmTBZ3My4-560EMj1BQutme2hvhCQ8ziP0uqdG_hbKci9aBtoPe0V8R2YKwBrLKPgtyBJJMuMv919BKUreav821Hwhd4vDgTDkBUsI4WuiAldqkm1OzBfeKx5HyrJ2M0PeKA3oT_sIX8853O671JKTUEZTgmJnE0s-AIB0TuCXeKROPfQVxjR4wP6VMemxiMoWYY7hmJVuml3maxstXwkAP3TEH37pa3xld4Nze58"/>
+</div>
+</div>
+</header>
+<!-- Page Content -->
+<div class="p-6 lg:p-8 flex-1">
+<div class="mb-8">
+<h2 class="text-2xl font-headline font-bold text-on-background tracking-tight">Assign Items to Project</h2>
+<p class="text-sm text-on-surface-variant mt-1 font-body">Allocate inventory resources to active manufacturing projects.</p>
+</div>
+<div class="flex flex-col lg:flex-row gap-8 items-start">
+<!-- LEFT COLUMN: Available Items -->
+<div class="w-full lg:w-2/3 flex flex-col gap-4">
+<div class="bg-surface-container-low rounded-lg p-6 ghost-border shadow-[0_12px_32px_rgba(20,27,43,0.03)]">
+<!-- Header & Search -->
+<div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+<h3 class="text-lg font-headline font-semibold text-on-background">Available Inventory</h3>
+<div class="relative w-full sm:w-72">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-sm">search</span>
+<input class="w-full bg-surface-container-lowest text-sm font-body text-on-background placeholder-on-surface-variant/50 border-0 border-b-2 border-outline-variant focus:border-primary focus:ring-0 pl-9 py-2 transition-colors" placeholder="Search by code or name..." type="text"/>
+</div>
+</div>
+<!-- Data Table (Editorial Style) -->
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="border-b-2 border-surface-variant text-xs font-label text-on-surface-variant uppercase tracking-wider">
+<th class="py-3 px-4 w-12">
+<input class="rounded border-outline-variant text-primary focus:ring-primary bg-surface-container-lowest" type="checkbox"/>
+</th>
+<th class="py-3 px-4 font-medium">Item Code</th>
+<th class="py-3 px-4 font-medium">Name</th>
+<th class="py-3 px-4 font-medium text-right">Available Qty</th>
+<th class="py-3 px-4 font-medium text-right">UOM</th>
+</tr>
+</thead>
+<tbody class="text-sm font-body">
+<!-- Row 1 -->
+<tr class="border-b-4 border-surface-container-low bg-surface-container-lowest transition-colors hover:bg-surface-variant/30">
+<td class="py-3 px-4">
+<input checked="" class="rounded border-outline-variant text-primary focus:ring-primary bg-surface-container-lowest" type="checkbox"/>
+</td>
+<td class="py-3 px-4 font-medium text-on-background">VAL-892A</td>
+<td class="py-3 px-4 text-on-surface-variant">High-Pressure Valve Assembly</td>
+<td class="py-3 px-4 text-right font-medium text-on-background">142</td>
+<td class="py-3 px-4 text-right text-on-surface-variant">Units</td>
+</tr>
+<!-- Row 2 -->
+<tr class="border-b-4 border-surface-container-low bg-surface-container-low transition-colors hover:bg-surface-variant/30">
+<td class="py-3 px-4">
+<input class="rounded border-outline-variant text-primary focus:ring-primary bg-surface-container-lowest" type="checkbox"/>
+</td>
+<td class="py-3 px-4 font-medium text-on-background">PIP-441B</td>
+<td class="py-3 px-4 text-on-surface-variant">Seamless Steel Pipe (3m)</td>
+<td class="py-3 px-4 text-right font-medium text-on-background">850</td>
+<td class="py-3 px-4 text-right text-on-surface-variant">Meters</td>
+</tr>
+<!-- Row 3 -->
+<tr class="border-b-4 border-surface-container-low bg-surface-container-lowest transition-colors hover:bg-surface-variant/30">
+<td class="py-3 px-4">
+<input checked="" class="rounded border-outline-variant text-primary focus:ring-primary bg-surface-container-lowest" type="checkbox"/>
+</td>
+<td class="py-3 px-4 font-medium text-on-background">SENS-09X</td>
+<td class="py-3 px-4 text-on-surface-variant">Thermal Precision Sensor</td>
+<td class="py-3 px-4 text-right font-medium text-on-background">45</td>
+<td class="py-3 px-4 text-right text-on-surface-variant">Units</td>
+</tr>
+<!-- Row 4 -->
+<tr class="border-b-4 border-surface-container-low bg-surface-container-low transition-colors hover:bg-surface-variant/30">
+<td class="py-3 px-4">
+<input class="rounded border-outline-variant text-primary focus:ring-primary bg-surface-container-lowest" type="checkbox"/>
+</td>
+<td class="py-3 px-4 font-medium text-on-background">MTR-772C</td>
+<td class="py-3 px-4 text-on-surface-variant">Industrial Servo Motor</td>
+<td class="py-3 px-4 text-right font-medium text-on-background">12</td>
+<td class="py-3 px-4 text-right text-on-surface-variant">Units</td>
+</tr>
+<!-- Row 5 -->
+<tr class="bg-surface-container-lowest transition-colors hover:bg-surface-variant/30">
+<td class="py-3 px-4">
+<input class="rounded border-outline-variant text-primary focus:ring-primary bg-surface-container-lowest" type="checkbox"/>
+</td>
+<td class="py-3 px-4 font-medium text-on-background">GSK-110</td>
+<td class="py-3 px-4 text-on-surface-variant">Silicone Flange Gasket</td>
+<td class="py-3 px-4 text-right font-medium text-on-background">3,200</td>
+<td class="py-3 px-4 text-right text-on-surface-variant">Pieces</td>
+</tr>
+</tbody>
+</table>
+</div>
+<!-- Pagination -->
+<div class="mt-6 flex items-center justify-between border-t border-surface-variant pt-4">
+<span class="text-xs font-label text-on-surface-variant">Showing 1-5 of 124 items</span>
+<div class="flex gap-2">
+<button class="px-3 py-1 text-sm font-medium text-on-surface-variant ghost-border rounded bg-surface-container-lowest hover:bg-surface-variant transition-colors disabled:opacity-50" disabled="">Prev</button>
+<button class="px-3 py-1 text-sm font-medium text-primary ghost-border rounded bg-surface-container-lowest hover:bg-surface-variant transition-colors">Next</button>
+</div>
+</div>
+</div>
+</div>
+<!-- RIGHT COLUMN: Assignment Panel -->
+<div class="w-full lg:w-1/3 sticky top-24">
+<div class="bg-surface-container-lowest rounded-lg p-6 ghost-border shadow-[0_12px_32px_rgba(20,27,43,0.08)] flex flex-col gap-6 relative overflow-hidden">
+<!-- Decorative top accent -->
+<div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary to-primary-container"></div>
+<h3 class="text-lg font-headline font-semibold text-on-background">Assignment Details</h3>
+<!-- Form Field: Project -->
+<div class="flex flex-col gap-1.5">
+<label class="text-xs font-label font-semibold text-on-surface-variant uppercase tracking-wider">Target Project</label>
+<div class="relative">
+<select class="w-full bg-surface-container-low text-sm font-body text-on-background border-0 border-b-2 border-outline-variant focus:border-primary focus:ring-0 py-2.5 px-3 appearance-none transition-colors">
+<option disabled="" selected="" value="">Select a project...</option>
+<option value="PRJ-101">PRJ-101: Alpha Facility Expansion</option>
+<option value="PRJ-102">PRJ-102: Beta Line Upgrade</option>
+<option value="PRJ-103">PRJ-103: Gamma Maintenance Phase II</option>
+</select>
+<span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant pointer-events-none">expand_more</span>
+</div>
+</div>
+<!-- Selected Items List -->
+<div class="flex flex-col gap-3">
+<label class="text-xs font-label font-semibold text-on-surface-variant uppercase tracking-wider flex justify-between">
+<span>Selected Items (2)</span>
+<span class="text-tertiary cursor-pointer hover:underline">Clear all</span>
+</label>
+<div class="flex flex-col gap-3">
+<!-- Selected Item 1 -->
+<div class="bg-surface-container-low p-3 rounded-md border-l-4 border-primary relative group">
+<button class="absolute right-2 top-2 text-on-surface-variant hover:text-error opacity-0 group-hover:opacity-100 transition-opacity">
+<span class="material-symbols-outlined text-sm">close</span>
+</button>
+<div class="font-medium text-sm text-on-background mb-1 pr-6">VAL-892A</div>
+<div class="text-xs text-on-surface-variant mb-3">High-Pressure Valve Assembly</div>
+<div class="flex items-center justify-between gap-4">
+<div class="text-xs text-on-surface-variant">Available: <span class="font-medium text-on-background">142</span></div>
+<div class="flex items-center gap-2">
+<label class="text-xs text-on-surface-variant">Qty:</label>
+<input class="w-20 bg-surface-container-lowest text-sm text-right border-0 border-b border-outline-variant focus:border-primary focus:ring-0 py-1 px-2" max="142" min="1" type="number" value="10"/>
+</div>
+</div>
+</div>
+<!-- Selected Item 2 -->
+<div class="bg-surface-container-low p-3 rounded-md border-l-4 border-primary relative group">
+<button class="absolute right-2 top-2 text-on-surface-variant hover:text-error opacity-0 group-hover:opacity-100 transition-opacity">
+<span class="material-symbols-outlined text-sm">close</span>
+</button>
+<div class="font-medium text-sm text-on-background mb-1 pr-6">SENS-09X</div>
+<div class="text-xs text-on-surface-variant mb-3">Thermal Precision Sensor</div>
+<div class="flex items-center justify-between gap-4">
+<div class="text-xs text-on-surface-variant">Available: <span class="font-medium text-on-background">45</span></div>
+<div class="flex items-center gap-2">
+<label class="text-xs text-on-surface-variant">Qty:</label>
+<input class="w-20 bg-surface-container-lowest text-sm text-right border-0 border-b border-outline-variant focus:border-primary focus:ring-0 py-1 px-2" max="45" min="1" type="number" value="5"/>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Form Field: Justification -->
+<div class="flex flex-col gap-1.5">
+<label class="text-xs font-label font-semibold text-on-surface-variant uppercase tracking-wider">Justification Notes</label>
+<textarea class="w-full bg-surface-container-low text-sm font-body text-on-background placeholder-on-surface-variant/50 border-0 border-b-2 border-outline-variant focus:border-primary focus:ring-0 p-3 resize-none transition-colors" placeholder="Enter reason for assignment..." rows="3"></textarea>
+</div>
+<!-- Action Button -->
+<div class="pt-4 mt-2 border-t border-surface-variant">
+<button class="w-full btn-primary text-on-primary py-3 rounded-md font-medium text-sm shadow-sm hover:opacity-90 transition-all flex justify-center items-center gap-2">
+<span class="material-symbols-outlined text-[18px]">assignment_turned_in</span>
+                                Assign Items to Project
+                            </button>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+</body></html>

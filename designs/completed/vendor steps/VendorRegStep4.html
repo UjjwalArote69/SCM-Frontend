@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Vendor Registration - Statutory Documents</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+  tailwind.config = {
+    darkMode: "class",
+    theme: {
+      extend: {
+        "colors": {
+                "on-tertiary": "#ffffff",
+                "inverse-surface": "#293040",
+                "on-tertiary-container": "#f3f8ff",
+                "on-surface-variant": "#5c403c",
+                "on-background": "#141b2b",
+                "on-primary": "#ffffff",
+                "error": "#ba1a1a",
+                "background": "#f9f9ff",
+                "inverse-on-surface": "#edf0ff",
+                "on-error": "#ffffff",
+                "outline": "#916f6b",
+                "tertiary": "#005e8d",
+                "primary-fixed-dim": "#ffb4ab",
+                "surface-tint": "#bf0715",
+                "tertiary-fixed-dim": "#90cdff",
+                "surface-bright": "#f9f9ff",
+                "on-primary-fixed-variant": "#93000b",
+                "surface": "#f9f9ff",
+                "on-secondary-fixed": "#410002",
+                "surface-container-low": "#f1f3ff",
+                "surface-dim": "#d3daef",
+                "secondary": "#a73831",
+                "error-container": "#ffdad6",
+                "primary-container": "#dc2626",
+                "tertiary-container": "#0078b2",
+                "on-primary-container": "#fff6f5",
+                "on-surface": "#141b2b",
+                "on-tertiary-fixed": "#001e30",
+                "secondary-container": "#fd786c",
+                "surface-container-lowest": "#ffffff",
+                "tertiary-fixed": "#cbe6ff",
+                "surface-variant": "#dce2f7",
+                "on-tertiary-fixed-variant": "#004b71",
+                "on-secondary": "#ffffff",
+                "secondary-fixed": "#ffdad6",
+                "on-error-container": "#93000a",
+                "surface-container-highest": "#dce2f7",
+                "on-secondary-container": "#700f0f",
+                "on-secondary-fixed-variant": "#86211c",
+                "primary-fixed": "#ffdad6",
+                "outline-variant": "#e6bdb8",
+                "surface-container-high": "#e1e8fd",
+                "secondary-fixed-dim": "#ffb4ab",
+                "primary": "#b70011",
+                "inverse-primary": "#ffb4ab",
+                "on-primary-fixed": "#410002",
+                "surface-container": "#e9edff"
+        },
+        "borderRadius": {
+                "DEFAULT": "0.125rem",
+                "lg": "0.25rem",
+                "xl": "0.5rem",
+                "full": "0.75rem"
+        },
+        "spacing": {},
+        "fontFamily": {
+                "headline": [
+                        "Inter", "sans-serif"
+                ],
+                "body": [
+                        "Inter", "sans-serif"
+                ],
+                "label": [
+                        "Inter", "sans-serif"
+                ]
+        }
+},
+    },
+  }
+</script>
+<style>
+    body {
+        font-family: 'Inter', sans-serif;
+    }
+</style>
+</head>
+<body class="bg-background text-on-background min-h-screen flex flex-col font-body antialiased pb-24 pt-16">
+<!-- TopNavBar -->
+<nav class="fixed top-0 w-full h-16 bg-slate-50 dark:bg-slate-900 border-b border-slate-200/20 z-50">
+<div class="flex items-center justify-between px-8 w-full h-full max-w-screen-2xl mx-auto">
+<div class="mx-auto text-xl font-black tracking-tighter text-red-700 dark:text-red-500">
+                SCM_ARCHITECT
+            </div>
+<div class="hidden">search_bar</div>
+<button class="font-sans tracking-tight text-sm uppercase font-bold text-red-700 dark:text-red-500 hover:text-red-600 transition-colors duration-200 scale-95 active:opacity-80 transition-transform">
+                Sign in
+            </button>
+</div>
+</nav>
+<!-- Main Content Canvas -->
+<main class="flex-grow flex flex-col items-center justify-start pt-12 px-6">
+<!-- Center Content Container - Max Width 840px -->
+<div class="w-full max-w-[840px] space-y-12">
+<!-- Header & Stepper Section -->
+<section class="space-y-8">
+<!-- Stepper -->
+<div class="flex items-center justify-between w-full relative">
+<div class="absolute left-0 top-1/2 -translate-y-1/2 w-full h-0.5 bg-surface-variant -z-10"></div>
+<!-- Completed Steps -->
+<div class="w-8 h-8 rounded-full bg-primary text-on-primary flex items-center justify-center font-bold text-xs shadow-md">
+<span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' 1;">check</span>
+</div>
+<div class="w-8 h-8 rounded-full bg-primary text-on-primary flex items-center justify-center font-bold text-xs shadow-md">
+<span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' 1;">check</span>
+</div>
+<div class="w-8 h-8 rounded-full bg-primary text-on-primary flex items-center justify-center font-bold text-xs shadow-md">
+<span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' 1;">check</span>
+</div>
+<!-- Active Step -->
+<div class="w-8 h-8 rounded-full bg-surface-lowest border-2 border-primary text-primary flex items-center justify-center font-bold text-xs relative shadow-[0_0_15px_rgba(183,0,17,0.3)]">
+                        4
+                        <span class="absolute -bottom-6 whitespace-nowrap text-[10px] font-bold text-primary tracking-wider uppercase">Current</span>
+</div>
+<!-- Incomplete Steps -->
+<div class="w-8 h-8 rounded-full bg-surface-variant text-on-surface-variant flex items-center justify-center font-bold text-xs opacity-50">5</div>
+<div class="w-8 h-8 rounded-full bg-surface-variant text-on-surface-variant flex items-center justify-center font-bold text-xs opacity-50">6</div>
+</div>
+<!-- Titles -->
+<div class="text-center space-y-3">
+<h1 class="text-3xl font-black font-headline tracking-tight text-on-background">Statutory Documents</h1>
+<p class="text-sm font-medium text-on-surface-variant font-label max-w-lg mx-auto">
+                        Upload high-resolution copies of required legal documents to verify your business identity.
+                    </p>
+</div>
+</section>
+<!-- Upload Grid Section -->
+<section class="grid grid-cols-1 md:grid-cols-2 gap-6 pb-12">
+<!-- Card 1: GST Certificate (Completed) -->
+<div class="bg-surface-container-lowest p-6 flex flex-col gap-5 border border-outline-variant/20 shadow-[0_12px_32px_rgba(20,27,43,0.03)] relative overflow-hidden group hover:shadow-[0_12px_32px_rgba(20,27,43,0.08)] transition-shadow duration-300">
+<div class="absolute left-0 top-0 bottom-0 w-1 bg-green-600"></div>
+<div class="flex items-start justify-between gap-4">
+<div class="w-12 h-12 bg-surface-container-low flex items-center justify-center rounded-sm shrink-0">
+<span class="material-symbols-outlined text-on-surface-variant text-2xl" style="font-variation-settings: 'FILL' 0;">description</span>
+</div>
+<div class="flex-grow">
+<h3 class="text-base font-bold text-on-background tracking-tight">GST Certificate</h3>
+<p class="text-xs text-on-surface-variant font-medium mt-1">Accepted: PDF, JPG, PNG (Max 5MB)</p>
+</div>
+</div>
+<div class="bg-surface-container flex items-center justify-between p-3 border border-outline-variant/30">
+<div class="flex items-center gap-3 overflow-hidden">
+<span class="material-symbols-outlined text-green-600 text-sm" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+<span class="text-xs font-semibold text-on-background truncate">gst_cert_2023_final.pdf</span>
+</div>
+<button class="text-xs font-bold text-primary hover:text-primary-container transition-colors shrink-0">Remove</button>
+</div>
+<!-- Progress Bar (100%) -->
+<div class="w-full bg-surface-variant h-1.5 mt-auto">
+<div class="bg-green-600 h-1.5 w-full"></div>
+</div>
+</div>
+<!-- Card 2: PAN Card (Uploading 45%) -->
+<div class="bg-surface-container-lowest p-6 flex flex-col gap-5 border border-outline-variant/20 shadow-[0_12px_32px_rgba(20,27,43,0.03)] relative overflow-hidden group hover:shadow-[0_12px_32px_rgba(20,27,43,0.08)] transition-shadow duration-300">
+<div class="absolute left-0 top-0 bottom-0 w-1 bg-tertiary"></div>
+<div class="flex items-start justify-between gap-4">
+<div class="w-12 h-12 bg-surface-container-low flex items-center justify-center rounded-sm shrink-0">
+<span class="material-symbols-outlined text-on-surface-variant text-2xl" style="font-variation-settings: 'FILL' 0;">badge</span>
+</div>
+<div class="flex-grow">
+<h3 class="text-base font-bold text-on-background tracking-tight">PAN Card</h3>
+<p class="text-xs text-on-surface-variant font-medium mt-1">Accepted: PDF, JPG, PNG (Max 5MB)</p>
+</div>
+</div>
+<div class="bg-surface-container flex items-center justify-between p-3 border border-outline-variant/30">
+<div class="flex items-center gap-3 overflow-hidden">
+<span class="material-symbols-outlined text-tertiary animate-pulse text-sm">cloud_upload</span>
+<span class="text-xs font-semibold text-on-background truncate">pan_card_scan.jpg</span>
+</div>
+<span class="text-xs font-bold text-tertiary shrink-0">45%</span>
+</div>
+<!-- Progress Bar (45%) -->
+<div class="w-full bg-surface-variant h-1.5 mt-auto">
+<div class="bg-tertiary h-1.5 w-[45%] transition-all duration-300"></div>
+</div>
+</div>
+<!-- Card 3: MSME Certificate (Empty/Optional) -->
+<div class="bg-surface-container-lowest p-6 flex flex-col gap-5 border border-outline-variant/20 shadow-[0_12px_32px_rgba(20,27,43,0.03)] relative overflow-hidden group hover:shadow-[0_12px_32px_rgba(20,27,43,0.08)] transition-shadow duration-300">
+<div class="absolute left-0 top-0 bottom-0 w-1 bg-surface-variant"></div>
+<div class="flex items-start justify-between gap-4">
+<div class="w-12 h-12 bg-surface-container-low flex items-center justify-center rounded-sm shrink-0">
+<span class="material-symbols-outlined text-on-surface-variant text-2xl" style="font-variation-settings: 'FILL' 0;">factory</span>
+</div>
+<div class="flex-grow">
+<div class="flex items-center gap-2">
+<h3 class="text-base font-bold text-on-background tracking-tight">MSME Certificate</h3>
+<span class="bg-surface-variant text-on-surface-variant text-[9px] uppercase tracking-wider font-bold px-1.5 py-0.5 rounded-sm">Optional</span>
+</div>
+<p class="text-xs text-on-surface-variant font-medium mt-1">Accepted: PDF, JPG, PNG (Max 5MB)</p>
+</div>
+</div>
+<label class="w-full h-12 mt-auto border-2 border-dashed border-outline-variant/50 bg-surface flex items-center justify-center cursor-pointer hover:bg-surface-container transition-colors group-hover:border-primary/50">
+<input accept=".pdf,.jpg,.png" class="hidden" type="file"/>
+<span class="text-sm font-semibold text-primary group-hover:text-primary-container">Choose file</span>
+</label>
+</div>
+<!-- Card 4: Aadhar Card (Empty/Required) -->
+<div class="bg-surface-container-lowest p-6 flex flex-col gap-5 border border-outline-variant/20 shadow-[0_12px_32px_rgba(20,27,43,0.03)] relative overflow-hidden group hover:shadow-[0_12px_32px_rgba(20,27,43,0.08)] transition-shadow duration-300">
+<div class="absolute left-0 top-0 bottom-0 w-1 bg-error/80"></div>
+<div class="flex items-start justify-between gap-4">
+<div class="w-12 h-12 bg-surface-container-low flex items-center justify-center rounded-sm shrink-0">
+<span class="material-symbols-outlined text-on-surface-variant text-2xl" style="font-variation-settings: 'FILL' 0;">fingerprint</span>
+</div>
+<div class="flex-grow">
+<div class="flex items-center gap-2">
+<h3 class="text-base font-bold text-on-background tracking-tight">Aadhar of Auth. Person</h3>
+<span class="text-error font-bold text-sm">*</span>
+</div>
+<p class="text-xs text-on-surface-variant font-medium mt-1">Accepted: PDF, JPG, PNG (Max 5MB)</p>
+</div>
+</div>
+<label class="w-full h-12 mt-auto border-2 border-dashed border-outline-variant/50 bg-surface flex items-center justify-center cursor-pointer hover:bg-surface-container transition-colors group-hover:border-primary/50">
+<input accept=".pdf,.jpg,.png" class="hidden" type="file"/>
+<span class="text-sm font-semibold text-primary group-hover:text-primary-container">Choose file</span>
+</label>
+</div>
+</section>
+</div>
+</main>
+<!-- Footer -->
+<footer class="fixed bottom-0 w-full border-t border-slate-200/20 bg-white dark:bg-slate-950 shadow-[0_-4px_20px_rgba(0,0,0,0.05)] z-50">
+<div class="flex justify-between items-center px-12 py-6 w-full max-w-screen-2xl mx-auto font-sans text-xs uppercase tracking-widest font-semibold">
+<!-- Left Action -->
+<button class="text-slate-400 border border-slate-200 dark:border-slate-800 px-6 py-2 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800 hover:brightness-110 transition-all duration-300 active:scale-98">
+                Back
+            </button>
+<!-- Center Context -->
+<span class="text-on-surface-variant opacity-60 hidden md:block">
+                Step 4 of 6
+            </span>
+<!-- Right Action -->
+<button class="bg-gradient-to-br from-red-700 to-red-500 text-white px-6 py-2 rounded-md shadow-lg hover:brightness-110 transition-all duration-300 active:scale-98 flex items-center gap-2">
+                Save &amp; Continue
+                <span class="material-symbols-outlined text-sm">arrow_forward</span>
+</button>
+</div>
+</footer>
+</body></html>

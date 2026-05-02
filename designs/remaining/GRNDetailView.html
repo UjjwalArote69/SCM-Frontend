@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>GRN-2023-8942-01 - Industrial SCM</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#b70011",
+                        "outline": "#916f6b",
+                        "on-secondary": "#ffffff",
+                        "surface-bright": "#f9f9ff",
+                        "secondary": "#a73831",
+                        "on-secondary-container": "#700f0f",
+                        "on-primary-fixed": "#410002",
+                        "on-error-container": "#93000a",
+                        "surface-tint": "#bf0715",
+                        "on-primary-container": "#fff6f5",
+                        "on-surface-variant": "#5c403c",
+                        "on-secondary-fixed-variant": "#86211c",
+                        "surface-container": "#e9edff",
+                        "surface-container-highest": "#dce2f7",
+                        "error": "#ba1a1a",
+                        "on-tertiary-fixed-variant": "#004b71",
+                        "on-tertiary-container": "#f3f8ff",
+                        "inverse-primary": "#ffb4ab",
+                        "secondary-fixed": "#ffdad6",
+                        "tertiary-fixed": "#cbe6ff",
+                        "surface-variant": "#dce2f7",
+                        "on-secondary-fixed": "#410002",
+                        "inverse-surface": "#293040",
+                        "on-error": "#ffffff",
+                        "surface-container-lowest": "#ffffff",
+                        "inverse-on-surface": "#edf0ff",
+                        "primary-fixed": "#ffdad6",
+                        "on-background": "#141b2b",
+                        "tertiary-fixed-dim": "#90cdff",
+                        "tertiary-container": "#0078b2",
+                        "outline-variant": "#e6bdb8",
+                        "on-tertiary": "#ffffff",
+                        "background": "#f9f9ff",
+                        "surface-container-high": "#e1e8fd",
+                        "on-surface": "#141b2b",
+                        "error-container": "#ffdad6",
+                        "primary-container": "#dc2626",
+                        "on-tertiary-fixed": "#001e30",
+                        "tertiary": "#005e8d",
+                        "on-primary-fixed-variant": "#93000b",
+                        "on-primary": "#ffffff",
+                        "secondary-container": "#fd786c",
+                        "surface-dim": "#d3daef",
+                        "secondary-fixed-dim": "#ffb4ab",
+                        "surface": "#f9f9ff",
+                        "primary-fixed-dim": "#ffb4ab",
+                        "surface-container-low": "#f1f3ff"
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    fontFamily: {
+                        "headline": ["Inter"],
+                        "body": ["Inter"],
+                        "label": ["Inter"]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+<body class="bg-background text-on-surface flex min-h-screen">
+<!-- SideNavBar -->
+<aside class="flex flex-col h-screen fixed left-0 top-0 pt-16 docked left-0 h-full w-64 bg-slate-100 dark:bg-slate-900 border-r border-surface-container-highest tonal shift between surface_container_low and canvas flat no shadows z-40 hidden md:flex">
+<div class="px-6 py-4 border-b border-surface-container-highest">
+<h2 class="font-headline font-bold text-on-surface">Node Alpha</h2>
+<p class="font-body text-sm text-on-surface-variant">Logistics Hub</p>
+</div>
+<nav class="flex-1 overflow-y-auto py-4">
+<ul class="space-y-1">
+<li>
+<a class="flex items-center gap-3 px-4 py-3 text-slate-600 dark:text-slate-400 font-label text-sm font-medium hover:bg-slate-200 dark:hover:bg-slate-800 transition-all" href="#">
+<span class="material-symbols-outlined text-[20px]">dashboard</span>
+                        Dashboard
+                    </a>
+</li>
+<li>
+<a class="flex items-center gap-3 px-4 py-3 bg-white dark:bg-slate-800 text-red-700 dark:text-red-500 border-l-4 border-red-700 font-label text-sm font-medium hover:bg-slate-200 dark:hover:bg-slate-800 transition-all Active: scale-98 transition-transform" href="#">
+<span class="material-symbols-outlined text-[20px]">receipt_long</span>
+                        Goods Receipt
+                    </a>
+</li>
+<li>
+<a class="flex items-center gap-3 px-4 py-3 text-slate-600 dark:text-slate-400 font-label text-sm font-medium hover:bg-slate-200 dark:hover:bg-slate-800 transition-all" href="#">
+<span class="material-symbols-outlined text-[20px]">warehouse</span>
+                        Warehousing
+                    </a>
+</li>
+<li>
+<a class="flex items-center gap-3 px-4 py-3 text-slate-600 dark:text-slate-400 font-label text-sm font-medium hover:bg-slate-200 dark:hover:bg-slate-800 transition-all" href="#">
+<span class="material-symbols-outlined text-[20px]">local_shipping</span>
+                        Shipments
+                    </a>
+</li>
+<li>
+<a class="flex items-center gap-3 px-4 py-3 text-slate-600 dark:text-slate-400 font-label text-sm font-medium hover:bg-slate-200 dark:hover:bg-slate-800 transition-all" href="#">
+<span class="material-symbols-outlined text-[20px]">factory</span>
+                        Suppliers
+                    </a>
+</li>
+</ul>
+<div class="px-4 mt-6">
+<button class="w-full bg-gradient-to-br from-primary to-primary-container text-on-primary py-2 px-4 rounded-md font-label text-sm font-medium hover:opacity-90 transition-opacity flex items-center justify-center gap-2 shadow-[0_4px_14px_rgba(183,0,17,0.39)]">
+<span class="material-symbols-outlined text-[18px]">add</span>
+                    Create GRN
+                </button>
+</div>
+</nav>
+<div class="mt-auto border-t border-surface-container-highest p-4">
+<ul class="space-y-1">
+<li>
+<a class="flex items-center gap-3 px-4 py-2 text-slate-600 dark:text-slate-400 font-label text-sm font-medium hover:bg-slate-200 dark:hover:bg-slate-800 transition-all" href="#">
+<span class="material-symbols-outlined text-[20px]">help_center</span>
+                        Support
+                    </a>
+</li>
+<li>
+<a class="flex items-center gap-3 px-4 py-2 text-slate-600 dark:text-slate-400 font-label text-sm font-medium hover:bg-slate-200 dark:hover:bg-slate-800 transition-all" href="#">
+<span class="material-symbols-outlined text-[20px]">settings</span>
+                        Settings
+                    </a>
+</li>
+</ul>
+</div>
+</aside>
+<!-- Main Content Area -->
+<main class="flex-1 md:ml-64 flex flex-col min-h-screen">
+<!-- TopNavBar -->
+<header class="flex justify-between items-center w-full px-6 h-16 bg-slate-50 dark:bg-slate-950 docked full-width top-0 z-50 border-b border-slate-200/20 dark:border-slate-800/20 flat no shadows sticky top-0">
+<div class="flex items-center gap-6">
+<div class="text-xl font-bold tracking-tighter text-red-700 dark:text-red-600 hidden md:block">Industrial SCM</div>
+<div class="relative hidden sm:block">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-[20px]">search</span>
+<input class="pl-10 pr-4 py-1.5 bg-surface-container-lowest border-b-2 border-outline-variant focus:border-primary focus:ring-0 text-sm font-body w-64 transition-colors rounded-none" placeholder="Search..." type="text"/>
+</div>
+</div>
+<nav class="hidden md:flex items-center gap-6 h-full">
+<a class="text-slate-500 dark:text-slate-400 font-inter tracking-tight text-sm font-medium hover:bg-slate-200/50 dark:hover:bg-slate-800/50 transition-colors h-full flex items-center px-2" href="#">Inventory</a>
+<a class="text-slate-500 dark:text-slate-400 font-inter tracking-tight text-sm font-medium hover:bg-slate-200/50 dark:hover:bg-slate-800/50 transition-colors h-full flex items-center px-2" href="#">Orders</a>
+<a class="text-slate-500 dark:text-slate-400 font-inter tracking-tight text-sm font-medium hover:bg-slate-200/50 dark:hover:bg-slate-800/50 transition-colors h-full flex items-center px-2" href="#">Analytics</a>
+</nav>
+<div class="flex items-center gap-4">
+<button class="text-on-surface-variant hover:text-primary transition-colors">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<button class="text-on-surface-variant hover:text-primary transition-colors">
+<span class="material-symbols-outlined">settings</span>
+</button>
+<button class="text-on-surface-variant hover:text-primary transition-colors">
+<span class="material-symbols-outlined">help</span>
+</button>
+<img alt="User profile" class="w-8 h-8 rounded-full border border-surface-container-highest" data-alt="Professional headshot of a man in business casual attire against a neutral gray background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBSE13O7OW6tEEjt49BaO5SRoKlGYeTW18joqxMqceuAvsY5eGdTWRRyP9JGUpeWnWHja3zbcrxGki3o0jHcGbYhxpmaFIUGSasria3LQvtPb-BF3LBRjTKpbE8vO5Slmmrebw7a9UzVZ01QcN29YiuYAvad7b1h2Uu3jnCSjNWcxola8YzDnieaeAYjm1w25AeKvQz4gIeuUscmaur4esJqh0Bl5Yh6xgBXZ9f8NIUNDLYMP2xCD81A0If2yKI9ZhHs69S0XtOFbbE"/>
+</div>
+</header>
+<!-- Page Content -->
+<div class="p-6 md:p-8 flex-1 bg-background overflow-y-auto">
+<!-- Header Section -->
+<div class="mb-8">
+<nav class="flex items-center text-sm font-body text-on-surface-variant mb-3">
+<a class="hover:text-primary transition-colors" href="#">Goods &amp; Finance</a>
+<span class="material-symbols-outlined text-[16px] mx-1">chevron_right</span>
+<a class="hover:text-primary transition-colors" href="#">GRN</a>
+<span class="material-symbols-outlined text-[16px] mx-1">chevron_right</span>
+<span class="text-on-surface font-medium">GRN-2023-8942-01</span>
+</nav>
+<h1 class="font-headline text-[32px] leading-tight font-bold text-on-surface mb-6">GRN-2023-8942-01</h1>
+<div class="flex flex-wrap gap-x-8 gap-y-4 bg-surface-container-low p-4 rounded-md">
+<div>
+<span class="block text-xs font-label text-on-surface-variant mb-1">Date</span>
+<span class="text-sm font-body text-on-surface font-medium">14 Nov 2023</span>
+</div>
+<div>
+<span class="block text-xs font-label text-on-surface-variant mb-1">Linked PO</span>
+<a class="text-sm font-body text-tertiary font-medium hover:underline flex items-center gap-1" href="#">
+                            PO-2023-8942
+                            <span class="material-symbols-outlined text-[14px]">open_in_new</span>
+</a>
+</div>
+<div>
+<span class="block text-xs font-label text-on-surface-variant mb-1">Received By</span>
+<div class="flex items-center gap-2">
+<span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-surface-container-highest text-xs font-bold text-on-surface">SK</span>
+<span class="text-sm font-body text-on-surface font-medium">S. Kumar</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Main Layout Grid -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+<!-- Left Column (70%) -->
+<div class="lg:col-span-8 space-y-6">
+<!-- Received Items -->
+<div class="bg-surface-container-lowest rounded-md shadow-[0_12px_32px_rgba(20,27,43,0.03)] border-l-4 border-l-[#16a34a]">
+<div class="p-5 border-b border-surface-container-highest">
+<h2 class="font-headline text-lg font-semibold text-on-surface">Received Items</h2>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-surface-container-low text-xs font-label text-on-surface-variant border-b border-surface-container-highest">
+<th class="py-3 px-5 font-medium w-12">#</th>
+<th class="py-3 px-5 font-medium">Item Code</th>
+<th class="py-3 px-5 font-medium">Name</th>
+<th class="py-3 px-5 font-medium text-right">Qty Ordered</th>
+<th class="py-3 px-5 font-medium text-right">Qty Received</th>
+<th class="py-3 px-5 font-medium text-center">Status</th>
+<th class="py-3 px-5 font-medium">Remarks</th>
+</tr>
+</thead>
+<tbody class="text-sm font-body">
+<tr class="border-b border-surface-container-highest/50 hover:bg-surface-container-low/50 transition-colors">
+<td class="py-3 px-5 text-on-surface-variant">1</td>
+<td class="py-3 px-5 font-medium text-on-surface">PMP-092</td>
+<td class="py-3 px-5">Hydraulic Pump V2</td>
+<td class="py-3 px-5 text-right">50</td>
+<td class="py-3 px-5 text-right font-medium">50</td>
+<td class="py-3 px-5 text-center">
+<span class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-[#dcfce7] text-[#166534]">Accepted</span>
+</td>
+<td class="py-3 px-5 text-on-surface-variant text-xs">-</td>
+</tr>
+<tr class="border-b border-surface-container-highest/50 hover:bg-surface-container-low/50 transition-colors bg-surface-container-low/30">
+<td class="py-3 px-5 text-on-surface-variant">2</td>
+<td class="py-3 px-5 font-medium text-on-surface">VLV-114</td>
+<td class="py-3 px-5">Pressure Valve</td>
+<td class="py-3 px-5 text-right">200</td>
+<td class="py-3 px-5 text-right font-medium text-secondary">150</td>
+<td class="py-3 px-5 text-center">
+<span class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-[#fef3c7] text-[#92400e]">Partial</span>
+</td>
+<td class="py-3 px-5 text-on-surface-variant text-xs">50 units backordered</td>
+</tr>
+<tr class="border-b border-surface-container-highest/50 hover:bg-surface-container-low/50 transition-colors">
+<td class="py-3 px-5 text-on-surface-variant">3</td>
+<td class="py-3 px-5 font-medium text-on-surface">GSK-881</td>
+<td class="py-3 px-5">Industrial Gasket Kit</td>
+<td class="py-3 px-5 text-right">100</td>
+<td class="py-3 px-5 text-right font-medium text-error">0</td>
+<td class="py-3 px-5 text-center">
+<span class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-[#fee2e2] text-[#991b1b]">Rejected</span>
+</td>
+<td class="py-3 px-5 text-on-surface-variant text-xs">Damaged in transit</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+<!-- Supporting Documents -->
+<div class="bg-surface-container-lowest rounded-md shadow-[0_12px_32px_rgba(20,27,43,0.03)] border border-outline-variant/20 p-5">
+<div class="flex justify-between items-center mb-4">
+<h2 class="font-headline text-lg font-semibold text-on-surface">Supporting Documents</h2>
+</div>
+<div class="grid grid-cols-2 gap-4">
+<div class="relative group rounded-md overflow-hidden bg-surface-container-low aspect-[4/3] border border-surface-container-highest">
+<img alt="Delivery Challan Document" class="object-cover w-full h-full opacity-80" data-alt="Close up of a printed industrial delivery challan document with barcodes and stamped signatures on a warehouse desk" src="https://lh3.googleusercontent.com/aida-public/AB6AXuANkhfgFcruknBVN9Cpd4cR_NrfbqNlYBNWpHNqDhj4i-lVfJlYdSR5UqenhkO7rMCoRP5-yRfHe9_uR2hnO_mA2Kyn_7UtX0dztmhlmvCAOdY-L2Hq3fEF2zClEX9em8xRW8PjwU2W7oqJjhy4SVFXaheuFtGeoNsS9ckeA3IBeAuR7-84DQS7Ljx_y4Bl_Sh2fwmuSHdjeSDgyt34rkIHDIeStbMHqYCYMomNrsZKwtZqECSic3Z2HE01CMTVDxOhRqiwZ34II2tj"/>
+<div class="absolute inset-0 bg-inverse-surface/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+<button class="bg-surface-container-lowest text-on-surface p-2 rounded-full hover:bg-surface transition-colors shadow-md">
+<span class="material-symbols-outlined text-[20px]">download</span>
+</button>
+</div>
+<div class="absolute bottom-0 left-0 right-0 bg-inverse-surface/80 p-2">
+<span class="text-xs text-on-primary font-medium block truncate">Challan_CH-8942.pdf</span>
+</div>
+</div>
+<div class="relative group rounded-md overflow-hidden bg-surface-container-low aspect-[4/3] border border-surface-container-highest">
+<img alt="Waybill Receipt" class="object-cover w-full h-full opacity-80" data-alt="A printed logistics waybill receipt with a barcode scanner resting next to it on a metal surface" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBsOWlKMEw8jALa_gSoQkgEQTf-JJRaEdxcSEb7lz_wpzuicoeNRk2jOo77eE8s_Xb_2l87ytzBO6eA-jbB6kI16fdmnvZ2oYP95QLHMcGoqR2IkUgLG4PTbLr_y2UuhpSzg3Xf4lQ8wlIBfGbqJhoSpP7JgoKwWZYsA2N_YK_GXMZSess1KczDgpvS1_vIFzs4ixuRJbq_2bhpZKDfc470PGP9N-FyM5lTy87Ovh5Spg4yY1Qdaj1ncsRhvKCD4dL3ODT-jnEcNun4"/>
+<div class="absolute inset-0 bg-inverse-surface/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+<button class="bg-surface-container-lowest text-on-surface p-2 rounded-full hover:bg-surface transition-colors shadow-md">
+<span class="material-symbols-outlined text-[20px]">download</span>
+</button>
+</div>
+<div class="absolute bottom-0 left-0 right-0 bg-inverse-surface/80 p-2">
+<span class="text-xs text-on-primary font-medium block truncate">Waybill_WB-221.jpg</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Inspector Signature -->
+<div class="bg-surface-container-lowest rounded-md shadow-[0_12px_32px_rgba(20,27,43,0.03)] border border-outline-variant/20 p-5 flex flex-col">
+<h2 class="font-headline text-lg font-semibold text-on-surface mb-4">Inspector Signature</h2>
+<div class="flex-1 bg-surface-container-low border border-dashed border-outline-variant rounded-md flex flex-col items-center justify-center p-6 min-h-[160px]">
+<img alt="Digital Signature Placeholder" class="h-16 opacity-70 mix-blend-multiply" data-alt="A stylized digital signature in black ink on a transparent or white background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuA30bKIvI9mhgAaHLg6tAbRaVDqNDFhTCXr8uY5jGU7Nw7Hj8Ub-52Q9a-l6B-W7WTqSs8KyqRhSGD95TSM2oMaMgfPy23b1zQRSRo2d6AeE5I1NFn72vGn3TLiC9IYMwYDPH_E6EIImDCbv-T-Vbvpj6CixSd6hVTVJfmmWN2jblhvIZ_DJ1Il-HGCSgyuAdZXkXAzQaw9t1ghQBYIiSxox7_r68ijZe8OSmqVZ-bDS5GcWGpfhkDQMgU6_ea-KrVDxT3ce2tolxgX" style="filter: grayscale(100%);"/>
+<div class="mt-4 text-center">
+<p class="text-sm font-medium text-on-surface">Signed by S. Kumar</p>
+<p class="text-xs text-on-surface-variant mt-1">14 Nov 2023, 10:42 AM</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Right Column (30%) -->
+<div class="lg:col-span-4 space-y-6">
+<!-- Actions -->
+<div class="bg-surface-container-lowest rounded-md shadow-[0_12px_32px_rgba(20,27,43,0.03)] p-5 border border-outline-variant/20">
+<h2 class="font-headline text-lg font-semibold text-on-surface mb-4">Actions</h2>
+<div class="space-y-3">
+<button class="w-full bg-gradient-to-br from-primary to-primary-container text-on-primary py-3 px-4 rounded-md font-label text-sm font-medium hover:opacity-90 transition-opacity flex items-center justify-center gap-2 shadow-[0_4px_14px_rgba(183,0,17,0.39)]">
+<span class="material-symbols-outlined text-[20px]">send</span>
+                                Send Acknowledgement to Vendor
+                            </button>
+<button class="w-full bg-transparent border-2 border-outline-variant/20 text-on-surface py-2.5 px-4 rounded-md font-label text-sm font-medium hover:bg-surface-container-low transition-colors flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-[20px]">print</span>
+                                Print GRN
+                            </button>
+</div>
+</div>
+<!-- Activity Feed -->
+<div class="bg-surface-container-lowest rounded-md shadow-[0_12px_32px_rgba(20,27,43,0.03)] p-5 border border-outline-variant/20">
+<h2 class="font-headline text-lg font-semibold text-on-surface mb-6">Activity Feed</h2>
+<div class="relative pl-6 border-l-2 border-surface-container-highest space-y-8">
+<!-- Activity Item -->
+<div class="relative">
+<div class="absolute -left-[31px] bg-surface-container-lowest p-1 rounded-full">
+<div class="w-3 h-3 bg-primary rounded-full"></div>
+</div>
+<div>
+<p class="text-sm font-medium text-on-surface">GRN Created</p>
+<p class="text-xs text-on-surface-variant mt-1">System generated draft from PO-2023-8942</p>
+<span class="text-[11px] font-label text-on-surface-variant block mt-2">14 Nov 2023, 08:30 AM</span>
+</div>
+</div>
+<!-- Activity Item -->
+<div class="relative">
+<div class="absolute -left-[31px] bg-surface-container-lowest p-1 rounded-full">
+<div class="w-3 h-3 bg-surface-container-highest rounded-full"></div>
+</div>
+<div>
+<p class="text-sm font-medium text-on-surface">Inspection Started</p>
+<p class="text-xs text-on-surface-variant mt-1">S. Kumar began physical count and quality check</p>
+<span class="text-[11px] font-label text-on-surface-variant block mt-2">14 Nov 2023, 09:15 AM</span>
+</div>
+</div>
+<!-- Activity Item -->
+<div class="relative">
+<div class="absolute -left-[31px] bg-surface-container-lowest p-1 rounded-full">
+<div class="w-3 h-3 bg-surface-container-highest rounded-full"></div>
+</div>
+<div>
+<p class="text-sm font-medium text-on-surface">Discrepancy Logged</p>
+<p class="text-xs text-on-surface-variant mt-1">Partial receipt for VLV-114 and Rejection for GSK-881 noted.</p>
+<span class="text-[11px] font-label text-on-surface-variant block mt-2">14 Nov 2023, 10:10 AM</span>
+</div>
+</div>
+<!-- Activity Item -->
+<div class="relative">
+<div class="absolute -left-[31px] bg-surface-container-lowest p-1 rounded-full">
+<div class="w-3 h-3 bg-surface-container-highest rounded-full border border-outline-variant"></div>
+</div>
+<div>
+<p class="text-sm font-medium text-on-surface">GRN Finalized</p>
+<p class="text-xs text-on-surface-variant mt-1">Inspector signature applied.</p>
+<span class="text-[11px] font-label text-on-surface-variant block mt-2">14 Nov 2023, 10:42 AM</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+</body></html>

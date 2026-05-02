@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>New Request for Quotation - Industrial Architect</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "tertiary-fixed-dim": "#90cdff",
+                        "tertiary": "#005e8d",
+                        "on-primary": "#ffffff",
+                        "primary": "#b70011",
+                        "primary-fixed-dim": "#ffb4ab",
+                        "on-secondary-container": "#700f0f",
+                        "on-background": "#141b2b",
+                        "on-tertiary": "#ffffff",
+                        "background": "#f9f9ff",
+                        "inverse-surface": "#293040",
+                        "inverse-on-surface": "#edf0ff",
+                        "on-secondary": "#ffffff",
+                        "secondary": "#a73831",
+                        "outline": "#916f6b",
+                        "secondary-fixed": "#ffdad6",
+                        "on-tertiary-fixed": "#001e30",
+                        "error": "#ba1a1a",
+                        "outline-variant": "#e6bdb8",
+                        "tertiary-container": "#0078b2",
+                        "on-secondary-fixed-variant": "#86211c",
+                        "primary-fixed": "#ffdad6",
+                        "surface-tint": "#bf0715",
+                        "on-primary-container": "#fff6f5",
+                        "inverse-primary": "#ffb4ab",
+                        "surface-container-high": "#e1e8fd",
+                        "on-primary-fixed-variant": "#93000b",
+                        "surface-container-low": "#f1f3ff",
+                        "surface": "#f9f9ff",
+                        "on-error-container": "#93000a",
+                        "on-surface-variant": "#5c403c",
+                        "surface-container": "#e9edff",
+                        "on-tertiary-fixed-variant": "#004b71",
+                        "on-error": "#ffffff",
+                        "secondary-fixed-dim": "#ffb4ab",
+                        "error-container": "#ffdad6",
+                        "primary-container": "#dc2626",
+                        "surface-container-lowest": "#ffffff",
+                        "on-surface": "#141b2b",
+                        "on-primary-fixed": "#410002",
+                        "on-secondary-fixed": "#410002",
+                        "surface-bright": "#f9f9ff",
+                        "tertiary-fixed": "#cbe6ff",
+                        "surface-container-highest": "#dce2f7",
+                        "on-tertiary-container": "#f3f8ff",
+                        "surface-dim": "#d3daef",
+                        "surface-variant": "#dce2f7",
+                        "secondary-container": "#fd786c"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {},
+                    "fontFamily": {
+                        "headline": ["Inter"],
+                        "body": ["Inter"],
+                        "label": ["Inter"]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .ghost-border {
+            border: 1px solid rgba(230, 189, 184, 0.2); /* outline-variant at 20% */
+        }
+        .ambient-shadow {
+            box-shadow: 0 12px 32px rgba(20, 27, 43, 0.08);
+        }
+        .gradient-primary {
+            background: linear-gradient(135deg, #b70011 0%, #dc2626 100%);
+        }
+        /* Custom Scrollbar for inner elements if needed */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f3ff; 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #dce2f7; 
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #916f6b; 
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background font-body antialiased flex h-screen overflow-hidden">
+<!-- SideNav -->
+<nav aria-label="Sidebar" class="bg-slate-100 dark:bg-slate-950 h-screen w-64 border-r-0 flex flex-col fixed left-0 top-0 py-4 gap-2 z-40 hidden md:flex">
+<div class="px-6 pb-6 pt-2">
+<h2 class="text-lg font-black text-slate-900 dark:text-slate-50 font-headline tracking-tight uppercase">Industrial Ops</h2>
+<p class="text-sm font-medium text-slate-500 dark:text-slate-400 font-label">V-4.2 Precision</p>
+</div>
+<div class="flex-1 flex flex-col gap-1 px-3">
+<a class="flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-800 transition-all scale-98 active:scale-95" href="#">
+<span class="material-symbols-outlined text-lg" data-icon="dashboard">dashboard</span>
+                Dashboard
+            </a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-800 transition-all scale-98 active:scale-95" href="#">
+<span class="material-symbols-outlined text-lg" data-icon="description">description</span>
+                Purchase Requests
+            </a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium text-red-700 dark:text-red-500 font-bold bg-white dark:bg-slate-900 shadow-sm transition-all scale-98 active:scale-95" href="#">
+<span class="material-symbols-outlined text-lg" data-icon="request_quote" data-weight="fill" style="font-variation-settings: 'FILL' 1;">request_quote</span>
+                RFQ Manager
+            </a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-800 transition-all scale-98 active:scale-95" href="#">
+<span class="material-symbols-outlined text-lg" data-icon="factory">factory</span>
+                Vendors
+            </a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-800 transition-all scale-98 active:scale-95" href="#">
+<span class="material-symbols-outlined text-lg" data-icon="inventory_2">inventory_2</span>
+                Inventory
+            </a>
+</div>
+<div class="px-3 mt-auto flex flex-col gap-1 border-t border-slate-200/50 dark:border-slate-800/50 pt-4">
+<a class="flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-800 transition-all scale-98 active:scale-95" href="#">
+<span class="material-symbols-outlined text-lg" data-icon="contact_support">contact_support</span>
+                Support
+            </a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-800 transition-all scale-98 active:scale-95" href="#">
+<span class="material-symbols-outlined text-lg" data-icon="settings">settings</span>
+                Settings
+            </a>
+</div>
+</nav>
+<!-- Main Content Wrapper -->
+<div class="flex-1 flex flex-col md:ml-64 h-screen overflow-hidden bg-background">
+<!-- TopAppBar -->
+<header class="w-full h-16 flex justify-between items-center px-6 sticky top-0 z-50 bg-slate-50 dark:bg-slate-900">
+<div class="flex items-center md:hidden">
+<h1 class="text-xl font-bold tracking-tight text-slate-900 dark:text-slate-50 font-headline">SCM Architect</h1>
+</div>
+<div class="hidden md:flex items-center">
+<!-- Breadcrumbs or page context could go here -->
+<div class="flex items-center text-sm font-label text-slate-500">
+<span>RFQ Manager</span>
+<span class="material-symbols-outlined mx-2 text-sm">chevron_right</span>
+<span class="text-on-background font-semibold">New Request</span>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<button class="text-slate-500 hover:bg-slate-100 p-2 rounded-full transition-colors cursor-pointer active:opacity-80">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+</button>
+<button class="text-slate-500 hover:bg-slate-100 p-2 rounded-full transition-colors cursor-pointer active:opacity-80">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+</button>
+<button class="text-slate-500 hover:bg-slate-100 p-2 rounded-full transition-colors cursor-pointer active:opacity-80">
+<span class="material-symbols-outlined" data-icon="help_outline">help_outline</span>
+</button>
+<div class="h-8 w-8 rounded-full bg-surface-container-highest overflow-hidden ml-2 cursor-pointer border-2 border-transparent hover:border-slate-200 transition-colors">
+<img alt="User profile" class="w-full h-full object-cover" data-alt="Professional headshot of a corporate user on a neutral background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDR6AFXJFAyTWajgKLU0430gM1vxZmlhxc-KXcF0NoqWUPur6T4QYNci5KBsnJ2S9Xw0t0yD48Qq8PaIp_ktoo2yDjVBE1egGQ1pesGxR3SPF8GWWmTrdHDq9hz7LZO1KWGeOCkLlIg1PNbXGesddRURC9cdlePtlrVBoOeeLjyAzPI-YtzcYcGMqbNQarGnxNOQaCgTnSobw6qT-kN4_9EpHFPrK8gYfbcjQQiBM8GqveTacv6AYJNRrkCcIACrFxQ0BAi7m1cpjfA"/>
+</div>
+</div>
+</header>
+<!-- Page Content -->
+<main class="flex-1 overflow-y-auto p-6 flex flex-col lg:flex-row gap-6 relative">
+<!-- Left Column: Form Sections -->
+<div class="flex-1 flex flex-col gap-6 max-w-5xl">
+<header class="mb-2">
+<h1 class="text-3xl font-headline font-bold text-on-background tracking-tight">New Request for Quotation</h1>
+<p class="text-sm font-label text-on-surface-variant mt-1">Configure parameters and select vendors to initiate a competitive bidding process.</p>
+</header>
+<!-- Section 1: RFQ Basics -->
+<section class="bg-surface-container-low p-1 rounded-xl">
+<div class="bg-surface-container-lowest rounded-lg p-6 relative">
+<div class="absolute left-0 top-0 bottom-0 w-1 bg-tertiary rounded-l-lg"></div>
+<h2 class="text-lg font-headline font-semibold text-on-background mb-5 flex items-center gap-2">
+<span class="material-symbols-outlined text-tertiary">tune</span>
+                            RFQ Basics
+                        </h2>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
+<!-- Linked PR -->
+<div class="col-span-1 md:col-span-2 relative">
+<label class="block text-xs font-label font-semibold text-on-surface-variant uppercase tracking-wider mb-1">Linked Purchase Request</label>
+<div class="relative flex items-center">
+<span class="material-symbols-outlined absolute left-3 text-on-surface-variant">search</span>
+<input class="w-full bg-surface-container-lowest text-on-background text-sm pl-10 pr-4 py-3 border-0 border-b-2 border-outline-variant focus:ring-0 focus:border-primary transition-colors placeholder-on-surface-variant/50" placeholder="Search approved PRs..." type="text"/>
+</div>
+</div>
+<!-- Vendor Category -->
+<div>
+<label class="block text-xs font-label font-semibold text-on-surface-variant uppercase tracking-wider mb-1">Vendor Category</label>
+<div class="relative">
+<select class="w-full bg-surface-container-lowest text-on-background text-sm pl-3 pr-10 py-3 border-0 border-b-2 border-outline-variant focus:ring-0 focus:border-primary transition-colors appearance-none cursor-pointer">
+<option disabled="" selected="" value="">Select Category</option>
+<option value="raw_materials">Raw Materials</option>
+<option value="machinery">Machinery &amp; Equipment</option>
+<option value="consumables">Consumables</option>
+</select>
+<span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant pointer-events-none">arrow_drop_down</span>
+</div>
+</div>
+<!-- Vendor Subcategory -->
+<div>
+<label class="block text-xs font-label font-semibold text-on-surface-variant uppercase tracking-wider mb-1">Vendor Subcategory</label>
+<div class="relative">
+<select class="w-full bg-surface-container-lowest text-on-background text-sm pl-3 pr-10 py-3 border-0 border-b-2 border-outline-variant focus:ring-0 focus:border-primary transition-colors appearance-none cursor-pointer disabled:opacity-50" disabled="">
+<option disabled="" selected="" value="">Select Category First</option>
+</select>
+<span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant pointer-events-none">arrow_drop_down</span>
+</div>
+</div>
+<!-- End Date -->
+<div>
+<label class="block text-xs font-label font-semibold text-on-surface-variant uppercase tracking-wider mb-1">Submission Deadline</label>
+<div class="relative flex items-center">
+<span class="material-symbols-outlined absolute left-3 text-on-surface-variant">calendar_today</span>
+<input class="w-full bg-surface-container-lowest text-on-background text-sm pl-10 pr-4 py-3 border-0 border-b-2 border-outline-variant focus:ring-0 focus:border-primary transition-colors cursor-pointer" type="datetime-local"/>
+</div>
+</div>
+<!-- Notes -->
+<div class="col-span-1 md:col-span-2 mt-2">
+<label class="block text-xs font-label font-semibold text-on-surface-variant uppercase tracking-wider mb-1">Internal Notes</label>
+<textarea class="w-full bg-surface-container-lowest text-on-background text-sm px-3 py-3 border-0 border-b-2 border-outline-variant focus:ring-0 focus:border-primary transition-colors resize-y" placeholder="Add instructions or context for this RFQ..." rows="3"></textarea>
+</div>
+</div>
+</div>
+</section>
+<!-- Section 2: Items from PR -->
+<section class="bg-surface-container-low p-1 rounded-xl">
+<div class="bg-surface-container-lowest rounded-lg pt-6 pb-2 relative overflow-hidden">
+<div class="absolute left-0 top-0 bottom-0 w-1 bg-secondary rounded-l-lg"></div>
+<div class="px-6 mb-4 flex justify-between items-center">
+<h2 class="text-lg font-headline font-semibold text-on-background flex items-center gap-2">
+<span class="material-symbols-outlined text-secondary">inventory_2</span>
+                                Items from PR
+                            </h2>
+<span class="text-xs font-label bg-surface-container-high text-on-surface px-2 py-1 rounded-md">PR-2023-0891</span>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="border-b-2 border-surface-container-highest">
+<th class="py-3 px-4 w-12"><input checked="" class="rounded text-primary focus:ring-primary border-outline-variant bg-surface-container-lowest" type="checkbox"/></th>
+<th class="py-3 px-4 text-xs font-label font-semibold text-on-surface-variant uppercase tracking-wider">Item Code</th>
+<th class="py-3 px-4 text-xs font-label font-semibold text-on-surface-variant uppercase tracking-wider">Name</th>
+<th class="py-3 px-4 text-xs font-label font-semibold text-on-surface-variant uppercase tracking-wider text-right">Qty</th>
+<th class="py-3 px-4 text-xs font-label font-semibold text-on-surface-variant uppercase tracking-wider">UOM</th>
+<th class="py-3 px-4 text-xs font-label font-semibold text-on-surface-variant uppercase tracking-wider">HSN</th>
+<th class="py-3 px-4 text-xs font-label font-semibold text-on-surface-variant uppercase tracking-wider">Certificates</th>
+</tr>
+</thead>
+<tbody class="text-sm font-body">
+<tr class="hover:bg-surface-container-low transition-colors border-b border-surface-container-high">
+<td class="py-3 px-4"><input checked="" class="rounded text-primary focus:ring-primary border-outline-variant bg-surface-container-lowest" type="checkbox"/></td>
+<td class="py-3 px-4 font-mono text-xs text-on-surface-variant">MAT-449-A</td>
+<td class="py-3 px-4 font-medium text-on-background">Industrial Grade Sealant</td>
+<td class="py-3 px-4 text-right">500</td>
+<td class="py-3 px-4 text-on-surface-variant">Ltr</td>
+<td class="py-3 px-4 text-on-surface-variant">3214.10.00</td>
+<td class="py-3 px-4"><span class="inline-flex items-center gap-1 text-xs bg-surface-variant text-on-surface px-2 py-0.5 rounded"><span class="material-symbols-outlined text-[14px]">verified</span> ISO 9001</span></td>
+</tr>
+<tr class="hover:bg-surface-container-low transition-colors border-b border-surface-container-high bg-surface-container-lowest/50">
+<td class="py-3 px-4"><input checked="" class="rounded text-primary focus:ring-primary border-outline-variant bg-surface-container-lowest" type="checkbox"/></td>
+<td class="py-3 px-4 font-mono text-xs text-on-surface-variant">PRT-882-X</td>
+<td class="py-3 px-4 font-medium text-on-background">Titanium Alloy Brackets</td>
+<td class="py-3 px-4 text-right">1,200</td>
+<td class="py-3 px-4 text-on-surface-variant">Pcs</td>
+<td class="py-3 px-4 text-on-surface-variant">8108.90.00</td>
+<td class="py-3 px-4"><span class="inline-flex items-center gap-1 text-xs bg-surface-variant text-on-surface px-2 py-0.5 rounded"><span class="material-symbols-outlined text-[14px]">verified</span> Mill Test</span></td>
+</tr>
+<tr class="hover:bg-surface-container-low transition-colors">
+<td class="py-3 px-4"><input checked="" class="rounded text-primary focus:ring-primary border-outline-variant bg-surface-container-lowest" type="checkbox"/></td>
+<td class="py-3 px-4 font-mono text-xs text-on-surface-variant">CNM-102-C</td>
+<td class="py-3 px-4 font-medium text-on-background">Heavy Duty Lubricant</td>
+<td class="py-3 px-4 text-right">250</td>
+<td class="py-3 px-4 text-on-surface-variant">Gal</td>
+<td class="py-3 px-4 text-on-surface-variant">3403.19.00</td>
+<td class="py-3 px-4"><span class="text-on-surface-variant text-xs italic">None</span></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</section>
+</div>
+<!-- Right Column: Sticky Summary Sidebar -->
+<div class="w-full lg:w-80 flex-shrink-0">
+<div class="sticky top-6 flex flex-col gap-4">
+<!-- Summary Card -->
+<div class="bg-surface-container-lowest rounded-xl ambient-shadow overflow-hidden">
+<div class="h-1 gradient-primary w-full"></div>
+<div class="p-5 border-b border-surface-container-high">
+<h3 class="text-base font-headline font-bold text-on-background uppercase tracking-wider mb-4">RFQ Summary</h3>
+<div class="flex flex-col gap-3">
+<div class="flex justify-between items-center">
+<span class="text-sm font-label text-on-surface-variant">RFQ Number</span>
+<span class="text-sm font-mono font-medium text-on-background bg-surface-container-low px-2 py-1 rounded">AUTO-GEN</span>
+</div>
+<div class="flex justify-between items-center">
+<span class="text-sm font-label text-on-surface-variant">Items Selected</span>
+<span class="text-sm font-medium text-on-background">3</span>
+</div>
+<div class="flex justify-between items-center">
+<span class="text-sm font-label text-on-surface-variant">Vendors Selected</span>
+<span class="text-sm font-medium text-on-background">0</span>
+</div>
+</div>
+</div>
+<div class="p-5 bg-surface-container-low flex flex-col items-center justify-center text-center">
+<span class="text-xs font-label font-semibold text-on-surface-variant uppercase tracking-wider mb-1">Time to Deadline</span>
+<div class="text-xl font-headline font-bold text-on-background font-mono">-- : -- : --</div>
+<span class="text-[10px] text-on-surface-variant mt-1">Select an end date</span>
+</div>
+</div>
+<!-- Action Buttons -->
+<div class="flex flex-col gap-3 mt-2">
+<button class="w-full gradient-primary text-on-primary font-label font-semibold py-3 px-4 rounded-md shadow-md hover:shadow-lg transition-all active:scale-[0.98] flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-sm">send</span>
+                            Send RFQ to Vendors
+                        </button>
+<button class="w-full bg-transparent text-primary font-label font-semibold py-3 px-4 rounded-md ghost-border hover:bg-surface-container-high transition-colors flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-sm">save</span>
+                            Save as Draft
+                        </button>
+</div>
+</div>
+</div>
+</main>
+</div>
+</body></html>

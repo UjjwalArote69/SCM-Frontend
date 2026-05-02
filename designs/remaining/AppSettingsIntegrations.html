@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Settings - Integrations | Industrial Architect SCM</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-tertiary": "#ffffff",
+                        "error-container": "#ffdad6",
+                        "outline-variant": "#e6bdb8",
+                        "secondary": "#a73831",
+                        "on-primary": "#ffffff",
+                        "surface-dim": "#d3daef",
+                        "on-tertiary-fixed": "#001e30",
+                        "on-secondary-fixed": "#410002",
+                        "on-primary-fixed": "#410002",
+                        "surface-variant": "#dce2f7",
+                        "surface-bright": "#f9f9ff",
+                        "on-background": "#141b2b",
+                        "secondary-fixed": "#ffdad6",
+                        "error": "#ba1a1a",
+                        "primary-fixed-dim": "#ffb4ab",
+                        "on-surface-variant": "#5c403c",
+                        "on-primary-container": "#fff6f5",
+                        "primary-container": "#dc2626",
+                        "surface-tint": "#bf0715",
+                        "outline": "#916f6b",
+                        "tertiary-container": "#0078b2",
+                        "surface-container-high": "#e1e8fd",
+                        "background": "#f9f9ff",
+                        "tertiary-fixed": "#cbe6ff",
+                        "tertiary-fixed-dim": "#90cdff",
+                        "secondary-fixed-dim": "#ffb4ab",
+                        "on-secondary-fixed-variant": "#86211c",
+                        "primary": "#b70011",
+                        "on-tertiary-fixed-variant": "#004b71",
+                        "surface-container-low": "#f1f3ff",
+                        "surface-container-highest": "#dce2f7",
+                        "secondary-container": "#fd786c",
+                        "on-tertiary-container": "#f3f8ff",
+                        "surface": "#f9f9ff",
+                        "inverse-surface": "#293040",
+                        "inverse-primary": "#ffb4ab",
+                        "on-primary-fixed-variant": "#93000b",
+                        "on-error": "#ffffff",
+                        "primary-fixed": "#ffdad6",
+                        "on-surface": "#141b2b",
+                        "surface-container-lowest": "#ffffff",
+                        "on-error-container": "#93000a",
+                        "tertiary": "#005e8d",
+                        "on-secondary": "#ffffff",
+                        "inverse-on-surface": "#edf0ff",
+                        "surface-container": "#e9edff",
+                        "on-secondary-container": "#700f0f"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "fontFamily": {
+                        "headline": ["Inter"],
+                        "body": ["Inter"],
+                        "label": ["Inter"]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body { font-family: 'Inter', sans-serif; }
+        .bg-primary-gradient { background: linear-gradient(135deg, #b70011 0%, #dc2626 100%); }
+    </style>
+</head>
+<body class="bg-background text-on-background min-h-screen flex flex-col pt-14">
+<!-- TopNavBar (From JSON) -->
+<nav class="fixed top-0 w-full z-50 bg-slate-50 dark:bg-slate-950 flex justify-between items-center px-8 py-3 bg-slate-100 dark:bg-slate-900 border-b-0 shadow-none">
+<div class="flex items-center gap-6">
+<span class="text-lg font-black tracking-tighter text-slate-900 dark:text-slate-100">Industrial Architect SCM</span>
+<div class="hidden md:flex gap-6 font-sans text-sm font-medium tracking-tight">
+<a class="text-slate-500 dark:text-slate-400 hover:text-red-600 dark:hover:text-red-400 transition-colors duration-200" href="#">Dashboard</a>
+<a class="text-slate-500 dark:text-slate-400 hover:text-red-600 dark:hover:text-red-400 transition-colors duration-200" href="#">Inventory</a>
+<a class="text-slate-500 dark:text-slate-400 hover:text-red-600 dark:hover:text-red-400 transition-colors duration-200" href="#">Logistics</a>
+<a class="text-slate-500 dark:text-slate-400 hover:text-red-600 dark:hover:text-red-400 transition-colors duration-200" href="#">Analytics</a>
+</div>
+</div>
+<div class="flex items-center gap-4 text-red-700 dark:text-red-500">
+<button class="active:scale-95 transition-transform"><span class="material-symbols-outlined">notifications</span></button>
+<button class="active:scale-95 transition-transform text-red-700 dark:text-red-500 font-bold border-b-2 border-red-700 dark:border-red-500 pb-1"><span class="material-symbols-outlined">settings</span></button>
+<div class="w-8 h-8 rounded-full bg-surface-variant overflow-hidden">
+<img alt="User profile avatar" class="w-full h-full object-cover" data-alt="Corporate headshot of a man in a white shirt on a neutral background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCQ1UOK-Ap1vT_D2hYGPbj8zixNKUf0HXVlmFQOMJmwL5xukkRRU9_92oqxOut9gRy4zHqfrtgVkW0dbs1-80Y11l9tWK4apV_HPgvpC76PYr552De3vpfWeYkTRRHu69tzJ_EFjJHf6aTTpL9fDu_3Mu0vQvd-j3Z5Np6At9DC3NkQvsyzUYHFvWwesQmXLF3npzcSQEPUxVDAoWvcenhef1O169B-U53RMuZdZp1kIUg1vo2ucittAUwccbu7CEXqQp6ED41ou39P"/>
+</div>
+</div>
+</nav>
+<div class="flex flex-1 overflow-hidden">
+<!-- SideNavBar (From JSON) -->
+<aside class="h-screen w-64 fixed left-0 top-14 bg-slate-50 dark:bg-slate-950 flex flex-col py-6 border-r border-slate-200/20 dark:border-slate-800/20 bg-slate-200 dark:bg-slate-900 shadow-none z-40 hidden md:flex">
+<div class="px-6 mb-8">
+<h2 class="text-base font-black text-slate-900 dark:text-slate-100">Settings</h2>
+<p class="text-xs text-slate-500 dark:text-slate-400 mt-1">System Configuration</p>
+</div>
+<nav class="flex-1 font-sans text-xs font-semibold uppercase tracking-widest">
+<a class="flex items-center gap-3 text-slate-500 dark:text-slate-400 px-4 py-3 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all duration-200 active:translate-x-1 transition-transform" href="#"><span class="material-symbols-outlined">tune</span> General</a>
+<a class="flex items-center gap-3 text-slate-500 dark:text-slate-400 px-4 py-3 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all duration-200 active:translate-x-1 transition-transform" href="#"><span class="material-symbols-outlined">shield_lock</span> Security</a>
+<!-- Active Nav Item -->
+<a class="flex items-center gap-3 bg-white dark:bg-slate-900 text-red-700 dark:text-red-500 font-bold px-4 py-3 border-l-4 border-red-700 dark:border-red-500 active:translate-x-1 transition-transform" href="#"><span class="material-symbols-outlined">extension</span> Integrations</a>
+<a class="flex items-center gap-3 text-slate-500 dark:text-slate-400 px-4 py-3 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all duration-200 active:translate-x-1 transition-transform" href="#"><span class="material-symbols-outlined">payments</span> Billing</a>
+<a class="flex items-center gap-3 text-slate-500 dark:text-slate-400 px-4 py-3 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all duration-200 active:translate-x-1 transition-transform" href="#"><span class="material-symbols-outlined">groups</span> Team</a>
+</nav>
+<div class="mt-auto font-sans text-xs font-semibold uppercase tracking-widest">
+<a class="flex items-center gap-3 text-slate-500 dark:text-slate-400 px-4 py-3 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all duration-200 active:translate-x-1 transition-transform" href="#"><span class="material-symbols-outlined">help</span> Help Center</a>
+</div>
+</aside>
+<!-- Main Content Canvas -->
+<main class="flex-1 ml-0 md:ml-64 p-8 lg:p-12 overflow-y-auto bg-background">
+<header class="mb-10">
+<h1 class="text-[2rem] font-headline font-bold text-on-background leading-tight">Integrations</h1>
+<p class="text-sm font-body text-on-surface-variant mt-2 max-w-2xl">Connect external services to enhance your SCM workflow. Configure API access and manage active connections.</p>
+</header>
+<!-- Tonal Layering: Section Background -->
+<div class="bg-surface-container-low p-6 lg:p-8 rounded-lg">
+<div class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+<!-- Integration Card: SMS Gateway -->
+<div class="bg-surface-container-lowest rounded-lg p-6 relative flex flex-col h-full border border-outline-variant/20 hover:border-outline-variant/40 transition-colors">
+<!-- Tonal tab indicating status (Connected) -->
+<div class="absolute left-0 top-0 bottom-0 w-1 bg-tertiary rounded-l-lg"></div>
+<div class="flex items-start justify-between mb-4 pl-2">
+<div class="w-12 h-12 bg-surface-container-high rounded flex items-center justify-center text-tertiary">
+<span class="material-symbols-outlined text-2xl">sms</span>
+</div>
+<span class="text-xs font-label font-medium bg-tertiary-container/10 text-tertiary px-2 py-1 rounded">Active</span>
+</div>
+<div class="flex-1 pl-2">
+<h3 class="text-base font-headline font-bold text-on-background mb-1">Global SMS Gateway</h3>
+<p class="text-sm font-body text-on-surface-variant mb-6 line-clamp-2">Automated SMS notifications for real-time shipment tracking and delivery alerts across regions.</p>
+</div>
+<div class="pl-2 mt-auto">
+<button class="w-full text-sm font-label font-semibold text-on-background border border-outline-variant/20 py-2 rounded-md hover:bg-surface-container-high transition-colors">Configure</button>
+</div>
+</div>
+<!-- Integration Card: E-Invoicing -->
+<div class="bg-surface-container-lowest rounded-lg p-6 relative flex flex-col h-full border border-outline-variant/20 hover:border-outline-variant/40 transition-colors">
+<div class="absolute left-0 top-0 bottom-0 w-1 bg-outline-variant/50 rounded-l-lg"></div>
+<div class="flex items-start justify-between mb-4 pl-2">
+<div class="w-12 h-12 bg-surface-container-high rounded flex items-center justify-center text-on-surface-variant">
+<span class="material-symbols-outlined text-2xl">receipt_long</span>
+</div>
+</div>
+<div class="flex-1 pl-2">
+<h3 class="text-base font-headline font-bold text-on-background mb-1">E-Invoicing Pro</h3>
+<p class="text-sm font-body text-on-surface-variant mb-6 line-clamp-2">Streamline vendor payments and automate invoice generation with standardized electronic formats.</p>
+</div>
+<div class="pl-2 mt-auto">
+<button class="w-full text-sm font-label font-semibold text-on-primary bg-primary-gradient py-2 rounded-md hover:opacity-90 transition-opacity">Connect</button>
+</div>
+</div>
+<!-- Integration Card: Payment Gateway -->
+<div class="bg-surface-container-lowest rounded-lg p-6 relative flex flex-col h-full border border-outline-variant/20 hover:border-outline-variant/40 transition-colors">
+<div class="absolute left-0 top-0 bottom-0 w-1 bg-outline-variant/50 rounded-l-lg"></div>
+<div class="flex items-start justify-between mb-4 pl-2">
+<div class="w-12 h-12 bg-surface-container-high rounded flex items-center justify-center text-on-surface-variant">
+<span class="material-symbols-outlined text-2xl">credit_card</span>
+</div>
+</div>
+<div class="flex-1 pl-2">
+<h3 class="text-base font-headline font-bold text-on-background mb-1">Enterprise Payment Gateway</h3>
+<p class="text-sm font-body text-on-surface-variant mb-6 line-clamp-2">Securely process B2B transactions and manage recurring billing cycles seamlessly.</p>
+</div>
+<div class="pl-2 mt-auto">
+<button class="w-full text-sm font-label font-semibold text-on-primary bg-primary-gradient py-2 rounded-md hover:opacity-90 transition-opacity">Connect</button>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+</body></html>

@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Edit User - SCM Architect</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "tertiary": "#005e8d",
+                        "surface-dim": "#d3daef",
+                        "outline-variant": "#e6bdb8",
+                        "primary-fixed": "#ffdad6",
+                        "tertiary-fixed": "#cbe6ff",
+                        "on-tertiary-fixed-variant": "#004b71",
+                        "secondary-fixed": "#ffdad6",
+                        "on-surface": "#141b2b",
+                        "surface-container-low": "#f1f3ff",
+                        "surface-container": "#e9edff",
+                        "on-primary-fixed-variant": "#93000b",
+                        "on-tertiary": "#ffffff",
+                        "on-secondary-fixed": "#410002",
+                        "on-error-container": "#93000a",
+                        "primary-fixed-dim": "#ffb4ab",
+                        "on-primary-fixed": "#410002",
+                        "surface-variant": "#dce2f7",
+                        "error": "#ba1a1a",
+                        "outline": "#916f6b",
+                        "on-surface-variant": "#5c403c",
+                        "on-primary": "#ffffff",
+                        "tertiary-container": "#0078b2",
+                        "background": "#f9f9ff",
+                        "primary-container": "#dc2626",
+                        "on-error": "#ffffff",
+                        "secondary-container": "#fd786c",
+                        "surface-bright": "#f9f9ff",
+                        "surface": "#f9f9ff",
+                        "on-secondary-container": "#700f0f",
+                        "tertiary-fixed-dim": "#90cdff",
+                        "on-tertiary-container": "#f3f8ff",
+                        "inverse-on-surface": "#edf0ff",
+                        "on-secondary": "#ffffff",
+                        "on-secondary-fixed-variant": "#86211c",
+                        "surface-container-high": "#e1e8fd",
+                        "error-container": "#ffdad6",
+                        "surface-tint": "#bf0715",
+                        "on-tertiary-fixed": "#001e30",
+                        "surface-container-highest": "#dce2f7",
+                        "inverse-primary": "#ffb4ab",
+                        "secondary-fixed-dim": "#ffb4ab",
+                        "inverse-surface": "#293040",
+                        "surface-container-lowest": "#ffffff",
+                        "secondary": "#a73831",
+                        "on-primary-container": "#fff6f5",
+                        "on-background": "#141b2b",
+                        "primary": "#b70011"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {},
+                    "fontFamily": {
+                        "headline": ["Inter"],
+                        "body": ["Inter"],
+                        "label": ["Inter"]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        
+        /* Ambient Shadow for Drawer */
+        .shadow-ambient {
+            box-shadow: 0 12px 32px rgba(20, 27, 43, 0.08);
+        }
+
+        /* Ghost Border */
+        .border-ghost {
+            border-color: rgba(230, 189, 184, 0.2); /* outline-variant at 20% */
+        }
+        
+        /* Signature Gradient */
+        .bg-signature-gradient {
+            background: linear-gradient(135deg, #b70011 0%, #dc2626 100%);
+        }
+        
+        /* Custom Input Bottom Border Focus */
+        .input-industrial:focus-within {
+            border-bottom-color: #b70011; /* primary */
+        }
+    </style>
+</head>
+<body class="bg-background text-on-surface font-body antialiased min-h-screen overflow-hidden flex relative">
+<!-- Background App Shell (Blurred/Darkened) -->
+<div class="flex-1 flex flex-col opacity-30 grayscale blur-sm pointer-events-none transition-all duration-300">
+<!-- TopNavBar (Simulated) -->
+<header class="bg-slate-50 text-red-700 font-sans antialiased text-sm tracking-tight w-full top-0 sticky h-[1px] flex justify-between items-center px-6 py-3 max-w-[1920px] mx-auto border-b border-slate-100 h-16">
+<div class="text-xl font-bold tracking-tighter text-slate-900">SCM Architect</div>
+<nav class="flex gap-6">
+<a class="text-slate-500 font-medium" href="#">Inventory</a>
+<a class="text-slate-500 font-medium" href="#">Logistics</a>
+<a class="text-slate-500 font-medium" href="#">Analytics</a>
+<a class="text-red-700 border-b-2 border-red-700 pb-1 font-semibold" href="#">Users</a>
+</nav>
+<div class="flex gap-4">
+<span class="material-symbols-outlined">notifications</span>
+<span class="material-symbols-outlined">settings</span>
+</div>
+</header>
+<main class="p-8 flex-1">
+<div class="max-w-6xl mx-auto space-y-6">
+<h1 class="text-3xl font-headline font-bold text-on-background">User Management</h1>
+<!-- Simulated list content -->
+<div class="bg-surface-container-low h-96 rounded-lg w-full"></div>
+</div>
+</main>
+</div>
+<!-- Overlay Backdrop -->
+<div class="fixed inset-0 bg-inverse-surface/40 z-40 transition-opacity"></div>
+<!-- Right Drawer -->
+<aside class="fixed right-0 top-0 bottom-0 w-[480px] bg-surface-container-low shadow-ambient z-50 flex flex-col transform transition-transform duration-300 ease-in-out border-l border-ghost">
+<!-- Drawer Header -->
+<div class="px-8 pt-8 pb-6 bg-surface-container-highest flex flex-col gap-2">
+<div class="flex justify-between items-start">
+<h1 class="font-headline text-[2rem] font-bold text-on-background leading-tight">Edit User</h1>
+<button class="text-on-surface-variant hover:text-on-surface transition-colors">
+<span class="material-symbols-outlined">close</span>
+</button>
+</div>
+<span class="font-label text-sm text-on-surface-variant bg-surface-container-low px-2 py-1 inline-block w-max rounded">User ID: USR-4829</span>
+</div>
+<!-- Drawer Content (Scrollable) -->
+<div class="flex-1 overflow-y-auto no-scrollbar p-8 space-y-8 bg-surface-container-low">
+<!-- Avatar Section -->
+<div class="flex items-center gap-6">
+<div class="relative w-20 h-20 rounded-full overflow-hidden bg-surface-container border border-ghost">
+<img alt="Avatar preview" class="w-full h-full object-cover" data-alt="Professional headshot of a confident woman in business attire against a neutral gray background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC6TvJqLu-n4TDnKCnHUla4cb425w36EaiwctKk4A5c-pZKVnxulJKGh11LjX0NN5hc4NPKNz_LVezEH_redeu5eV-SZYG7BtsORNGafR8UidIA7Y11Nbfyo76xwLnoUCn7i9VDQxC-rGH0-iQnIIwVz8F4N93Tj1LIQmRlkX9ZsI94s7PaDThfRI7TTGIXPo7xoW6fQ1C4quQP4vxfmSLcgXQsG6FsONQMrDeeszLLuednCUrpKtMKyApF7Wdp3npUC7nnC53dZYC3"/>
+</div>
+<div>
+<button class="text-tertiary font-bold text-sm hover:text-on-tertiary-fixed-variant transition-colors flex items-center gap-1">
+<span class="material-symbols-outlined text-[18px]">upload</span>
+                        Change Photo
+                    </button>
+<p class="text-xs text-on-surface-variant mt-1">JPG, GIF or PNG. Max size of 800K</p>
+</div>
+</div>
+<!-- Basic Info Form Group -->
+<div class="space-y-6">
+<h2 class="font-headline text-lg font-semibold text-on-background border-b border-ghost pb-2">Basic Information</h2>
+<div class="space-y-4">
+<!-- Full Name -->
+<div class="relative input-industrial border-b-2 border-outline-variant bg-surface-container-lowest transition-colors">
+<label class="block text-xs font-label text-on-surface-variant pt-2 px-3" for="fullName">Full Name</label>
+<input class="w-full bg-transparent border-none text-on-surface text-base px-3 pb-2 pt-1 focus:ring-0 focus:outline-none" id="fullName" type="text" value="Sarah Jenkins"/>
+</div>
+<!-- Email & Phone Row -->
+<div class="flex gap-4">
+<div class="flex-1 relative input-industrial border-b-2 border-outline-variant bg-surface-container-lowest transition-colors">
+<label class="block text-xs font-label text-on-surface-variant pt-2 px-3" for="email">Email Address</label>
+<input class="w-full bg-transparent border-none text-on-surface text-base px-3 pb-2 pt-1 focus:ring-0 focus:outline-none" id="email" type="email" value="s.jenkins@scm-architect.com"/>
+</div>
+<div class="flex-1 relative input-industrial border-b-2 border-outline-variant bg-surface-container-lowest transition-colors">
+<label class="block text-xs font-label text-on-surface-variant pt-2 px-3" for="phone">Phone</label>
+<input class="w-full bg-transparent border-none text-on-surface text-base px-3 pb-2 pt-1 focus:ring-0 focus:outline-none" id="phone" type="tel" value="+1 (555) 019-2834"/>
+</div>
+</div>
+</div>
+</div>
+<!-- Organization Form Group -->
+<div class="space-y-6">
+<h2 class="font-headline text-lg font-semibold text-on-background border-b border-ghost pb-2">Organization &amp; Role</h2>
+<div class="space-y-4">
+<!-- Role Dropdown (Simulated) -->
+<div class="relative input-industrial border-b-2 border-outline-variant bg-surface-container-lowest transition-colors">
+<label class="block text-xs font-label text-on-surface-variant pt-2 px-3" for="role">System Role</label>
+<div class="flex items-center px-3 pb-2 pt-1">
+<span class="w-2 h-2 rounded-full bg-secondary-container mr-2"></span>
+<select class="w-full bg-transparent border-none text-on-surface text-base p-0 focus:ring-0 focus:outline-none appearance-none cursor-pointer" id="role">
+<option>Logistics Manager</option>
+<option>Inventory Analyst</option>
+<option>System Admin</option>
+</select>
+<span class="material-symbols-outlined text-on-surface-variant pointer-events-none">arrow_drop_down</span>
+</div>
+</div>
+<!-- Department & Company Row -->
+<div class="flex gap-4">
+<div class="flex-1 relative input-industrial border-b-2 border-outline-variant bg-surface-container-lowest transition-colors">
+<label class="block text-xs font-label text-on-surface-variant pt-2 px-3" for="department">Department</label>
+<div class="flex items-center px-3 pb-2 pt-1">
+<select class="w-full bg-transparent border-none text-on-surface text-base p-0 focus:ring-0 focus:outline-none appearance-none cursor-pointer" id="department">
+<option>Outbound Freight</option>
+<option>Inbound Receiving</option>
+<option>Warehousing</option>
+</select>
+<span class="material-symbols-outlined text-on-surface-variant pointer-events-none">arrow_drop_down</span>
+</div>
+</div>
+<div class="flex-1 relative input-industrial border-b-2 border-outline-variant bg-surface-container-lowest transition-colors">
+<label class="block text-xs font-label text-on-surface-variant pt-2 px-3" for="company">Company</label>
+<div class="flex items-center px-3 pb-2 pt-1">
+<select class="w-full bg-transparent border-none text-on-surface text-base p-0 focus:ring-0 focus:outline-none appearance-none cursor-pointer" id="company">
+<option>Global Logistics Corp</option>
+<option>Regional Distribution LLC</option>
+</select>
+<span class="material-symbols-outlined text-on-surface-variant pointer-events-none">arrow_drop_down</span>
+</div>
+</div>
+</div>
+<!-- Work Location -->
+<div class="relative input-industrial border-b-2 border-outline-variant bg-surface-container-lowest transition-colors">
+<label class="block text-xs font-label text-on-surface-variant pt-2 px-3" for="location">Work Location</label>
+<div class="flex items-center px-3 pb-2 pt-1">
+<select class="w-full bg-transparent border-none text-on-surface text-base p-0 focus:ring-0 focus:outline-none appearance-none cursor-pointer" id="location">
+<option>Facility Alpha (Chicago)</option>
+<option>Facility Beta (Dallas)</option>
+<option>HQ (New York)</option>
+</select>
+<span class="material-symbols-outlined text-on-surface-variant pointer-events-none">arrow_drop_down</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Reporting Structure Form Group -->
+<div class="space-y-6">
+<h2 class="font-headline text-lg font-semibold text-on-background border-b border-ghost pb-2">Reporting Structure</h2>
+<div class="space-y-4">
+<!-- Business Head Autocomplete -->
+<div class="relative input-industrial border-b-2 border-outline-variant bg-surface-container-lowest transition-colors">
+<label class="block text-xs font-label text-on-surface-variant pt-2 px-3" for="businessHead">Business Head</label>
+<div class="flex items-center px-3 pb-2 pt-1">
+<input class="w-full bg-transparent border-none text-on-surface text-base p-0 focus:ring-0 focus:outline-none" id="businessHead" type="text" value="Marcus Thorne"/>
+<span class="material-symbols-outlined text-on-surface-variant text-[18px]">search</span>
+</div>
+</div>
+<!-- Functional Head Autocomplete -->
+<div class="relative input-industrial border-b-2 border-outline-variant bg-surface-container-lowest transition-colors">
+<label class="block text-xs font-label text-on-surface-variant pt-2 px-3" for="functionalHead">Functional Head</label>
+<div class="flex items-center px-3 pb-2 pt-1">
+<input class="w-full bg-transparent border-none text-on-surface text-base p-0 focus:ring-0 focus:outline-none" id="functionalHead" type="text" value="Elena Rostova"/>
+<span class="material-symbols-outlined text-on-surface-variant text-[18px]">search</span>
+</div>
+</div>
+<!-- Director Autocomplete -->
+<div class="relative input-industrial border-b-2 border-outline-variant bg-surface-container-lowest transition-colors">
+<label class="block text-xs font-label text-on-surface-variant pt-2 px-3" for="director">Director</label>
+<div class="flex items-center px-3 pb-2 pt-1">
+<input class="w-full bg-transparent border-none text-on-surface text-base p-0 focus:ring-0 focus:outline-none" id="director" type="text" value="David Chen"/>
+<span class="material-symbols-outlined text-on-surface-variant text-[18px]">search</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Account Settings Form Group -->
+<div class="space-y-6">
+<h2 class="font-headline text-lg font-semibold text-on-background border-b border-ghost pb-2">Account Settings</h2>
+<div class="space-y-4">
+<!-- Is Active Toggle -->
+<div class="flex items-center justify-between p-4 bg-surface-container-lowest border border-ghost rounded">
+<div>
+<span class="block text-sm font-semibold text-on-surface">Account Active</span>
+<span class="block text-xs text-on-surface-variant">User can log in and access assigned systems.</span>
+</div>
+<!-- Toggle Switch (Simulated HTML/CSS) -->
+<label class="relative inline-flex items-center cursor-pointer">
+<input checked="" class="sr-only peer" type="checkbox"/>
+<div class="w-11 h-6 bg-surface-variant rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+</label>
+</div>
+<!-- Welcome Email Checkbox -->
+<div class="flex items-start p-4 bg-surface-container-lowest border border-ghost rounded">
+<div class="flex items-center h-5">
+<input class="w-4 h-4 text-primary bg-surface-variant border-outline-variant rounded focus:ring-primary focus:ring-2" id="welcomeEmail" type="checkbox" value=""/>
+</div>
+<div class="ml-3 text-sm">
+<label class="font-medium text-on-surface" for="welcomeEmail">Send welcome email</label>
+<p class="text-xs text-on-surface-variant">Triggers password reset and onboarding flow.</p>
+</div>
+</div>
+</div>
+</div>
+<!-- Spacer to ensure scroll doesn't cut off behind fixed footer -->
+<div class="h-8"></div>
+</div>
+<!-- Drawer Footer -->
+<div class="px-8 py-4 bg-surface-container-highest flex justify-between items-center border-t border-ghost">
+<button class="text-error text-sm font-bold hover:text-on-error-container transition-colors">
+                Deactivate User
+            </button>
+<div class="flex gap-4">
+<button class="px-6 py-2 text-sm font-bold text-on-surface border border-ghost rounded hover:bg-surface-variant transition-colors">
+                    Cancel
+                </button>
+<button class="px-6 py-2 text-sm font-bold text-on-primary bg-signature-gradient rounded shadow-sm hover:opacity-90 transition-opacity">
+                    Save Changes
+                </button>
+</div>
+</div>
+</aside>
+</body></html>

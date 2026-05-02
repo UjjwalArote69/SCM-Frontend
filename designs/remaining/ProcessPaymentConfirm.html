@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Process Payment - Confirm</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-container-low": "#f1f3ff",
+                        "surface-container": "#e9edff",
+                        "on-primary-fixed-variant": "#93000b",
+                        "on-surface": "#141b2b",
+                        "secondary-fixed": "#ffdad6",
+                        "primary-fixed": "#ffdad6",
+                        "tertiary-fixed": "#cbe6ff",
+                        "on-tertiary-fixed-variant": "#004b71",
+                        "outline-variant": "#e6bdb8",
+                        "tertiary": "#005e8d",
+                        "surface-dim": "#d3daef",
+                        "error": "#ba1a1a",
+                        "surface-variant": "#dce2f7",
+                        "primary-fixed-dim": "#ffb4ab",
+                        "on-primary-fixed": "#410002",
+                        "on-secondary-fixed": "#410002",
+                        "on-error-container": "#93000a",
+                        "on-tertiary": "#ffffff",
+                        "tertiary-fixed-dim": "#90cdff",
+                        "surface-bright": "#f9f9ff",
+                        "surface": "#f9f9ff",
+                        "on-secondary-container": "#700f0f",
+                        "secondary-container": "#fd786c",
+                        "primary-container": "#dc2626",
+                        "on-error": "#ffffff",
+                        "background": "#f9f9ff",
+                        "on-surface-variant": "#5c403c",
+                        "on-primary": "#ffffff",
+                        "tertiary-container": "#0078b2",
+                        "outline": "#916f6b",
+                        "on-background": "#141b2b",
+                        "primary": "#b70011",
+                        "surface-container-lowest": "#ffffff",
+                        "secondary": "#a73831",
+                        "on-primary-container": "#fff6f5",
+                        "secondary-fixed-dim": "#ffb4ab",
+                        "inverse-surface": "#293040",
+                        "inverse-primary": "#ffb4ab",
+                        "on-tertiary-fixed": "#001e30",
+                        "surface-container-highest": "#dce2f7",
+                        "surface-container-high": "#e1e8fd",
+                        "error-container": "#ffdad6",
+                        "surface-tint": "#bf0715",
+                        "on-secondary-fixed-variant": "#86211c",
+                        "on-tertiary-container": "#f3f8ff",
+                        "inverse-on-surface": "#edf0ff",
+                        "on-secondary": "#ffffff"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "fontFamily": {
+                        "headline": ["Inter", "sans-serif"],
+                        "body": ["Inter", "sans-serif"],
+                        "label": ["Inter", "sans-serif"]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background font-body h-screen flex overflow-hidden">
+<!-- SideNavBar -->
+<aside class="bg-slate-100 dark:bg-slate-900 h-screen w-64 border-r-0 flex flex-col py-6 hidden md:flex shrink-0 z-20 relative">
+<div class="px-6 mb-8 flex items-center gap-3">
+<div class="w-10 h-10 rounded-full bg-slate-300 dark:bg-slate-700 flex items-center justify-center overflow-hidden">
+<span class="material-symbols-outlined text-slate-600 dark:text-slate-300">hub</span>
+</div>
+<div>
+<h1 class="text-lg font-bold text-slate-800 dark:text-slate-200 leading-tight">Finance Hub</h1>
+<p class="text-xs text-slate-500 dark:text-slate-400">Terminal 04</p>
+</div>
+</div>
+<nav class="flex-1 px-4 space-y-1">
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg bg-white dark:bg-slate-950 text-red-700 dark:text-red-400 shadow-sm font-['Inter'] uppercase tracking-widest text-[10px] font-bold cursor-pointer transition-transform active:scale-95 duration-150 group" href="#">
+<span class="material-symbols-outlined text-[20px]">payments</span>
+                Accounts Payable
+            </a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-800 transition-all font-['Inter'] uppercase tracking-widest text-[10px] font-bold cursor-pointer transition-transform active:scale-95 duration-150 group" href="#">
+<span class="material-symbols-outlined text-[20px] group-hover:text-slate-800 dark:group-hover:text-slate-200 transition-colors">description</span>
+                Invoices
+            </a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-800 transition-all font-['Inter'] uppercase tracking-widest text-[10px] font-bold cursor-pointer transition-transform active:scale-95 duration-150 group" href="#">
+<span class="material-symbols-outlined text-[20px] group-hover:text-slate-800 dark:group-hover:text-slate-200 transition-colors">factory</span>
+                Vendors
+            </a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-800 transition-all font-['Inter'] uppercase tracking-widest text-[10px] font-bold cursor-pointer transition-transform active:scale-95 duration-150 group" href="#">
+<span class="material-symbols-outlined text-[20px] group-hover:text-slate-800 dark:group-hover:text-slate-200 transition-colors">analytics</span>
+                Reports
+            </a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-800 transition-all font-['Inter'] uppercase tracking-widest text-[10px] font-bold cursor-pointer transition-transform active:scale-95 duration-150 group" href="#">
+<span class="material-symbols-outlined text-[20px] group-hover:text-slate-800 dark:group-hover:text-slate-200 transition-colors">verified_user</span>
+                Audit
+            </a>
+</nav>
+<div class="px-4 mt-auto">
+<button class="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-lg bg-slate-800 text-white hover:bg-slate-700 transition-colors font-['Inter'] font-bold text-sm">
+<span class="material-symbols-outlined text-[18px]">add</span>
+                New Payment
+            </button>
+</div>
+</aside>
+<!-- Main Content Area -->
+<div class="flex-1 flex flex-col min-w-0 bg-surface-container-low">
+<!-- TopNavBar -->
+<header class="bg-slate-50 dark:bg-slate-950 docked full-width top-0 z-10">
+<div class="flex justify-between items-center w-full px-6 py-3 max-w-full mx-auto">
+<div class="flex items-center gap-8">
+<div class="text-xl font-black tracking-tighter text-slate-900 dark:text-slate-50 md:hidden">Industrial SCM</div>
+<nav class="hidden md:flex items-center gap-1">
+<a class="px-4 py-2 text-slate-600 dark:text-slate-400 font-medium hover:bg-slate-200/50 dark:hover:bg-slate-800/50 transition-colors rounded-md font-['Inter'] text-sm tracking-tight active:scale-95 duration-150" href="#">Dashboard</a>
+<a class="px-4 py-2 text-slate-600 dark:text-slate-400 font-medium hover:bg-slate-200/50 dark:hover:bg-slate-800/50 transition-colors rounded-md font-['Inter'] text-sm tracking-tight active:scale-95 duration-150" href="#">Inventory</a>
+<a class="px-4 py-2 text-slate-600 dark:text-slate-400 font-medium hover:bg-slate-200/50 dark:hover:bg-slate-800/50 transition-colors rounded-md font-['Inter'] text-sm tracking-tight active:scale-95 duration-150" href="#">Logistics</a>
+<a class="px-4 py-2 text-slate-600 dark:text-slate-400 font-medium hover:bg-slate-200/50 dark:hover:bg-slate-800/50 transition-colors rounded-md font-['Inter'] text-sm tracking-tight active:scale-95 duration-150" href="#">Finance</a>
+</nav>
+</div>
+<div class="flex items-center gap-4">
+<div class="hidden md:flex items-center bg-slate-200 dark:bg-slate-800 rounded-full px-3 py-1.5 focus-within:ring-2 ring-red-700">
+<input class="bg-transparent border-none focus:ring-0 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-500 w-48 font-['Inter']" placeholder="Search..." type="text"/>
+<span class="material-symbols-outlined text-slate-500 text-[20px]">search</span>
+</div>
+<div class="flex items-center gap-2">
+<button class="p-2 rounded-full text-slate-600 dark:text-slate-400 hover:bg-slate-200/50 dark:hover:bg-slate-800/50 transition-colors active:scale-95 duration-150">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">notifications</span>
+</button>
+<button class="p-2 rounded-full text-slate-600 dark:text-slate-400 hover:bg-slate-200/50 dark:hover:bg-slate-800/50 transition-colors active:scale-95 duration-150">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">settings</span>
+</button>
+<img alt="Finance User Profile" class="w-8 h-8 rounded-full border-2 border-slate-200 dark:border-slate-800 ml-2 object-cover" data-alt="Professional headshot of a business executive in a modern office setting, neutral lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBALs36zuNRfCLD33vUJACZYmu6xIcjw5GTThY8JlWZB5O06XeV7pp3NWP5tT6v2mldQeTgRo5BhW6dzi1enIujDfHC7IKCIjVrtycArmRXeCO-Ky5KSZmjEX9kIGGFN2iEsyggyOFNCjQz1tIR1NVnijSRMBdcROetxbQbHHf-lgNwHqXWmHe-IYLKZVJ-RbuYg3p4HgsTcqYSokzDocNxKpIab62Ax3hR8h1b79h0WLe9Uxawbth_VZIPYawcF6yidd3vhDHPTIk1"/>
+</div>
+</div>
+</div>
+<!-- Ghost border separator instead of solid line -->
+<div class="h-px w-full bg-outline-variant opacity-20"></div>
+</header>
+<!-- Canvas -->
+<main class="flex-1 overflow-y-auto p-8 lg:p-12">
+<div class="max-w-6xl mx-auto space-y-8">
+<!-- Header & Stepper -->
+<div class="flex flex-col md:flex-row md:items-end justify-between gap-6">
+<div>
+<h2 class="text-3xl font-headline font-bold text-on-surface tracking-tight mb-2">Review Payment</h2>
+<p class="text-sm text-on-surface-variant font-label">INV-2023-88492 • Stellar Manufacturing Group</p>
+</div>
+<!-- Stepper -->
+<div class="flex items-center gap-4 text-sm font-label">
+<div class="flex items-center gap-2 text-primary font-medium">
+<div class="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center">
+<span class="material-symbols-outlined text-[14px]">check</span>
+</div>
+<span class="hidden sm:inline">Verify</span>
+</div>
+<div class="w-8 h-px bg-outline-variant opacity-30"></div>
+<div class="flex items-center gap-2 text-primary font-medium">
+<div class="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center">
+<span class="material-symbols-outlined text-[14px]">check</span>
+</div>
+<span class="hidden sm:inline">Details</span>
+</div>
+<div class="w-8 h-px bg-outline-variant opacity-30"></div>
+<div class="flex items-center gap-2 text-on-surface font-bold bg-surface-container-lowest px-3 py-1 rounded shadow-[0_4px_12px_rgba(20,27,43,0.04)]">
+<div class="w-6 h-6 rounded-full bg-surface-variant flex items-center justify-center text-xs">
+                                3
+                            </div>
+<span>Confirm</span>
+</div>
+</div>
+</div>
+<!-- Asymmetric Grid Layout -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+<!-- Left Column: Details (Level 2) -->
+<div class="lg:col-span-8 space-y-6">
+<!-- Logistics/Tabbed Card Style -->
+<div class="bg-surface-container-lowest rounded-lg shadow-[0_8px_24px_rgba(20,27,43,0.03)] relative overflow-hidden">
+<!-- Tabbed edge indicating status (Pending Review) -->
+<div class="absolute left-0 top-0 bottom-0 w-1 bg-tertiary"></div>
+<div class="p-8 pl-10 space-y-8">
+<!-- Section 1: Vendor & Invoice -->
+<div>
+<h3 class="text-xs font-bold uppercase tracking-widest text-on-surface-variant mb-6 flex items-center gap-2">
+<span class="material-symbols-outlined text-[16px]">domain</span>
+                                        Vendor &amp; Invoice Baseline
+                                    </h3>
+<div class="grid grid-cols-2 md:grid-cols-3 gap-y-6 gap-x-8">
+<div>
+<p class="text-xs font-label text-on-surface-variant mb-1">Vendor Name</p>
+<p class="text-sm font-medium text-on-background">Stellar Manufacturing Group</p>
+</div>
+<div>
+<p class="text-xs font-label text-on-surface-variant mb-1">Vendor ID</p>
+<p class="text-sm font-medium text-on-background">VND-8839-A</p>
+</div>
+<div>
+<p class="text-xs font-label text-on-surface-variant mb-1">Invoice Number</p>
+<p class="text-sm font-medium text-on-background">INV-2023-88492</p>
+</div>
+<div>
+<p class="text-xs font-label text-on-surface-variant mb-1">Invoice Date</p>
+<p class="text-sm font-medium text-on-background">Oct 12, 2023</p>
+</div>
+<div>
+<p class="text-xs font-label text-on-surface-variant mb-1">Due Date</p>
+<p class="text-sm font-medium text-on-background text-primary">Nov 11, 2023</p>
+</div>
+<div>
+<p class="text-xs font-label text-on-surface-variant mb-1">Terms</p>
+<p class="text-sm font-medium text-on-background">Net 30</p>
+</div>
+</div>
+</div>
+<!-- Subtle Separator (Ghost Line) -->
+<div class="h-px w-full bg-outline-variant opacity-20"></div>
+<!-- Section 2: Payment Configuration -->
+<div>
+<h3 class="text-xs font-bold uppercase tracking-widest text-on-surface-variant mb-6 flex items-center gap-2">
+<span class="material-symbols-outlined text-[16px]">account_balance</span>
+                                        Payment Configuration
+                                    </h3>
+<div class="grid grid-cols-2 md:grid-cols-3 gap-y-6 gap-x-8">
+<div>
+<p class="text-xs font-label text-on-surface-variant mb-1">Source Account</p>
+<p class="text-sm font-medium text-on-background">Corporate Operating •••• 4930</p>
+</div>
+<div>
+<p class="text-xs font-label text-on-surface-variant mb-1">Payment Method</p>
+<p class="text-sm font-medium text-on-background">ACH Transfer (Standard)</p>
+</div>
+<div>
+<p class="text-xs font-label text-on-surface-variant mb-1">Execution Date</p>
+<p class="text-sm font-medium text-on-background">Oct 25, 2023</p>
+</div>
+<div class="col-span-2">
+<p class="text-xs font-label text-on-surface-variant mb-1">Remittance Memo</p>
+<p class="text-sm font-medium text-on-background bg-surface-container p-3 rounded-md mt-1 border border-outline-variant/20">Payment for Q3 Extrusion Materials PO-99482</p>
+</div>
+</div>
+</div>
+<!-- Subtle Separator -->
+<div class="h-px w-full bg-outline-variant opacity-20"></div>
+<!-- Section 3: Line Items Summary (No Lines Rule) -->
+<div>
+<h3 class="text-xs font-bold uppercase tracking-widest text-on-surface-variant mb-4 flex items-center gap-2">
+<span class="material-symbols-outlined text-[16px]">list_alt</span>
+                                        Allocation Summary
+                                    </h3>
+<div class="space-y-2">
+<!-- Header Row (Implicit) -->
+<div class="flex justify-between text-xs font-label text-on-surface-variant px-2 py-1">
+<span>GL Code &amp; Description</span>
+<span>Amount</span>
+</div>
+<!-- Row 1 -->
+<div class="flex justify-between items-center bg-surface p-3 rounded text-sm transition-colors hover:bg-surface-container">
+<div class="flex flex-col">
+<span class="font-medium text-on-background">Raw Materials - Aluminum</span>
+<span class="text-xs text-on-surface-variant">GL: 5010-00</span>
+</div>
+<span class="font-medium font-mono">$45,200.00</span>
+</div>
+<!-- Row 2 -->
+<div class="flex justify-between items-center bg-surface p-3 rounded text-sm transition-colors hover:bg-surface-container">
+<div class="flex flex-col">
+<span class="font-medium text-on-background">Freight Inbound</span>
+<span class="text-xs text-on-surface-variant">GL: 5120-00</span>
+</div>
+<span class="font-medium font-mono">$2,450.00</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Right Column: Actions (Level 3 Focus) -->
+<div class="lg:col-span-4 space-y-6">
+<div class="bg-surface-bright rounded-lg p-8 shadow-[0_12px_32px_rgba(20,27,43,0.06)] sticky top-8">
+<h3 class="text-sm font-label text-on-surface-variant mb-2">Total Payment Authorized</h3>
+<div class="text-4xl font-headline font-bold text-on-background tracking-tighter mb-8 font-mono">
+                                $47,650.00
+                            </div>
+<div class="space-y-4 mb-8">
+<div class="flex justify-between text-sm">
+<span class="text-on-surface-variant">Subtotal</span>
+<span class="font-medium font-mono">$47,650.00</span>
+</div>
+<div class="flex justify-between text-sm">
+<span class="text-on-surface-variant">Tax</span>
+<span class="font-medium font-mono">$0.00</span>
+</div>
+<div class="flex justify-between text-sm">
+<span class="text-on-surface-variant">Discounts</span>
+<span class="font-medium text-tertiary font-mono">-$0.00</span>
+</div>
+</div>
+<!-- Alert Box -->
+<div class="bg-surface-container p-4 rounded mb-8 flex gap-3 items-start border-l-2 border-tertiary">
+<span class="material-symbols-outlined text-tertiary text-[20px] mt-0.5">info</span>
+<p class="text-xs text-on-surface leading-relaxed">
+                                    This transaction requires secondary approval per your organizational policy threshold (&gt;$25k).
+                                </p>
+</div>
+<!-- Actions -->
+<div class="flex flex-col gap-4">
+<button class="w-full bg-gradient-to-br from-primary to-primary-container text-on-primary font-bold py-3 px-6 rounded-md shadow-sm transition-transform active:scale-[0.98] flex justify-center items-center gap-2">
+<span class="material-symbols-outlined text-[20px]">lock_open</span>
+                                    Confirm &amp; Submit
+                                </button>
+<button class="w-full bg-transparent border border-outline-variant/30 text-on-surface font-medium py-3 px-6 rounded-md transition-colors hover:bg-surface-container active:scale-[0.98]">
+                                    Back to Details
+                                </button>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+</body></html>

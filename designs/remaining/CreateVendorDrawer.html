@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Vendor Details</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "on-tertiary-container": "#f3f8ff",
+                        "on-surface-variant": "#5c403c",
+                        "on-background": "#141b2b",
+                        "on-primary": "#ffffff",
+                        "on-tertiary": "#ffffff",
+                        "inverse-surface": "#293040",
+                        "error": "#ba1a1a",
+                        "on-error": "#ffffff",
+                        "background": "#f9f9ff",
+                        "inverse-on-surface": "#edf0ff",
+                        "outline": "#916f6b",
+                        "tertiary": "#005e8d",
+                        "tertiary-fixed-dim": "#90cdff",
+                        "surface-bright": "#f9f9ff",
+                        "on-primary-fixed-variant": "#93000b",
+                        "surface": "#f9f9ff",
+                        "on-secondary-fixed": "#410002",
+                        "primary-fixed-dim": "#ffb4ab",
+                        "surface-tint": "#bf0715",
+                        "error-container": "#ffdad6",
+                        "primary-container": "#dc2626",
+                        "surface-container-low": "#f1f3ff",
+                        "surface-dim": "#d3daef",
+                        "secondary": "#a73831",
+                        "tertiary-container": "#0078b2",
+                        "on-primary-container": "#fff6f5",
+                        "on-tertiary-fixed": "#001e30",
+                        "on-surface": "#141b2b",
+                        "secondary-container": "#fd786c",
+                        "surface-container-lowest": "#ffffff",
+                        "surface-variant": "#dce2f7",
+                        "tertiary-fixed": "#cbe6ff",
+                        "on-secondary": "#ffffff",
+                        "secondary-fixed": "#ffdad6",
+                        "on-tertiary-fixed-variant": "#004b71",
+                        "surface-container-highest": "#dce2f7",
+                        "on-secondary-container": "#700f0f",
+                        "on-error-container": "#93000a",
+                        "primary-fixed": "#ffdad6",
+                        "on-secondary-fixed-variant": "#86211c",
+                        "surface-container-high": "#e1e8fd",
+                        "secondary-fixed-dim": "#ffb4ab",
+                        "outline-variant": "#e6bdb8",
+                        "inverse-primary": "#ffb4ab",
+                        "on-primary-fixed": "#410002",
+                        "primary": "#b70011",
+                        "surface-container": "#e9edff"
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    fontFamily: {
+                        "headline": ["Inter"],
+                        "body": ["Inter"],
+                        "label": ["Inter"]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+<body class="bg-surface-container-low text-on-surface h-screen w-full overflow-hidden flex relative font-body">
+<!-- Mock Background Content (Vendor Master List) -->
+<div class="flex-1 flex flex-col opacity-30 pointer-events-none">
+<header class="h-16 border-b border-surface-variant flex items-center px-6 justify-between bg-surface-container-lowest">
+<h1 class="text-2xl font-bold font-headline text-on-background">Vendors</h1>
+</header>
+<div class="p-8">
+<div class="bg-surface-container-lowest rounded-lg border border-outline-variant/20 p-6">
+<div class="h-8 w-1/4 bg-surface-container-high rounded mb-4"></div>
+<div class="space-y-3">
+<div class="h-12 w-full bg-surface-container rounded"></div>
+<div class="h-12 w-full bg-surface-container rounded"></div>
+<div class="h-12 w-full bg-surface-container rounded"></div>
+</div>
+</div>
+</div>
+</div>
+<!-- Overlay backdrop -->
+<div class="absolute inset-0 bg-on-background/20 z-40 transition-opacity"></div>
+<!-- NavigationDrawer Component -->
+<aside class="bg-white dark:bg-slate-950 font-['Inter'] leading-relaxed fixed right-0 top-0 h-full w-[480px] z-50 shadow-[-12px_0_32px_rgba(20,27,43,0.08)] transition-transform duration-300 ease-in-out flex flex-col h-full p-8 space-y-6 overflow-y-auto">
+<!-- Header -->
+<div class="flex items-start justify-between border-b border-surface-variant pb-4 shrink-0">
+<div>
+<h2 class="text-xl font-bold text-slate-900 dark:text-slate-50 font-headline">Record Details</h2>
+<p class="text-sm text-slate-500 mt-1">Edit or create master data records</p>
+</div>
+<button class="p-2 text-on-surface-variant hover:bg-surface-container rounded-full transition-colors">
+<span class="material-symbols-outlined" data-icon="close">close</span>
+</button>
+</div>
+<!-- Form Content -->
+<div class="flex-1 space-y-6 mt-6 overflow-y-auto pr-2">
+<div class="space-y-4">
+<h3 class="text-sm font-semibold uppercase tracking-wider text-on-surface-variant">General Information</h3>
+<div class="space-y-1">
+<label class="block text-xs font-medium text-on-surface-variant font-label">Vendor Name</label>
+<input class="w-full bg-surface-container-lowest border-0 border-b-2 border-outline-variant focus:ring-0 focus:border-primary transition-colors text-on-background py-2 px-3 text-sm" placeholder="Enter vendor name" type="text"/>
+</div>
+<div class="space-y-1">
+<label class="block text-xs font-medium text-on-surface-variant font-label">Category</label>
+<select class="w-full bg-surface-container-lowest border-0 border-b-2 border-outline-variant focus:ring-0 focus:border-primary transition-colors text-on-background py-2 px-3 text-sm">
+<option>Select category</option>
+<option>Raw Materials</option>
+<option>Logistics</option>
+<option>Services</option>
+</select>
+</div>
+</div>
+<div class="space-y-4">
+<h3 class="text-sm font-semibold uppercase tracking-wider text-on-surface-variant">Contact Details</h3>
+<div class="space-y-1">
+<label class="block text-xs font-medium text-on-surface-variant font-label">Primary Contact</label>
+<input class="w-full bg-surface-container-lowest border-0 border-b-2 border-outline-variant focus:ring-0 focus:border-primary transition-colors text-on-background py-2 px-3 text-sm" placeholder="Contact person name" type="text"/>
+</div>
+<div class="grid grid-cols-2 gap-4">
+<div class="space-y-1">
+<label class="block text-xs font-medium text-on-surface-variant font-label">Phone</label>
+<input class="w-full bg-surface-container-lowest border-0 border-b-2 border-outline-variant focus:ring-0 focus:border-primary transition-colors text-on-background py-2 px-3 text-sm" placeholder="+1 (555) 000-0000" type="tel"/>
+</div>
+<div class="space-y-1">
+<label class="block text-xs font-medium text-on-surface-variant font-label">Email</label>
+<input class="w-full bg-surface-container-lowest border-0 border-b-2 border-outline-variant focus:ring-0 focus:border-primary transition-colors text-on-background py-2 px-3 text-sm" placeholder="email@example.com" type="email"/>
+</div>
+</div>
+</div>
+<div class="space-y-4">
+<h3 class="text-sm font-semibold uppercase tracking-wider text-on-surface-variant">Legal &amp; Registration</h3>
+<div class="grid grid-cols-2 gap-4">
+<div class="space-y-1">
+<label class="block text-xs font-medium text-on-surface-variant font-label">GST Number</label>
+<input class="w-full bg-surface-container-lowest border-0 border-b-2 border-outline-variant focus:ring-0 focus:border-primary transition-colors text-on-background py-2 px-3 text-sm" placeholder="GSTIN" type="text"/>
+</div>
+<div class="space-y-1">
+<label class="block text-xs font-medium text-on-surface-variant font-label">PAN</label>
+<input class="w-full bg-surface-container-lowest border-0 border-b-2 border-outline-variant focus:ring-0 focus:border-primary transition-colors text-on-background py-2 px-3 text-sm" placeholder="PAN Number" type="text"/>
+</div>
+</div>
+</div>
+<div class="space-y-4">
+<h3 class="text-sm font-semibold uppercase tracking-wider text-on-surface-variant">Location</h3>
+<div class="space-y-1">
+<label class="block text-xs font-medium text-on-surface-variant font-label">Address</label>
+<textarea class="w-full bg-surface-container-lowest border-0 border-b-2 border-outline-variant focus:ring-0 focus:border-primary transition-colors text-on-background py-2 px-3 text-sm resize-none" placeholder="Full address" rows="3"></textarea>
+</div>
+</div>
+</div>
+<!-- Footer Actions -->
+<div class="pt-6 border-t border-surface-variant flex justify-end gap-3 mt-auto shrink-0 bg-white">
+<button class="px-5 py-2 text-sm font-medium text-on-surface-variant border border-outline-variant/20 rounded-md hover:bg-surface-container transition-colors">
+                Cancel
+            </button>
+<button class="px-5 py-2 text-sm font-medium text-on-primary bg-gradient-to-br from-primary to-primary-container rounded-md hover:opacity-90 transition-opacity shadow-sm">
+                Save Changes
+            </button>
+</div>
+</aside>
+</body></html>

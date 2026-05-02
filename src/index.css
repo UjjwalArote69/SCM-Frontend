@@ -1,0 +1,360 @@
+@import "tailwindcss";
+
+/* ============================================================
+   SCM Frontend — Theme Tokens
+   ------------------------------------------------------------
+   Raw CSS variables on :root / [data-theme="dark"] — swap at runtime
+   @theme inline — maps those vars to Tailwind utility names
+   ============================================================ */
+
+@theme inline {
+  /* Brand (red) */
+  --color-primary: var(--brand-primary);
+  --color-primary-hover: var(--brand-primary-hover);
+  --color-primary-soft: var(--brand-primary-soft);
+  --color-primary-deep: var(--brand-primary-deep);
+  --color-primary-foreground: var(--brand-primary-foreground);
+
+  /* Surfaces */
+  --color-bg: var(--surface-bg);
+  --color-surface: var(--surface);
+  --color-surface-alt: var(--surface-alt);
+  --color-surface-container: var(--surface-container);
+  --color-surface-container-low: var(--surface-container-low);
+  --color-surface-container-lowest: var(--surface-container-lowest);
+  --color-border: var(--surface-border);
+  --color-outline-variant: var(--surface-outline-variant);
+
+  /* Text */
+  --color-text: var(--text);
+  --color-text-muted: var(--text-muted);
+  --color-text-subtle: var(--text-subtle);
+
+  /* Status */
+  --color-success: var(--status-success);
+  --color-success-soft: var(--status-success-soft);
+  --color-warning: var(--status-warning);
+  --color-warning-soft: var(--status-warning-soft);
+  --color-danger: var(--status-danger);
+  --color-danger-soft: var(--status-danger-soft);
+  --color-info: var(--status-info);
+  --color-info-soft: var(--status-info-soft);
+
+  --font-sans: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+/* ---------- Light theme (default) ---------- */
+/* Slate scale — faint cool blue tint across surfaces, with cool-grey text
+   so the whole app reads on one axis (no more brown-vs-blue hue clash). */
+:root {
+  --brand-primary: #dc2626;
+  --brand-primary-hover: #b70011;
+  --brand-primary-deep: #93000b;
+  --brand-primary-soft: #fef2f2;
+  --brand-primary-foreground: #ffffff;
+
+  --surface-bg: #f9f9ff;
+  --surface: #ffffff;
+  --surface-alt: #f1f3ff;
+  --surface-container: #e9edff;
+  --surface-container-low: #f1f3ff;
+  --surface-container-lowest: #ffffff;
+  --surface-border: #dce2f7;
+  --surface-outline-variant: #c7cee0;
+
+  --text: #0f172a;
+  --text-muted: #64748b;
+  --text-subtle: #94a3b8;
+
+  --status-success: #16a34a;
+  --status-success-soft: #dcfce7;
+  --status-warning: #d97706;
+  --status-warning-soft: #fef3c7;
+  --status-danger: #dc2626;
+  --status-danger-soft: #fee2e2;
+  --status-info: #2563eb;
+  --status-info-soft: #dbeafe;
+}
+
+/* ---------- Dark theme — crypto-dashboard aesthetic ---------- */
+/* Near-black canvas with warm orange corner-glow; cards are glass — slightly
+   elevated dark surfaces with hairline white borders.                     */
+[data-theme="dark"] {
+  --brand-primary: #ff5d3a;
+  --brand-primary-hover: #ff7a5c;
+  --brand-primary-deep: #c53d1f;
+  --brand-primary-soft: rgba(255, 93, 58, 0.12);
+  --brand-primary-foreground: #ffffff;
+
+  --surface-bg: #0a0a0e;
+  --surface: #14141a;
+  --surface-alt: #1a1a22;
+  --surface-container: #1a1a22;
+  --surface-container-low: #121218;
+  --surface-container-lowest: #0d0d13;
+  --surface-border: rgba(255, 255, 255, 0.06);
+  --surface-outline-variant: rgba(255, 255, 255, 0.04);
+
+  --text: #f3f4f6;
+  --text-muted: rgba(255, 255, 255, 0.58);
+  --text-subtle: rgba(255, 255, 255, 0.32);
+
+  --status-success: #22c55e;
+  --status-success-soft: rgba(34, 197, 94, 0.14);
+  --status-warning: #f59e0b;
+  --status-warning-soft: rgba(245, 158, 11, 0.14);
+  --status-danger: #f87171;
+  --status-danger-soft: rgba(248, 113, 113, 0.14);
+  --status-info: #60a5fa;
+  --status-info-soft: rgba(96, 165, 250, 0.14);
+}
+
+/* Body — pure near-black canvas in dark mode. The reference's "warmth" comes
+   almost entirely from the colourful UI elements (rainbow gauge, sparklines,
+   change pills, brand button). The canvas itself is essentially flat black
+   with only a hint of warm bleed at the corners — anything stronger reads
+   like a marketing splash, not a dashboard. */
+[data-theme="dark"] body {
+  background-color: #0a0a0e;
+  background-image:
+    radial-gradient(
+      ellipse 50% 35% at 100% 0%,
+      rgba(255, 93, 58, 0.06),
+      transparent 70%
+    ),
+    radial-gradient(
+      ellipse 40% 30% at 0% 100%,
+      rgba(255, 140, 50, 0.04),
+      transparent 70%
+    );
+  background-attachment: fixed;
+}
+
+/* Glass-morphism card — solid dark surface, hairline white border, with a
+   barely-there warm corner glow inside. */
+.glass-card {
+  background-color: rgba(255, 255, 255, 0.025);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  position: relative;
+  overflow: hidden;
+}
+.glass-card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    circle at 100% 100%,
+    rgba(255, 93, 58, 0.07),
+    transparent 55%
+  );
+  pointer-events: none;
+  z-index: 0;
+}
+.glass-card > * {
+  position: relative;
+  z-index: 1;
+}
+/* Light theme falls back to the existing surface tokens — no warm tint. */
+[data-theme="dark"] .glass-card {
+  background-color: rgba(255, 255, 255, 0.025);
+  border-color: rgba(255, 255, 255, 0.07);
+}
+:root .glass-card,
+html:not([data-theme="dark"]) .glass-card {
+  background-color: var(--surface-container-lowest);
+  border-color: var(--surface-border);
+}
+:root .glass-card::after,
+html:not([data-theme="dark"]) .glass-card::after {
+  display: none;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+/* ============================================================
+   Onboarding micro-animations (vendor registration flow)
+   ============================================================ */
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.fade-up {
+  animation: fade-up 0.42s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes pop-in {
+  0% {
+    transform: scale(0.5);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(1.1);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+.pop-in {
+  animation: pop-in 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+body {
+  background-color: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ============================================================
+   Print styles — hide nav chrome, produce a clean document.
+   Used by Print / Save-as-PDF buttons on Detail pages.
+   ============================================================ */
+@page {
+  size: A4 portrait;
+  margin: 14mm 14mm 16mm 14mm;
+}
+
+/* Print-only elements are hidden in normal view */
+.print-only {
+  display: none;
+}
+
+@media print {
+  /* Hide app shell */
+  nav[class*="fixed"],
+  aside[class*="fixed"],
+  header[class*="sticky"],
+  .print\:hidden {
+    display: none !important;
+  }
+
+  /* Reset layout containers that assumed a sidebar */
+  html,
+  body,
+  main,
+  div[class*="ml-64"] {
+    margin-left: 0 !important;
+    padding: 0 !important;
+    background: #fff !important;
+    color: #111 !important;
+    font-size: 10.5pt !important;
+    line-height: 1.45 !important;
+    font-family: "Inter", system-ui, sans-serif !important;
+  }
+
+  main {
+    padding: 0 !important;
+    max-width: none !important;
+  }
+
+  /* Reveal print-only chrome */
+  .print-only {
+    display: block !important;
+  }
+
+  /* Neutralize dark theme */
+  * {
+    background-color: transparent !important;
+    color: #111 !important;
+    box-shadow: none !important;
+    text-shadow: none !important;
+  }
+
+  /* Strip card backgrounds & decorative borders */
+  section,
+  .print-reset {
+    background: transparent !important;
+    border: none !important;
+    padding: 0 !important;
+    margin-bottom: 14pt !important;
+  }
+
+  /* Headings */
+  h1 { font-size: 20pt !important; margin: 0 0 2pt !important; letter-spacing: -0.02em !important; }
+  h2 { font-size: 12pt !important; margin: 8pt 0 6pt !important; border-bottom: 1.5px solid #222 !important; padding-bottom: 3pt !important; text-transform: uppercase !important; letter-spacing: 0.08em !important; }
+  h3 { font-size: 10.5pt !important; margin: 4pt 0 3pt !important; }
+
+  /* Table styling */
+  table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+    margin-top: 4pt !important;
+    font-size: 9.5pt !important;
+  }
+  thead tr {
+    background: #f3f3f3 !important;
+    border-bottom: 1.5px solid #222 !important;
+  }
+  thead th {
+    padding: 6pt 8pt !important;
+    text-align: left !important;
+    font-weight: 700 !important;
+    font-size: 8.5pt !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.05em !important;
+    color: #333 !important;
+  }
+  tbody td {
+    padding: 5pt 8pt !important;
+    border-bottom: 0.5px solid #ddd !important;
+    vertical-align: top !important;
+  }
+  tbody tr:nth-child(even) td {
+    background: #fafafa !important;
+  }
+
+  /* Meta field grid — keep labels tight */
+  .print-meta-grid {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 6pt 24pt !important;
+    margin: 4pt 0 0 !important;
+  }
+  .print-meta-grid > div > div:first-child {
+    font-size: 7.5pt !important;
+    font-weight: 700 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.06em !important;
+    color: #666 !important;
+    margin-bottom: 1pt !important;
+  }
+  .print-meta-grid > div > div:last-child {
+    font-size: 10pt !important;
+    color: #111 !important;
+  }
+
+  /* Approval timeline compact */
+  .print-timeline-item {
+    page-break-inside: avoid !important;
+  }
+
+  /* Avoid orphan sections across pages */
+  section, table {
+    page-break-inside: avoid;
+  }
+
+  /* Don't expand link hrefs inline */
+  a[href]::after { content: none !important; }
+
+  /* Status badge — make it a plain inline label */
+  [class*="rounded"][class*="bg-"] {
+    background: transparent !important;
+    border: 1px solid #666 !important;
+    border-radius: 2px !important;
+    padding: 1pt 4pt !important;
+    font-size: 8pt !important;
+  }
+}

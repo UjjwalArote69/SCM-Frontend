@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Import Items from Excel</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "on-tertiary-fixed": "#001e30",
+                        "surface-tint": "#bf0715",
+                        "secondary-container": "#fd786c",
+                        "on-secondary": "#ffffff",
+                        "surface-bright": "#f9f9ff",
+                        "on-primary": "#ffffff",
+                        "surface-container-low": "#f1f3ff",
+                        "inverse-primary": "#ffb4ab",
+                        "secondary-fixed": "#ffdad6",
+                        "on-primary-fixed-variant": "#93000b",
+                        "surface-container-lowest": "#ffffff",
+                        "primary-container": "#dc2626",
+                        "surface-container": "#e9edff",
+                        "tertiary-fixed": "#cbe6ff",
+                        "on-tertiary-fixed-variant": "#004b71",
+                        "on-surface": "#141b2b",
+                        "inverse-surface": "#293040",
+                        "on-surface-variant": "#5c403c",
+                        "primary": "#b70011",
+                        "error-container": "#ffdad6",
+                        "on-background": "#141b2b",
+                        "on-secondary-fixed-variant": "#86211c",
+                        "surface-dim": "#d3daef",
+                        "secondary-fixed-dim": "#ffb4ab",
+                        "on-error": "#ffffff",
+                        "surface-container-highest": "#dce2f7",
+                        "surface-variant": "#dce2f7",
+                        "surface": "#f9f9ff",
+                        "primary-fixed-dim": "#ffb4ab",
+                        "inverse-on-surface": "#edf0ff",
+                        "error": "#ba1a1a",
+                        "primary-fixed": "#ffdad6",
+                        "on-secondary-container": "#700f0f",
+                        "on-primary-fixed": "#410002",
+                        "on-primary-container": "#fff6f5",
+                        "background": "#f9f9ff",
+                        "surface-container-high": "#e1e8fd",
+                        "outline": "#916f6b",
+                        "tertiary-fixed-dim": "#90cdff",
+                        "on-tertiary": "#ffffff",
+                        "tertiary-container": "#0078b2",
+                        "on-secondary-fixed": "#410002",
+                        "outline-variant": "#e6bdb8",
+                        "on-error-container": "#93000a",
+                        "on-tertiary-container": "#f3f8ff",
+                        "secondary": "#a73831",
+                        "tertiary": "#005e8d"
+                    },
+                    borderRadius: {
+                        DEFAULT: "0.125rem",
+                        lg: "0.25rem",
+                        xl: "0.5rem",
+                        full: "0.75rem"
+                    },
+                    fontFamily: {
+                        headline: ["Inter", "sans-serif"],
+                        body: ["Inter", "sans-serif"],
+                        label: ["Inter", "sans-serif"]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+</head>
+<body class="font-body text-on-background bg-background flex h-screen overflow-hidden antialiased">
+<!-- SideNavBar -->
+<nav class="bg-slate-100 dark:bg-slate-900 text-red-700 dark:text-red-500 font-sans text-xs uppercase tracking-widest font-semibold h-screen w-64 fixed left-0 top-0 overflow-y-auto bg-slate-200 dark:bg-slate-800 flat no shadows flex flex-col pt-20 pb-4 h-full select-none cursor-pointer z-40">
+<div class="px-6 mb-8">
+<div class="text-xl font-black text-slate-900 dark:text-slate-50 mb-1">MDM Portal</div>
+<div class="text-slate-500 text-[10px]">V2.4 Architecture</div>
+</div>
+<div class="flex-1 flex flex-col space-y-1">
+<!-- Dashboard (Inactive) -->
+<div class="flex items-center space-x-3 text-slate-600 dark:text-slate-400 px-4 py-3 hover:bg-slate-200/50 dark:hover:bg-slate-800/50 hover:translate-x-1 transition-transform duration-200">
+<span class="material-symbols-outlined">dashboard</span>
+<span>Dashboard</span>
+</div>
+<!-- Item Master (Active) -->
+<div class="flex items-center space-x-3 bg-white dark:bg-slate-950 text-red-700 dark:text-red-500 border-l-4 border-red-700 dark:border-red-500 px-4 py-3 hover:translate-x-1 transition-transform duration-200">
+<span class="material-symbols-outlined">inventory_2</span>
+<span>Item Master</span>
+</div>
+<!-- Categories (Inactive) -->
+<div class="flex items-center space-x-3 text-slate-600 dark:text-slate-400 px-4 py-3 hover:bg-slate-200/50 dark:hover:bg-slate-800/50 hover:translate-x-1 transition-transform duration-200">
+<span class="material-symbols-outlined">category</span>
+<span>Categories</span>
+</div>
+<!-- Warehouse (Inactive) -->
+<div class="flex items-center space-x-3 text-slate-600 dark:text-slate-400 px-4 py-3 hover:bg-slate-200/50 dark:hover:bg-slate-800/50 hover:translate-x-1 transition-transform duration-200">
+<span class="material-symbols-outlined">factory</span>
+<span>Warehouse</span>
+</div>
+<!-- Audit Logs (Inactive) -->
+<div class="flex items-center space-x-3 text-slate-600 dark:text-slate-400 px-4 py-3 hover:bg-slate-200/50 dark:hover:bg-slate-800/50 hover:translate-x-1 transition-transform duration-200">
+<span class="material-symbols-outlined">history</span>
+<span>Audit Logs</span>
+</div>
+</div>
+<div class="px-4 mt-auto">
+<button class="w-full py-3 bg-gradient-to-br from-primary to-primary-container text-on-primary rounded-md font-bold tracking-widest text-xs uppercase shadow-sm hover:opacity-90 transition-opacity">New Entry</button>
+</div>
+</nav>
+<!-- Main Content Wrapper -->
+<div class="flex-1 ml-64 flex flex-col h-screen relative">
+<!-- TopNavBar -->
+<header class="bg-slate-50 dark:bg-slate-900 text-red-700 dark:text-red-500 font-sans antialiased text-sm tracking-tight docked full-width top-0 z-30 border-b border-slate-200/50 dark:border-slate-800/50 flat no shadows flex justify-between items-center h-16 w-full px-6 bg-white dark:bg-slate-950">
+<div class="flex items-center space-x-8">
+<div class="text-lg font-black tracking-tighter text-slate-900 dark:text-slate-100 uppercase mr-8">Industrial MDM</div>
+<nav class="flex space-x-6 h-16">
+<!-- Inventory (Active) -->
+<div class="text-red-700 dark:text-red-500 font-bold border-b-2 border-red-700 dark:border-red-500 pb-1 flex items-center h-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors duration-200 cursor-pointer active:opacity-70 mt-1">
+                        Inventory
+                    </div>
+<!-- Suppliers (Inactive) -->
+<div class="text-slate-500 dark:text-slate-400 font-medium hover:text-slate-900 dark:hover:text-slate-100 flex items-center h-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors duration-200 cursor-pointer active:opacity-70">
+                        Suppliers
+                    </div>
+<!-- Logistics (Inactive) -->
+<div class="text-slate-500 dark:text-slate-400 font-medium hover:text-slate-900 dark:hover:text-slate-100 flex items-center h-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors duration-200 cursor-pointer active:opacity-70">
+                        Logistics
+                    </div>
+</nav>
+</div>
+<div class="flex items-center space-x-4">
+<div class="relative">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">search</span>
+<input class="pl-9 pr-4 py-1.5 bg-slate-100 dark:bg-slate-800 border-none rounded-md text-sm focus:ring-1 focus:ring-red-700 w-64" placeholder="Search..." type="text"/>
+</div>
+<button class="text-slate-500 hover:text-slate-900 p-2 rounded-full hover:bg-slate-100 transition-colors"><span class="material-symbols-outlined">notifications</span></button>
+<button class="text-slate-500 hover:text-slate-900 p-2 rounded-full hover:bg-slate-100 transition-colors"><span class="material-symbols-outlined">settings</span></button>
+<img alt="User profile" class="w-8 h-8 rounded-full ml-2 border border-slate-200" data-alt="Professional headshot of a person looking forward against a neutral background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB5JI7RykWhxcoqaOA7z5vB6VKFjnXI6ByFlEhNsDPNqqPFfOkVuo90aKaoWRK9tpT92uZ7pvlsBwk018eWaVhOOB6zuoiso-fw1XM2irGha1JecyW5r3zR89G1oc6_aevpDYjQiRFKCLE3YwPnyXnkDLf6ud05nZ655REcE-6BR1eCdps3WkNlA7CgNUIcRXTqNZnHjKNO37fB_zMttZ4zQbvdm6htp6PqXfZ8tp0JPf3Otsdc-xS61NkxF4LDEKGV0Wvpsckfh-sP"/>
+</div>
+</header>
+<!-- Mock Background Canvas (Items Master List) -->
+<main class="flex-1 p-8 overflow-hidden flex flex-col bg-background">
+<div class="flex justify-between items-end mb-6">
+<div>
+<h1 class="font-headline text-2xl font-bold text-on-surface">Items Master</h1>
+<p class="text-sm text-on-surface-variant mt-1">Manage all precision components and inventory SKUs.</p>
+</div>
+<div class="flex gap-3">
+<button class="px-4 py-2 border border-outline-variant/20 rounded-md text-sm font-medium text-on-surface bg-surface-container-lowest hover:bg-surface-container-high transition-colors">Export Data</button>
+<button class="px-4 py-2 bg-gradient-to-br from-primary to-primary-container text-on-primary rounded-md text-sm font-medium shadow-sm hover:opacity-90 transition-opacity">Import</button>
+</div>
+</div>
+<!-- Fake Data Grid -->
+<div class="flex-1 flex flex-col gap-2">
+<!-- Header Row -->
+<div class="grid grid-cols-5 px-4 py-3 bg-surface-container-highest text-xs font-bold text-on-surface uppercase tracking-wider rounded-t-md">
+<div>SKU Code</div>
+<div class="col-span-2">Description</div>
+<div>Category</div>
+<div>Status</div>
+</div>
+<!-- Data Rows (Alternating tones, no borders) -->
+<div class="grid grid-cols-5 px-4 py-4 bg-surface-container-lowest text-sm text-on-surface items-center shadow-sm">
+<div class="font-semibold">PRC-9921-A</div>
+<div class="col-span-2 text-on-surface-variant">Titanium Micro-Bearing Assembly</div>
+<div>Components</div>
+<div><span class="inline-flex items-center px-2 py-1 bg-surface-container-high text-xs font-medium rounded text-on-surface">Active</span></div>
+</div>
+<div class="grid grid-cols-5 px-4 py-4 bg-surface-container-low text-sm text-on-surface items-center">
+<div class="font-semibold">PRC-9922-B</div>
+<div class="col-span-2 text-on-surface-variant">Carbon Fiber Strut Support</div>
+<div>Materials</div>
+<div><span class="inline-flex items-center px-2 py-1 bg-surface-container-high text-xs font-medium rounded text-on-surface">Active</span></div>
+</div>
+<div class="grid grid-cols-5 px-4 py-4 bg-surface-container-lowest text-sm text-on-surface items-center shadow-sm">
+<div class="font-semibold">SENS-04X</div>
+<div class="col-span-2 text-on-surface-variant">Optical Proximity Sensor V2</div>
+<div>Electronics</div>
+<div><span class="inline-flex items-center px-2 py-1 bg-error-container text-error text-xs font-medium rounded">Low Stock</span></div>
+</div>
+</div>
+</main>
+<!-- MODAL OVERLAY -->
+<div class="fixed inset-0 bg-on-surface/60 backdrop-blur-[2px] z-50 flex items-center justify-center p-4">
+<!-- Modal Container -->
+<div class="w-[560px] bg-surface-container-lowest rounded-xl shadow-[0_12px_32px_rgba(20,27,43,0.12)] flex flex-col overflow-hidden">
+<!-- Header -->
+<div class="px-6 py-5 flex justify-between items-center border-b border-surface-container-high">
+<h2 class="font-headline text-xl font-semibold text-on-surface">Import Items from Excel</h2>
+<button class="text-on-surface-variant hover:text-on-surface transition-colors p-1 rounded hover:bg-surface-container-high">
+<span class="material-symbols-outlined">close</span>
+</button>
+</div>
+<!-- Body -->
+<div class="p-6 flex flex-col gap-8">
+<!-- Step 1: Download -->
+<div>
+<a class="inline-flex items-center gap-2 text-tertiary hover:text-tertiary-container font-medium text-sm transition-colors group" href="#">
+<span class="material-symbols-outlined text-lg group-hover:-translate-y-0.5 transition-transform">download</span>
+                            Step 1: Download the Excel template
+                        </a>
+<p class="text-xs text-on-surface-variant mt-1 ml-7">Ensure your data matches the required schema before uploading.</p>
+</div>
+<!-- Step 2: Upload Area -->
+<div class="flex flex-col gap-2">
+<div class="text-sm font-semibold text-on-surface">Step 2: Upload Data</div>
+<!-- Drag & Drop Zone -->
+<div class="border-2 border-dashed border-outline-variant/40 bg-surface-container-low rounded-lg p-10 flex flex-col items-center justify-center text-center hover:bg-surface transition-colors cursor-pointer group">
+<div class="w-12 h-12 rounded-full bg-surface-container-highest flex items-center justify-center mb-4 group-hover:bg-primary-fixed transition-colors">
+<span class="material-symbols-outlined text-2xl text-on-surface-variant group-hover:text-primary transition-colors">upload_file</span>
+</div>
+<div class="font-headline text-base font-medium text-on-surface mb-1">Drop your .xlsx or .csv file here</div>
+<div class="text-sm text-on-surface-variant">or <span class="text-primary font-medium">browse files</span> on your computer</div>
+</div>
+</div>
+<!-- Checklist -->
+<div class="flex flex-col gap-3 pt-2">
+<label class="flex items-start gap-3 cursor-pointer group">
+<div class="flex items-center h-5">
+<input checked="" class="w-4 h-4 text-primary bg-surface-container-lowest border-outline rounded focus:ring-primary focus:ring-2 focus:ring-offset-1 focus:ring-offset-surface-container-lowest cursor-pointer" type="checkbox"/>
+</div>
+<div class="text-sm text-on-surface font-medium group-hover:text-primary transition-colors">Validate data before import</div>
+</label>
+<label class="flex items-start gap-3 cursor-pointer group">
+<div class="flex items-center h-5">
+<input class="w-4 h-4 text-primary bg-surface-container-lowest border-outline rounded focus:ring-primary focus:ring-2 focus:ring-offset-1 focus:ring-offset-surface-container-lowest cursor-pointer" type="checkbox"/>
+</div>
+<div class="text-sm text-on-surface font-medium group-hover:text-primary transition-colors">Overwrite existing items with same code</div>
+</label>
+</div>
+</div>
+<!-- Footer -->
+<div class="px-6 py-4 bg-surface-container-low flex justify-end gap-3 mt-auto border-t border-surface-container-high/50">
+<button class="px-5 py-2.5 rounded-md text-sm font-semibold text-on-surface border border-outline-variant/30 bg-surface-container-lowest hover:bg-surface-container-high transition-colors">Cancel</button>
+<button class="px-5 py-2.5 rounded-md text-sm font-semibold text-on-primary bg-gradient-to-br from-primary to-primary-container shadow-sm hover:opacity-90 transition-opacity">Start Import</button>
+</div>
+</div>
+</div>
+</div>
+</body></html>

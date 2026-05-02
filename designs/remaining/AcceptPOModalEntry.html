@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Accept Purchase Order</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-variant": "#dce2f7",
+                        "on-tertiary": "#ffffff",
+                        "background": "#f9f9ff",
+                        "surface-container": "#e9edff",
+                        "on-error-container": "#93000a",
+                        "outline": "#916f6b",
+                        "primary": "#b70011",
+                        "tertiary-fixed": "#cbe6ff",
+                        "secondary": "#a73831",
+                        "on-tertiary-fixed": "#001e30",
+                        "on-secondary-container": "#700f0f",
+                        "on-background": "#141b2b",
+                        "surface-container-lowest": "#ffffff",
+                        "on-tertiary-fixed-variant": "#004b71",
+                        "inverse-on-surface": "#edf0ff",
+                        "on-primary-fixed": "#410002",
+                        "on-primary-container": "#fff6f5",
+                        "primary-container": "#dc2626",
+                        "secondary-fixed": "#ffdad6",
+                        "on-secondary-fixed": "#410002",
+                        "inverse-surface": "#293040",
+                        "outline-variant": "#e6bdb8",
+                        "inverse-primary": "#ffb4ab",
+                        "on-tertiary-container": "#f3f8ff",
+                        "tertiary-fixed-dim": "#90cdff",
+                        "error": "#ba1a1a",
+                        "surface-tint": "#bf0715",
+                        "surface": "#f9f9ff",
+                        "on-primary-fixed-variant": "#93000b",
+                        "on-surface": "#141b2b",
+                        "on-primary": "#ffffff",
+                        "tertiary-container": "#0078b2",
+                        "tertiary": "#005e8d",
+                        "surface-container-low": "#f1f3ff",
+                        "primary-fixed": "#ffdad6",
+                        "surface-container-high": "#e1e8fd",
+                        "secondary-fixed-dim": "#ffb4ab",
+                        "secondary-container": "#fd786c",
+                        "on-surface-variant": "#5c403c",
+                        "error-container": "#ffdad6",
+                        "on-secondary": "#ffffff",
+                        "surface-dim": "#d3daef",
+                        "on-error": "#ffffff",
+                        "surface-bright": "#f9f9ff",
+                        "on-secondary-fixed-variant": "#86211c",
+                        "primary-fixed-dim": "#ffb4ab",
+                        "surface-container-highest": "#dce2f7"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "fontFamily": {
+                        "headline": ["Inter"],
+                        "body": ["Inter"],
+                        "label": ["Inter"]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+<body class="bg-background text-on-background h-screen w-full relative overflow-hidden flex">
+<!-- Ambient Background / Simulated App Context -->
+<div class="absolute inset-0 bg-surface-container-low opacity-50 z-0 flex flex-col">
+<!-- Simulated App Content Behind Modal -->
+<header class="h-16 bg-surface-container-highest border-b border-outline-variant/20 flex items-center px-8 justify-between">
+<div class="font-bold text-xl tracking-widest uppercase text-on-background">SCM PORTAL</div>
+<div class="flex gap-4">
+<div class="h-8 w-8 bg-surface-variant rounded-full"></div>
+</div>
+</header>
+<main class="p-8 flex-1">
+<div class="h-8 w-64 bg-surface-variant/50 rounded mb-8"></div>
+<div class="grid grid-cols-3 gap-6">
+<div class="h-32 bg-surface-container-highest/50 rounded"></div>
+<div class="h-32 bg-surface-container-highest/50 rounded"></div>
+<div class="h-32 bg-surface-container-highest/50 rounded"></div>
+</div>
+<div class="mt-8 h-64 bg-surface-container-highest/50 rounded w-full"></div>
+</main>
+</div>
+<!-- Modal Overlay -->
+<div class="absolute inset-0 bg-on-surface/20 backdrop-blur-[2px] z-40 flex items-center justify-center p-4">
+<!-- Modal Container -->
+<div aria-labelledby="modal-title" aria-modal="true" class="bg-surface-container-lowest w-full max-w-[640px] shadow-[0_12px_32px_rgba(20,27,43,0.08)] rounded flex flex-col relative" role="dialog">
+<!-- Modal Header -->
+<div class="px-8 py-6 border-b border-surface-container flex justify-between items-start bg-surface-bright">
+<div>
+<p class="text-on-surface-variant text-sm font-medium mb-1 tracking-wider uppercase">Purchase Order Action</p>
+<h2 class="text-2xl font-bold text-on-background leading-tight" id="modal-title">Accept PO — ABCBU-ABC-21042026-PO-42</h2>
+</div>
+<button aria-label="Close modal" class="text-on-surface-variant hover:text-on-surface transition-colors mt-1">
+<span class="material-symbols-outlined">close</span>
+</button>
+</div>
+<!-- Modal Body -->
+<div class="p-8 flex flex-col gap-8 bg-surface-container-lowest">
+<!-- Amount Card -->
+<div class="bg-surface-container-low p-6 rounded flex flex-col gap-2 relative overflow-hidden">
+<div class="absolute top-0 bottom-0 left-0 w-1 bg-tertiary"></div>
+<span class="text-sm font-medium text-on-surface-variant uppercase tracking-wide ml-2">Total Order Value</span>
+<div class="text-3xl font-bold text-on-background tracking-tight ml-2">₹1,24,500.00</div>
+</div>
+<!-- Summary Row -->
+<div class="grid grid-cols-2 md:grid-cols-4 gap-6">
+<div class="flex flex-col gap-1">
+<span class="text-xs font-medium text-on-surface-variant uppercase tracking-wider">Buyer Name</span>
+<span class="text-sm font-semibold text-on-background">Industrial Corp Ltd</span>
+</div>
+<div class="flex flex-col gap-1">
+<span class="text-xs font-medium text-on-surface-variant uppercase tracking-wider">Delivery Date</span>
+<span class="text-sm font-semibold text-on-background">15 Nov 2023</span>
+</div>
+<div class="flex flex-col gap-1">
+<span class="text-xs font-medium text-on-surface-variant uppercase tracking-wider">Payment Terms</span>
+<span class="text-sm font-semibold text-on-background">Net 30 Days</span>
+</div>
+<div class="flex flex-col gap-1">
+<span class="text-xs font-medium text-on-surface-variant uppercase tracking-wider">Delivery Terms</span>
+<span class="text-sm font-semibold text-on-background">EXW</span>
+</div>
+</div>
+<div class="w-full h-px bg-surface-container"></div>
+<!-- Form Elements -->
+<div class="flex flex-col gap-6">
+<!-- Comments Textarea -->
+<div class="flex flex-col gap-2">
+<label class="text-sm font-medium text-on-surface" for="comments">Additional Comments <span class="text-on-surface-variant font-normal">(Optional)</span></label>
+<textarea class="w-full bg-surface-container-lowest border-0 border-b-2 border-outline-variant focus:border-primary focus:ring-0 px-4 py-3 text-sm text-on-background transition-colors resize-none shadow-none rounded-t" id="comments" placeholder="Add any notes regarding this order acceptance..." rows="3"></textarea>
+</div>
+<!-- Required Checkbox -->
+<div class="flex items-start gap-3 mt-2">
+<div class="flex items-center h-5 mt-0.5">
+<input class="w-5 h-5 rounded-[2px] border-outline-variant text-primary focus:ring-primary focus:ring-offset-surface-container-lowest bg-surface-container-lowest cursor-pointer transition-all" id="confirm-terms" required="" type="checkbox"/>
+</div>
+<label class="text-sm text-on-surface font-medium cursor-pointer leading-tight" for="confirm-terms">
+                            I confirm the terms and agree to fulfill this order.
+                        </label>
+</div>
+</div>
+</div>
+<!-- Modal Footer -->
+<div class="px-8 py-6 bg-surface-container-low border-t border-surface-container flex justify-end gap-4 items-center rounded-b">
+<button class="px-6 py-2.5 text-sm font-bold text-on-surface-variant hover:text-on-surface border border-outline-variant/20 bg-transparent rounded transition-colors uppercase tracking-wide shadow-none" type="button">
+                    Cancel
+                </button>
+<button class="px-6 py-2.5 text-sm font-bold text-on-primary bg-gradient-to-br from-primary to-primary-container rounded transition-all hover:brightness-110 uppercase tracking-wide flex items-center gap-2 shadow-sm" type="button">
+                    Accept Order
+                    <span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+</button>
+</div>
+</div>
+</div>
+</body></html>

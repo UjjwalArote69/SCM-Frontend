@@ -1,0 +1,160 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8" />
+<title>SCM — Flow Diagrams</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" />
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script type="module">
+  import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs";
+  window.__mermaid = mermaid;
+</script>
+<style>
+  @page { size: A3 portrait; margin: 14mm 14mm 18mm 14mm; }
+  :root {
+    --fg: #0f172a;
+    --muted: #475569;
+    --border: #e2e8f0;
+    --accent: #b91c1c;
+    --bg-soft: #f8fafc;
+    --code-bg: #f1f5f9;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    color: var(--fg);
+    line-height: 1.55;
+    font-size: 11.5pt;
+    background: #fff;
+  }
+  h1, h2, h3, h4 { color: var(--fg); line-height: 1.25; }
+  h1 { font-size: 24pt; border-bottom: 3px solid var(--accent); padding-bottom: 8px; margin-top: 0; }
+  h2 { font-size: 18pt; margin-top: 28px; border-bottom: 1px solid var(--border); padding-bottom: 6px; }
+  h3 { font-size: 13.5pt; margin-top: 18px; color: var(--accent); }
+  h4 { font-size: 11.5pt; margin-top: 14px; }
+  p, li { color: var(--fg); }
+  a { color: var(--accent); text-decoration: none; }
+  hr { border: none; border-top: 1px solid var(--border); margin: 24px 0; }
+  blockquote {
+    border-left: 4px solid var(--accent);
+    background: var(--bg-soft);
+    margin: 14px 0;
+    padding: 10px 16px;
+    color: var(--muted);
+    border-radius: 4px;
+    page-break-inside: avoid;
+  }
+  blockquote p { margin: 6px 0; }
+  code {
+    background: var(--code-bg);
+    padding: 2px 5px;
+    border-radius: 3px;
+    font-family: "JetBrains Mono", Consolas, monospace;
+    font-size: 0.9em;
+  }
+  pre code { background: transparent; padding: 0; }
+  pre { background: var(--code-bg); padding: 12px 14px; border-radius: 6px; overflow-x: auto; font-size: 0.88em; }
+  table { border-collapse: collapse; width: 100%; margin: 14px 0; font-size: 0.95em; page-break-inside: avoid; }
+  th, td { border: 1px solid var(--border); padding: 8px 12px; text-align: left; vertical-align: top; }
+  th { background: var(--bg-soft); font-weight: 600; }
+  ul, ol { padding-left: 24px; }
+  li { margin: 4px 0; }
+
+  /* Diagram container */
+  .mermaid {
+    margin: 14px 0;
+    padding: 10px;
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    text-align: center;
+    page-break-inside: avoid;
+    break-inside: avoid;
+    max-width: 260mm;
+    max-height: 370mm;
+    overflow: hidden;
+    margin-left: auto;
+    margin-right: auto;
+  }
+  /* Force every Mermaid SVG to scale to fit isotropically */
+  .mermaid svg {
+    display: block !important;
+    margin: 0 auto !important;
+    max-width: 100% !important;
+    max-height: 364mm !important;
+    width: auto !important;
+    height: auto !important;
+  }
+  /* Use Arial (universally installed) so Mermaid's measurement and rendering use the
+     exact same font metrics — eliminates the 1-char clipping at node right edges. */
+  .mermaid, .mermaid foreignObject *, .mermaid .nodeLabel, .mermaid .edgeLabel,
+  .mermaid .label, .mermaid .label-container, .mermaid text {
+    font-family: Arial, "Helvetica Neue", Helvetica, sans-serif !important;
+  }
+  /* Mermaid sets foreignObject width = measured text width, but rendered text
+     can be a hair wider, so the last char gets clipped. Allow horizontal overflow
+     into the surrounding node-rect padding (we set flowchart.padding=18). */
+  .mermaid foreignObject { overflow: visible !important; }
+  .mermaid foreignObject > div { overflow: visible !important; }
+  h2 { page-break-after: avoid; break-after: avoid; }
+  h2 + p, h2 + blockquote, h2 + .mermaid { page-break-before: avoid; }
+</style>
+</head>
+<body>
+<div id="content"></div>
+<script>
+  const RAW_MD = "# SCM — Flow Diagrams\n\n> Visual reference for how the Meka SCM system fits together.\n> Diagrams use **Mermaid** — render in GitHub, Notion, or VS Code (with the Mermaid extension).\n\n---\n\n## Contents\n\n1. [System Architecture](#1-system-architecture) — how the pieces talk to each other\n2. [Procurement Pipeline](#2-procurement-pipeline) — PR → RFQ → PO → GRN end-to-end\n3. [Award Approval Flow](#3-award-approval-flow) — three-party consensus + CFO/CEO chain\n4. [Role-Based Access](#4-role-based-access) — who lands where, who can do what\n5. [Auth & Request Lifecycle](#5-auth--request-lifecycle) — login, bearer flow, self-healing\n6. [Data Model (ERD)](#6-data-model-erd) — core tables and relationships\n\n---\n\n## 1. System Architecture\n\n```mermaid\nflowchart LR\n    classDef client fill:#dbeafe,stroke:#1e40af,stroke-width:2px,color:#1e3a8a\n    classDef server fill:#fef3c7,stroke:#b45309,stroke-width:2px,color:#78350f\n    classDef db fill:#dcfce7,stroke:#166534,stroke-width:2px,color:#14532d\n    classDef edge stroke:#64748b,stroke-width:2px\n\n    subgraph Client[\"🖥️&nbsp;&nbsp;React 19 + Vite 8\"]\n        direction TB\n        Pages[\"📄&nbsp;Pages<br/><i>PR · RFQ · PO · GRN</i>\"]\n        Stores[\"🗃️&nbsp;Zustand stores<br/><i>per feature</i>\"]\n        Auth[\"🔐&nbsp;Auth store<br/><i>localStorage persist</i>\"]\n        ClientAPI[\"📡&nbsp;axios client<br/><i>auto-bearer · 127.0.0.1</i>\"]\n    end\n\n    subgraph Server[\"⚙️&nbsp;&nbsp;Laravel API · :8000\"]\n        direction TB\n        Mw[\"🛡️&nbsp;ApiToken MW<br/><i>throttle:5,1 on /login</i>\"]\n        Ctrl[\"🎯&nbsp;Controllers<br/><i>Pr · Rfq · Po · Grn · Vendor</i>\"]\n        Models[\"📦&nbsp;Eloquent Models<br/><i>AppPr · AppPo · AppRfq · AppGrn</i>\"]\n    end\n\n    DB[(\"🗄️&nbsp;MySQL :3307<br/>meka_scm\")]\n\n    Pages --> Stores\n    Stores --> ClientAPI\n    Auth --> ClientAPI\n    ClientAPI ==>|\"Bearer token\"| Mw\n    Mw --> Ctrl\n    Ctrl --> Models\n    Models ==> DB\n\n    class Pages,Stores,Auth,ClientAPI client\n    class Mw,Ctrl,Models server\n    class DB db\n```\n\n---\n\n## 2. Procurement Pipeline\n\nEnd-to-end procure-to-receive flow. PRs originate in the **Purchase department** (officer / team / dept). After CEO approval, the **Purchase HOD** allocates the post-approval work (RFQ + PO authoring) to a subordinate. Every status mutation is guarded by a **terminal-state check** (409 if record is already in a terminal state).\n\n```mermaid\nflowchart TD\n    classDef start fill:#e0e7ff,stroke:#4338ca,stroke-width:2px,color:#312e81\n    classDef approve fill:#dcfce7,stroke:#15803d,stroke-width:2px,color:#14532d\n    classDef reject fill:#fee2e2,stroke:#b91c1c,stroke-width:2px,color:#7f1d1d\n    classDef action fill:#fef3c7,stroke:#a16207,stroke-width:2px,color:#713f12\n    classDef hold fill:#e0f2fe,stroke:#0369a1,stroke-width:2px,color:#0c4a6e\n    classDef vendor fill:#fce7f3,stroke:#be185d,stroke-width:2px,color:#831843\n    classDef purchase fill:#ffedd5,stroke:#c2410c,stroke-width:2px,color:#7c2d12\n    classDef terminal fill:#d1fae5,stroke:#047857,stroke-width:3px,color:#064e3b\n\n    Start([\"🛒&nbsp;<b>Purchase Dept</b><br/>officer / team raises need\"]):::purchase\n    PR[\"📋&nbsp;<b>PR Created</b><br/>by Purchase Officer<br/>status: pending · chain_stage: hod\"]:::action\n\n    HOD{{\"🧑‍💼&nbsp;HOD Review<br/><i>(department head)</i>\"}}:::action\n    CFO{{\"💰&nbsp;CFO Review\"}}:::action\n    CEO{{\"👑&nbsp;CEO Review\"}}:::action\n    Hold[\"⏸️&nbsp;<b>On Hold</b><br/><i>awaiting clarification</i>\"]:::hold\n    Cancelled([\"🚫&nbsp;Cancelled<br/><i>by creator</i>\"]):::reject\n    Approved[\"✅&nbsp;<b>PR Approved</b><br/>chain_stage: done\"]:::approve\n    Rejected([\"❌&nbsp;Rejected\"]):::reject\n\n    PurchaseHOD[\"🧑‍💼&nbsp;<b>Purchase Dept HOD</b><br/>reviews approved PR\"]:::purchase\n    Allocate[\"👥&nbsp;<b>Allocate work</b><br/>assigns to assistant /<br/>subordinate in dept\"]:::purchase\n    Assignee[\"🧑‍💻&nbsp;<b>Purchase Assistant</b><br/>handles RFQ → PO\"]:::purchase\n\n    RFQ[\"📨&nbsp;<b>RFQ Created</b><br/>by assignee · invites vendors\"]:::action\n    Submit[\"💬&nbsp;Vendors submit quotes<br/><i>identity from bearer token</i>\"]:::vendor\n    Compare[\"📊&nbsp;<b>Comparison</b><br/>status: compared\"]:::action\n    Award[\"🏆&nbsp;Award winner<br/>POST /rfqs/{n}/award\"]:::approve\n\n    PO[\"📦&nbsp;<b>PO Created</b><br/>by Purchase Dept<br/>after quote selection\"]:::action\n    VendorPO{{\"Vendor Action\"}}:::vendor\n    PORej([\"❌&nbsp;PO Rejected\"]):::reject\n    Accepted[\"✅&nbsp;<b>PO Accepted</b>\"]:::approve\n\n    GRN[\"📥&nbsp;<b>GRN</b><br/><i>warehouse roles</i>\"]:::action\n    Auto{{\"received ≥ ordered?\"}}:::action\n    Partial[\"🔄&nbsp;Partial fulfillment<br/><i>more GRNs allowed</i>\"]:::action\n    Fulfilled([\"🎉&nbsp;<b>PO auto-fulfilled</b>\"]):::terminal\n\n    Start --> PR --> HOD\n    PR -.->|\"creator cancels<br/>(while pending)\"| Cancelled\n\n    HOD -->|approve| CFO\n    HOD -->|reject| Rejected\n    HOD -->|hold| Hold\n    CFO -->|approve| CEO\n    CFO -->|reject| Rejected\n    CFO -->|hold| Hold\n    CEO -->|approve| Approved\n    CEO -->|reject| Rejected\n    CEO -->|hold| Hold\n\n    Hold -.->|\"resume<br/>back to current stage\"| HOD\n    Hold -.->|resume| CFO\n    Hold -.->|resume| CEO\n\n    Approved --> PurchaseHOD --> Allocate --> Assignee\n    Assignee --> RFQ --> Submit --> Compare --> Award\n    Award --> PO --> VendorPO\n    VendorPO -->|reject| PORej\n    VendorPO -->|accept| Accepted\n\n    Accepted --> GRN --> Auto\n    Auto -->|no| Partial --> GRN\n    Auto -->|yes| Fulfilled\n```\n\n> ### 🔒 Access rules for this pipeline\n>\n> - **RFQ create / delete** → **Purchase department only**. All other roles get read-only views (List + Detail + Comparison leaderboard).\n> - **Quotation comparison leaderboard** → visible to **everyone** (transparency by design).\n> - **Award button** → gated by the three-party consensus + CFO/CEO chain detailed in [§3 Award Approval Flow](#3-award-approval-flow). Only the **Purchase HOD** ultimately fires the award.\n\n---\n\n## 3. Award Approval Flow\n\nThe \"Award\" action on a quotation is **not** a single click — it requires a three-party internal consensus, then the same CFO → CEO approval tree used for PRs. Two scenarios cover whether the Respective Department HOD agrees on the first round.\n\n### Phase 1 — Three-party consensus (departmental)\n\nThree stakeholders must converge on **one vendor** before the financial-approval tree opens:\n\n| Party | Role | Why they review |\n| --- | --- | --- |\n| 🏢 Respective Dept HOD | Originating department head | Confirms vendor meets the technical / operational need that drove the PR |\n| 💰 Finance Dept HOD | Finance head | Validates pricing, payment terms, financial fit |\n| 🛒 Purchase Dept HOD | Purchase head | Confirms vendor compliance, history, procurement-policy fit |\n\n```mermaid\nflowchart TD\n    classDef start fill:#e0e7ff,stroke:#4338ca,stroke-width:2px,color:#312e81\n    classDef party fill:#ffedd5,stroke:#c2410c,stroke-width:2px,color:#7c2d12\n    classDef agree fill:#dcfce7,stroke:#15803d,stroke-width:2px,color:#14532d\n    classDef disagree fill:#fee2e2,stroke:#b91c1c,stroke-width:2px,color:#7f1d1d\n    classDef comm fill:#e0f2fe,stroke:#0369a1,stroke-width:2px,color:#0c4a6e\n    classDef gate fill:#fef3c7,stroke:#a16207,stroke-width:2px,color:#713f12\n    classDef tree fill:#ede9fe,stroke:#6d28d9,stroke-width:2px,color:#4c1d95\n    classDef final fill:#d1fae5,stroke:#047857,stroke-width:3px,color:#064e3b\n\n    Compare([\"📊&nbsp;Quotation Leaderboard<br/><i>visible to everyone</i>\"]):::start\n\n    RDeptHOD[\"🏢&nbsp;<b>Respective<br/>Dept HOD</b>\"]:::party\n    FinHOD[\"💰&nbsp;<b>Finance<br/>Dept HOD</b>\"]:::party\n    PurHOD[\"🛒&nbsp;<b>Purchase<br/>Dept HOD</b>\"]:::party\n\n    Decision{{\"All three agree<br/>on the same vendor?\"}}:::gate\n\n    Case1[\"🟢&nbsp;<b>Case 1</b><br/>All three agree on first review\"]:::agree\n    Case2[\"🟡&nbsp;<b>Case 2</b><br/>Respective HOD disagrees<br/>(other two agree)\"]:::disagree\n    Comms[\"✉️&nbsp;<b>Internal communication</b><br/>email / chat / meeting<br/>negotiate until aligned\"]:::comm\n    Realign{{\"Reach consensus<br/>on one vendor?\"}}:::gate\n    Stuck([\"🛑&nbsp;Award blocked<br/>until consensus\"]):::disagree\n\n    Phase2[\"🚀&nbsp;<b>Consensus reached</b><br/>unlock financial tree → Phase 2\"]:::final\n\n    Compare --> RDeptHOD\n    Compare --> FinHOD\n    Compare --> PurHOD\n\n    RDeptHOD --> Decision\n    FinHOD --> Decision\n    PurHOD --> Decision\n\n    Decision -->|yes — first round| Case1 --> Phase2\n    Decision -->|no| Case2 --> Comms --> Realign\n    Realign -->|yes| Phase2\n    Realign -->|no| Stuck\n    Stuck -.->|retry| Comms\n```\n\n### Phase 2 — Financial approval tree + final award\n\nOnce the three departmental HODs agree on a vendor, the decision flows up the same approval tree used for PRs. The **Award button** only becomes functional on the Purchase HOD's screen after CEO approval.\n\n```mermaid\nflowchart LR\n    classDef start fill:#d1fae5,stroke:#047857,stroke-width:2px,color:#064e3b\n    classDef tree fill:#ede9fe,stroke:#6d28d9,stroke-width:2px,color:#4c1d95\n    classDef gate fill:#fef3c7,stroke:#a16207,stroke-width:2px,color:#713f12\n    classDef hold fill:#e0f2fe,stroke:#0369a1,stroke-width:2px,color:#0c4a6e\n    classDef reject fill:#fee2e2,stroke:#b91c1c,stroke-width:2px,color:#7f1d1d\n    classDef approve fill:#dcfce7,stroke:#15803d,stroke-width:2px,color:#14532d\n    classDef final fill:#fde68a,stroke:#b45309,stroke-width:3px,color:#78350f\n\n    Consensus([\"🚀&nbsp;Three-party<br/>consensus reached\"]):::start\n\n    CFO{{\"💰&nbsp;CFO Review\"}}:::tree\n    CEO{{\"👑&nbsp;CEO Review\"}}:::tree\n    CFOHold[\"⏸️&nbsp;Hold / Reject<br/><i>back to consensus</i>\"]:::hold\n    CEOHold[\"⏸️&nbsp;Hold / Reject<br/><i>back to consensus</i>\"]:::hold\n\n    Unlock[\"🔓&nbsp;<b>Award button unlocked</b><br/>on Purchase HOD screen<br/><i>only Purchase HOD can fire it</i>\"]:::approve\n    Awarded[\"🏆&nbsp;<b>Vendor Awarded</b><br/>POST /rfqs/{n}/award<br/>RFQ status: awarded\"]:::final\n    POFlow([\"📦&nbsp;Continue to PO creation<br/>(Purchase Dept)\"]):::start\n\n    Consensus --> CFO\n    CFO -->|approve| CEO\n    CFO -->|reject / hold| CFOHold\n    CEO -->|approve| Unlock\n    CEO -->|reject / hold| CEOHold\n    CFOHold -.->|re-review| Consensus\n    CEOHold -.->|re-review| Consensus\n\n    Unlock -->|\"Purchase HOD<br/>clicks Award\"| Awarded --> POFlow\n```\n\n> ### 🛡️ Award button visibility matrix\n>\n> | Stage | Award button visible? | Functional? | Who can fire? |\n> | --- | --- | --- | --- |\n> | Three-party consensus pending | ❌ Hidden | — | — |\n> | Consensus reached, awaiting CFO | ❌ Hidden | — | — |\n> | CFO approved, awaiting CEO | ❌ Hidden | — | — |\n> | **CEO approved** | ✅ Visible | ✅ Yes | **Purchase HOD only** |\n> | Awarded (terminal) | — | — | — |\n\n---\n\n## 4. Role-Based Access\n\nThree audiences, three layouts, eleven roles. RBAC is enforced **defense-in-depth** — `<RoleGate>` on the route, axios bearer in transit, `ApiToken` middleware at the edge, controller `BACKOFFICE_ROLES` / `WAREHOUSE_ROLES` constants at the action.\n\n```mermaid\nflowchart LR\n    classDef entry fill:#ede9fe,stroke:#6d28d9,stroke-width:2px,color:#4c1d95\n    classDef admin fill:#fee2e2,stroke:#b91c1c,stroke-width:2px,color:#7f1d1d\n    classDef user fill:#dbeafe,stroke:#1d4ed8,stroke-width:2px,color:#1e3a8a\n    classDef vendor fill:#fce7f3,stroke:#be185d,stroke-width:2px,color:#831843\n    classDef forbidden fill:#fef3c7,stroke:#a16207,stroke-width:2px,color:#713f12\n\n    Login([\"🔑&nbsp;/login\"]):::entry\n    Boot[\"⚡&nbsp;AuthBootstrap<br/>GET /api/me\"]:::entry\n    Gate{{\"RoleGate\"}}:::entry\n\n    Admin[\"🛠️&nbsp;<b>/admin</b><br/>AdminLayout\"]:::admin\n    AdminCaps[\"• Full CRUD: PR · RFQ · PO · GRN<br/>• Manage Users · Vendors · Items<br/>• Approve / suspend vendors<br/>• Override any status\"]:::admin\n\n    User[\"👤&nbsp;<b>/app</b><br/>UserLayout\"]:::user\n    UserCaps[\"• Create PR (any role)<br/>• Approve at matching chain_stage<br/>• Create RFQ/PO if BACKOFFICE_ROLE<br/>• Create GRN if WAREHOUSE_ROLE<br/>• View list scoped to creator\"]:::user\n\n    Vendor[\"🏢&nbsp;<b>/vendor</b><br/>VendorLayout\"]:::vendor\n    VendorCaps[\"• See only invited RFQs<br/>• Submit quotes (identity ← token)<br/>• Accept / reject own POs<br/>• Self-update via PUT /me\"]:::vendor\n\n    F403[\"🚫&nbsp;/403\"]:::forbidden\n\n    Login --> Boot --> Gate\n    Gate -->|admin| Admin --> AdminCaps\n    Gate -->|\"employee · manager · hod<br/>cfo · ceo · purchase_officer<br/>accountant · director · customer\"| User --> UserCaps\n    Gate -->|vendor| Vendor --> VendorCaps\n    Gate -->|unknown / tampered| F403\n```\n\n---\n\n## 5. Auth & Request Lifecycle\n\n```mermaid\nsequenceDiagram\n    autonumber\n    actor U as 👤 User\n    participant R as ⚛️ React\n    participant LS as 💾 localStorage\n    participant API as 🔧 Laravel\n    participant DB as 🗄️ MySQL\n\n    rect rgb(219, 234, 254)\n        Note over U,DB: Login\n        U->>R: email + password\n        R->>API: POST /api/login<br/>(throttle:5,1)\n        API->>DB: verify + store sha256(token)<br/>→ users.api_token\n        API-->>R: { user, token }\n        R->>LS: persist scm-auth\n        R-->>U: redirect by role\n    end\n\n    rect rgb(254, 243, 199)\n        Note over R,DB: Authenticated request\n        R->>API: GET /api/prs<br/>Authorization: Bearer ‹token›\n        API->>API: ApiToken middleware<br/>verify sha256 hash\n        API->>API: Controller RBAC<br/>(BACKOFFICE_ROLES etc.)\n        API->>DB: scoped query<br/>(creator / vendor / all)\n        API-->>R: data[]\n    end\n\n    rect rgb(220, 252, 231)\n        Note over R,API: Self-heal on app mount\n        R->>API: GET /api/me\n        API-->>R: fresh role\n        Note right of R: Tampered localStorage<br/>roles get overwritten\n    end\n```\n\n---\n\n## 6. Data Model (ERD)\n\nCore tables. All item lists, vendor invites, and quote responses are stored as **JSON columns** on the parent record — denormalised by design for snapshot integrity.\n\n```mermaid\nerDiagram\n    USERS ||--o| APP_VENDORS : \"linked via user_id\"\n    USERS ||--o{ APP_PRS : creates\n    USERS {\n        bigint id PK\n        string name\n        string email UK\n        string role\n        string api_token \"sha256\"\n    }\n    APP_VENDORS {\n        bigint id PK\n        bigint user_id FK\n        string vendor_code UK\n        string vendor_name\n        string status \"approved/pending/suspended\"\n        json bank_details\n        string gst\n        string pan\n    }\n    APP_PRS ||--o{ APP_RFQS : \"spawns\"\n    APP_PRS {\n        string number PK \"PR-YYYY-NNNN\"\n        string status\n        string chain_stage \"hod/cfo/ceo/done\"\n        json items\n        bigint creator_id FK\n    }\n    APP_RFQS ||--o{ APP_POS : \"awarded → creates\"\n    APP_RFQS {\n        string number PK \"QT-YYYY-NNNN\"\n        string status \"open/compared/awarded/closed\"\n        string pr_number FK\n        json items\n        json vendors \"invited names\"\n        json responses \"vendor quotes\"\n        string awarded_vendor\n    }\n    APP_POS ||--o{ APP_GRNS : \"received via\"\n    APP_POS {\n        string number PK \"PO-YYYY-NNNN\"\n        string status \"pending/accepted/fulfilled/rejected\"\n        string rfq_number FK\n        string vendor \"name snapshot\"\n        json items \"with rate + gst\"\n    }\n    APP_GRNS {\n        string number PK \"GRN-YYYY-NNN\"\n        string po_number FK\n        string status \"partial/full\"\n        string vendor\n        json items \"received qty\"\n    }\n```\n\n---\n\n## Appendix · Auto-generated number formats\n\n| Document | Pattern        | Example         |\n| -------- | -------------- | --------------- |\n| PR       | `PR-YYYY-NNNN` | `PR-2026-0042`  |\n| RFQ      | `QT-YYYY-NNNN` | `QT-2026-0017`  |\n| PO       | `PO-YYYY-NNNN` | `PO-2026-0009`  |\n| GRN      | `GRN-YYYY-NNN` | `GRN-2026-031`  |\n\n## Appendix · Terminal states (mutation blocked, returns 409)\n\n| Entity | Terminal states                          |\n| ------ | ---------------------------------------- |\n| PR     | `approved` · `rejected` · `cancelled` <br/>(`hold` is **non-terminal** — resumable) |\n| RFQ    | `awarded` · `closed`                     |\n| PO     | `fulfilled` · `rejected`                 |\n| GRN    | _(no terminal — append-only)_            |\n";
+  // Replace fenced ```mermaid blocks with placeholders BEFORE markdown parse so marked
+  // doesn't mangle them, then swap back as <div class="mermaid">…</div>.
+  const blocks = [];
+  const stripped = RAW_MD.replace(/```mermaid\n([\s\S]*?)```/g, (_, code) => {
+    const i = blocks.push(code) - 1;
+    return `\n\n<!--MERMAID_${i}-->\n\n`;
+  });
+  let htmlOut = marked.parse(stripped, { gfm: true, breaks: false });
+  htmlOut = htmlOut.replace(/<!--MERMAID_(\d+)-->/g, (_, i) => {
+    const code = blocks[Number(i)]
+      .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    return `<div class="mermaid">${code}</div>`;
+  });
+  document.getElementById("content").innerHTML = htmlOut;
+
+  (async () => {
+    while (!window.__mermaid) await new Promise(r => setTimeout(r, 50));
+    // Wait for Inter to be available so Mermaid measures text widths accurately.
+    if (document.fonts && document.fonts.ready) {
+      try { await document.fonts.load('600 14px "Inter"'); } catch {}
+      try { await document.fonts.load('400 13px "Inter"'); } catch {}
+      try { await document.fonts.ready; } catch {}
+    }
+
+    window.__mermaid.initialize({
+      startOnLoad: false,
+      theme: "default",
+      securityLevel: "loose",
+      flowchart: { htmlLabels: true, useMaxWidth: false, padding: 18, nodeSpacing: 32, rankSpacing: 44 },
+      sequence:  { useMaxWidth: false },
+      er:        { useMaxWidth: false },
+      themeVariables: { fontFamily: 'Arial, "Helvetica Neue", Helvetica, sans-serif', fontSize: "13px" }
+    });
+    await window.__mermaid.run({ querySelector: ".mermaid" });
+
+    // Strip inline sizing on every SVG so CSS can scale to fit. Keep viewBox so
+    // browsers compute aspect-ratio-preserving size from max-width / max-height.
+    document.querySelectorAll(".mermaid svg").forEach(svg => {
+      svg.removeAttribute("width");
+      svg.removeAttribute("height");
+      svg.style.maxWidth = "";
+      svg.style.width = "";
+      svg.style.height = "";
+      svg.setAttribute("preserveAspectRatio", "xMidYMid meet");
+    });
+
+    window.__mermaidReady = true;
+  })();
+</script>
+</body>
+</html>
