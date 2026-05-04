@@ -234,7 +234,7 @@ export default function Login() {
           </div>
         </div>
         <div className="mt-4">
-          <Button variant="secondary" onClick={() => navigate("/vendor-registration")}>
+          <Button variant="secondary" onClick={() => navigate("/vendor-register")}>
             Register as Vendor
           </Button>
         </div>

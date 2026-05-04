@@ -26,7 +26,7 @@ export default function AssignPermissionsDrawer({ open, user, onClose }) {
       footer={
         <>
           <button onClick={onClose} className="px-4 py-2 text-sm font-medium text-text border border-border rounded-md hover:bg-surface-container-low">Cancel</button>
-          <button onClick={save} className="px-6 py-2 text-sm font-bold text-primary-foreground bg-primary hover:bg-primary-hover rounded-md">Save Permissions</button>
+          <button onClick={save} className="px-6 py-2 text-sm font-bold text-primary-foreground bg-primary hover:brightness-110 rounded-md">Save Permissions</button>
         </>
       }
     >

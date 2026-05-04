@@ -23,7 +23,7 @@ export default function ProformaInvoicePage() {
   const total = subtotal + tax;
 
   return (
-    <div className="max-w-5xl mx-auto">
+    <div className="max-w-[1400px] mx-auto">
       <PageHeader title="Create Proforma Invoice" subtitle="Provisional invoice issued before shipment" />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -67,12 +67,12 @@ export default function ProformaInvoicePage() {
         </div>
 
         <div className="lg:col-span-1">
-          <div className="sticky top-6 bg-surface-container-lowest border border-border rounded-lg p-6 space-y-4">
+          <div className="sticky top-6 glass-card rounded-2xl p-6 space-y-4">
             <h3 className="text-lg font-bold text-text">Summary</h3>
             <div className="flex justify-between text-sm"><span className="text-text-muted">Subtotal</span><span className="font-medium">${subtotal.toFixed(2)}</span></div>
             <div className="flex justify-between text-sm"><span className="text-text-muted">Tax (8%)</span><span className="font-medium">${tax.toFixed(2)}</span></div>
             <div className="flex justify-between pt-3 border-t border-border font-bold"><span>Total</span><span className="text-lg text-primary">${total.toFixed(2)}</span></div>
-            <button onClick={send} className="w-full bg-primary hover:bg-primary-hover text-primary-foreground py-2.5 rounded-md font-bold flex items-center justify-center gap-2">
+            <button onClick={send} className="w-full bg-primary hover:brightness-110 text-primary-foreground py-2.5 rounded-md font-bold flex items-center justify-center gap-2">
               <Send className="h-4 w-4" /> Send Proforma
             </button>
             <button onClick={draft} className="w-full border border-border text-text py-2.5 rounded-md font-medium hover:bg-surface-container-low">

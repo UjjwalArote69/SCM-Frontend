@@ -26,7 +26,11 @@ export default function NotificationsDropdown({ onClose }) {
 
   useEffect(() => {
     const handler = (e) => {
-      if (!ref.current?.contains(e.target)) onClose?.();
+      if (ref.current?.contains(e.target)) return;
+      // Don't close on clicks to the bell trigger — otherwise mousedown
+      // closes and the button's onClick re-opens immediately.
+      if (e.target.closest?.('[aria-label="Notifications"]')) return;
+      onClose?.();
     };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
@@ -35,7 +39,14 @@ export default function NotificationsDropdown({ onClose }) {
   return (
     <div
       ref={ref}
-      className="absolute right-0 top-full mt-2 w-80 bg-surface-container-lowest border border-border rounded-lg shadow-lg z-50 overflow-hidden"
+      className="absolute right-0 top-full mt-2 w-80 rounded-2xl z-50 overflow-hidden border border-border"
+      style={{
+        backgroundColor: "var(--color-surface)",
+        backdropFilter: "blur(14px) saturate(1.1)",
+        WebkitBackdropFilter: "blur(14px) saturate(1.1)",
+        boxShadow:
+          "0 1px 2px rgba(0,0,0,0.06), 0 4px 16px -4px rgba(0,0,0,0.10), 0 24px 48px -16px rgba(0,0,0,0.18)",
+      }}
     >
       <div className="px-4 py-3 border-b border-border flex items-center justify-between">
         <div className="flex items-center gap-2">

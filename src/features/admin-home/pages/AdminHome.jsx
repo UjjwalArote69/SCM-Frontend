@@ -52,7 +52,7 @@ function Tile({ to, icon: Icon, label, value, desc, tone = "info", loading }) {
   return (
     <Link
       to={to}
-      className="bg-surface-container-lowest border border-border rounded-xl p-5 hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 shadow-sm group relative overflow-hidden block"
+      className="glass-card rounded-2xl p-5 hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 shadow-sm group relative overflow-hidden block"
     >
       <div className={`absolute top-0 left-0 right-0 h-1 ${TONE_BAR[tone] ?? TONE_BAR.info} rounded-t-xl`} />
       <div className="flex items-start justify-between mt-1 mb-4">
@@ -236,7 +236,7 @@ export default function AdminHome() {
   const today = new Date().toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" });
 
   return (
-    <div className="max-w-7xl mx-auto space-y-6">
+    <div className="max-w-[1400px] mx-auto space-y-6">
 
       {/* ── Hero Banner — neutral card ── */}
       <div className="bg-surface-container-lowest border border-border rounded-2xl p-5 sm:p-6 shadow-sm">
@@ -291,7 +291,7 @@ export default function AdminHome() {
       <div className="flex flex-col lg:flex-row gap-6">
 
         {/* Pending PR approvals */}
-        <div className="lg:w-2/3 bg-surface-container-lowest border border-border rounded-xl shadow-sm overflow-hidden">
+        <div className="lg:w-2/3 glass-card rounded-2xl shadow-sm overflow-hidden">
           <div className="px-6 py-4 border-b border-border flex items-center justify-between">
             <h2 className="text-base font-bold text-text">Pending PR Approvals</h2>
             <span
@@ -350,7 +350,7 @@ export default function AdminHome() {
 
         <div className="lg:w-1/3 flex flex-col gap-6">
           {/* Pending vendors */}
-          <div className="bg-surface-container-lowest border border-border rounded-xl shadow-sm overflow-hidden">
+          <div className="glass-card rounded-2xl shadow-sm overflow-hidden">
             <div className="px-6 py-4 border-b border-border flex items-center justify-between">
               <h2 className="text-sm font-bold text-text uppercase tracking-wider">Pending Vendors</h2>
               <span
@@ -386,7 +386,7 @@ export default function AdminHome() {
           </div>
 
           {/* System quick links */}
-          <div className="bg-surface-container-lowest border border-border rounded-xl shadow-sm overflow-hidden">
+          <div className="glass-card rounded-2xl shadow-sm overflow-hidden">
             <div className="px-6 py-4 border-b border-border">
               <h2 className="text-sm font-bold text-text uppercase tracking-wider">System</h2>
             </div>

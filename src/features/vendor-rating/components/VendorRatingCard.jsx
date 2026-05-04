@@ -411,7 +411,7 @@ export default function VendorRatingCard({ vendorName, compact = false }) {
   };
 
   return (
-    <section className="bg-surface-container-lowest border border-border rounded-lg overflow-hidden">
+    <section className="glass-card rounded-2xl overflow-hidden">
       <header
         className={`flex items-center justify-between gap-2 ${compact ? "px-4 py-3" : "px-5 py-4"} border-b border-border bg-surface-container-low/40`}
       >
@@ -520,7 +520,7 @@ export default function VendorRatingCard({ vendorName, compact = false }) {
             type="button"
             onClick={handleSubmit}
             disabled={submitting}
-            className="px-4 py-2 text-sm font-bold text-primary-foreground bg-primary hover:bg-primary-hover rounded-md disabled:opacity-50 inline-flex items-center gap-2"
+            className="px-4 py-2 text-sm font-bold text-primary-foreground bg-primary hover:brightness-110 rounded-md disabled:opacity-50 inline-flex items-center gap-2"
           >
             {submitting ? (
               <Loader2 className="h-4 w-4 animate-spin" />

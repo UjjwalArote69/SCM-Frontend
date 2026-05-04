@@ -60,7 +60,7 @@ export default function Topbar() {
   const roleShort = user ? formatUserRole(user, { short: true }) : null;
 
   return (
-    <header className="h-16 sticky top-0 z-30 bg-bg/80 backdrop-blur-md border-b border-border flex items-center gap-4 px-4 md:px-6">
+    <header className="scm-chrome h-16 sticky top-0 z-30 bg-bg/70 backdrop-blur-xl border-b border-border flex items-center gap-4 px-4 md:px-6">
 
       {/* ── Left ── */}
       <div className="flex items-center gap-3 shrink-0">

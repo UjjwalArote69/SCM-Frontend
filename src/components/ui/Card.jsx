@@ -20,7 +20,7 @@ export default function Card({
 }) {
   return (
     <div
-      className={`bg-surface-container-lowest border border-border rounded-lg ${PADDING[padding] ?? PADDING.lg} ${className}`}
+      className={`glass-card rounded-2xl ${PADDING[padding] ?? PADDING.lg} ${className}`}
       {...rest}
     >
       {children}

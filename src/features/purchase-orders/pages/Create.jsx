@@ -298,7 +298,7 @@ export default function PurchaseOrderCreatePage() {
   };
 
   return (
-    <div className="max-w-6xl mx-auto">
+    <div className="max-w-[1400px] mx-auto">
       <PageHeader
         title="Create Purchase Order"
         subtitle="Issue a new PO to a vendor"
@@ -695,7 +695,7 @@ export default function PurchaseOrderCreatePage() {
                 type="button"
                 onClick={submit}
                 disabled={submitting}
-                className="w-full bg-primary hover:bg-primary-hover text-primary-foreground py-3 rounded-md font-bold shadow-sm flex items-center justify-center gap-2 text-sm disabled:opacity-60"
+                className="w-full bg-primary hover:brightness-110 text-primary-foreground py-3 rounded-md font-bold shadow-sm flex items-center justify-center gap-2 text-sm disabled:opacity-60"
               >
                 {submitting ? (
                   <Loader2 className="h-4 w-4 animate-spin" />

@@ -52,7 +52,22 @@
       "Bash(tar -xzf \"C:\\\\Users\\\\ujjwa\\\\.claude\\\\projects\\\\C--Users-ujjwa-OneDrive-Desktop-Ujjwal-Work-SCM-backupmeka-scm-frontend\\\\ae34eef9-59c5-4fab-b5cb-06c4ba61c425\\\\tool-results\\\\webfetch-1777697889016-j6ezex.bin\")",
       "PowerShell(New-Item *)",
       "WebSearch",
-      "WebFetch(domain:raw.githubusercontent.com)"
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "Bash(grep -n \"label=\\\\\"Total\\\\\"\\\\|label=\\\\\"Cancelled\\\\\"\\\\|StatCard$\\\\|hasFilters \" \"C:/Users/ujjwa/OneDrive/Desktop/Ujjwal/Work/SCM/backupmeka/scm-frontend/src/features/purchase-requests/pages/List.jsx\")",
+      "Bash(grep -n \"}\\\\\\)}\\\\s*$\\\\|filtered.map\\\\|const tone =\\\\|const stripColor =\\\\|<\\\\/div>\\\\s*<\\\\/div>\\\\s*\\\\\\)\" \"C:/Users/ujjwa/OneDrive/Desktop/Ujjwal/Work/SCM/backupmeka/scm-frontend/src/features/purchase-requests/pages/List.jsx\")",
+      "Bash(grep -n \"}\\)}\\\\s*$\\\\|filtered.map\\\\|<\\\\/div>\" \"C:/Users/ujjwa/OneDrive/Desktop/Ujjwal/Work/SCM/backupmeka/scm-frontend/src/features/purchase-requests/pages/List.jsx\")",
+      "WebFetch(domain:supplierfirst.ril.com)",
+      "WebFetch(domain:scm.ril.com)",
+      "Bash(python *)",
+      "Bash(\"C:/Program Files/gs/gs10.07.0/bin/gswin64c.exe\" --version)",
+      "Bash(\"C:/Program Files/gs/gs10.07.0/bin/gswin64c.exe\" -dQUIET -dNODISPLAY -dNOPAUSE -dBATCH -sDEVICE=txtwrite -sOutputFile=- \"C:\\\\Users\\\\ujjwa\\\\.claude\\\\projects\\\\C--Users-ujjwa-OneDrive-Desktop-Ujjwal-Work-SCM-backupmeka-scm-frontend\\\\ae34eef9-59c5-4fab-b5cb-06c4ba61c425\\\\tool-results\\\\webfetch-1777715734077-iohmna.pdf\")",
+      "Bash(\"C:/Program Files/gs/gs10.07.0/bin/gswin64c.exe\" -dQUIET -dNOPAUSE -dBATCH -sDEVICE=txtwrite -sOutputFile=\"C:/Users/ujjwa/AppData/Local/Temp/ril-pqq.txt\" \"C:/Users/ujjwa/.claude/projects/C--Users-ujjwa-OneDrive-Desktop-Ujjwal-Work-SCM-backupmeka-scm-frontend/ae34eef9-59c5-4fab-b5cb-06c4ba61c425/tool-results/webfetch-1777715734077-iohmna.pdf\")",
+      "Bash(\"C:/Program Files/gs/gs10.07.0/bin/gswin64c.exe\" -dQUIET -dNOPAUSE -dBATCH -sDEVICE=txtwrite -sOutputFile=\"C:/Users/ujjwa/AppData/Local/Temp/ril-epay.txt\" \"C:/Users/ujjwa/.claude/projects/C--Users-ujjwa-OneDrive-Desktop-Ujjwal-Work-SCM-backupmeka-scm-frontend/ae34eef9-59c5-4fab-b5cb-06c4ba61c425/tool-results/webfetch-1777715912184-ln3nn4.pdf\")",
+      "WebFetch(domain:supplierregistration.ril.com)",
+      "WebFetch(domain:gstincheck.co.in)",
+      "Bash(grep -B1 -A2 \"<FieldGroup$\" \"C:/Users/ujjwa/OneDrive/Desktop/Ujjwal/Work/SCM/backupmeka/scm-frontend/src/features/onboarding/pages/VendorRegistrationPage.jsx\")",
+      "Bash(grep *)",
+      "PowerShell(Get-NetTCPConnection *)"
     ],
     "additionalDirectories": [
       "C:\\Users\\ujjwa\\OneDrive\\Desktop\\Ujjwal\\Work\\SCM\\backupmeka"

@@ -30,7 +30,7 @@ export default function VendorInvoicesPage() {
   const pendingAccept = pos.filter((p) => p.status === "pending");
 
   return (
-    <div className="max-w-6xl mx-auto">
+    <div className="max-w-[1400px] mx-auto">
       <PageHeader
         title="My Invoices"
         subtitle="Invoice against your accepted purchase orders"
@@ -39,7 +39,7 @@ export default function VendorInvoicesPage() {
             <RefreshButton onRefresh={fetchAll} loading={loading} />
             <Link
               to="/vendor/invoices/upload"
-              className="flex items-center gap-2 px-4 py-2 rounded-md bg-primary hover:bg-primary-hover text-primary-foreground text-sm font-bold"
+              className="flex items-center gap-2 px-4 py-2 rounded-md bg-primary hover:brightness-110 text-primary-foreground text-sm font-bold"
             >
               <Upload className="h-4 w-4" /> Upload Invoice
             </Link>

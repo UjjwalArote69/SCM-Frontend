@@ -32,7 +32,7 @@ export default function GenericMasterDrawer({
           </button>
           <button
             onClick={save}
-            className="px-6 py-2 text-sm font-bold text-primary-foreground bg-primary hover:bg-primary-hover rounded-md"
+            className="px-6 py-2 text-sm font-bold text-primary-foreground bg-primary hover:brightness-110 rounded-md"
           >
             {isNew ? "Create" : "Save"}
           </button>

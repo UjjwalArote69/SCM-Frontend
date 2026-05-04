@@ -222,7 +222,7 @@ function ApprovalTree({ chain, pr, canSeeComment }) {
           };
 
   return (
-    <section className="bg-surface-container-lowest rounded-xl border border-border overflow-hidden print-reset">
+    <section className="glass-card rounded-2xl overflow-hidden print-reset">
       <header className="px-4 sm:px-5 py-3 sm:py-4 border-b border-border flex items-center justify-between gap-2">
         <h2 className="text-sm font-bold uppercase tracking-wider text-text flex items-center gap-2">
           <GitBranch className="h-4 w-4 text-text-muted print:hidden" />
@@ -397,7 +397,7 @@ function RequesterStatusPanel({ pr }) {
   const c = config[pr.status] ?? config.pending;
   const Icon = c.Icon;
   return (
-    <section className="bg-surface-container-lowest rounded-lg p-6 border border-border print-reset">
+    <section className="glass-card rounded-2xl p-6 print-reset">
       <h2 className="text-lg font-bold text-text mb-4">Request Status</h2>
       <div
         className={`rounded-md border ${c.cls} p-5 flex items-start gap-4`}
@@ -470,7 +470,7 @@ export default function PurchaseRequestDetailPage() {
 
   if (loading) {
     return (
-      <div className="max-w-7xl mx-auto flex items-center justify-center py-24 text-text-muted">
+      <div className="max-w-[1400px] mx-auto flex items-center justify-center py-24 text-text-muted">
         <Loader2 className="h-6 w-6 animate-spin mr-2" /> Loading {number}…
       </div>
     );
@@ -599,7 +599,7 @@ export default function PurchaseRequestDetailPage() {
   };
 
   return (
-    <div className="max-w-7xl mx-auto">
+    <div className="max-w-[1400px] mx-auto">
       {/* Print-only letterhead — rendered only when printing */}
       <div className="print-only mb-6">
         <div className="flex items-start justify-between pb-4 border-b-2 border-black">
@@ -626,16 +626,19 @@ export default function PurchaseRequestDetailPage() {
       </div>
 
       {/* Breadcrumb */}
-      <nav className="text-sm font-medium text-text-muted mb-4 flex items-center gap-2 print:hidden">
-        <Link to="/app/purchase-requests" className="hover:text-primary">
+      <nav className="text-[12px] font-medium text-text-muted mb-4 flex items-center gap-1.5 print:hidden">
+        <Link
+          to="/app/purchase-requests"
+          className="hover:text-primary transition-colors"
+        >
           Purchase Requests
         </Link>
-        <ChevronRight className="h-4 w-4" />
-        <span className="text-text">{pr.number}</span>
+        <ChevronRight className="h-3.5 w-3.5 text-text-subtle" />
+        <span className="text-text font-mono">{pr.number}</span>
       </nav>
 
       {/* Hero card */}
-      <div className="mb-6 rounded-xl bg-surface-container-lowest border border-border overflow-hidden print:hidden">
+      <div className="mb-6 glass-card rounded-2xl overflow-hidden print:hidden">
         <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-4 sm:gap-6 p-4 sm:p-6">
           {/* Left: PR number + status + facts */}
           <div className="flex-1 min-w-0">
@@ -676,11 +679,11 @@ export default function PurchaseRequestDetailPage() {
                   </span>
                 )}
             </div>
-            <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight text-text font-mono break-all">
+            <h1 className="text-[24px] sm:text-[28px] font-bold tracking-tight text-text font-mono break-all leading-tight">
               {pr.number}
             </h1>
             {!isEmpty(pr.title) && (
-              <p className="text-text-muted text-sm mt-1">{pr.title}</p>
+              <p className="text-text-muted text-[14px] mt-1.5">{pr.title}</p>
             )}
             {/* Quick facts strip — 2-col grid on mobile, free-flowing on sm+ */}
             <div className="grid grid-cols-2 gap-x-4 gap-y-3 sm:flex sm:flex-wrap sm:gap-x-6 sm:gap-y-2 mt-4 text-xs">
@@ -712,13 +715,13 @@ export default function PurchaseRequestDetailPage() {
         </div>
 
         {/* Bottom action bar */}
-        <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-center sm:justify-between gap-3 px-4 sm:px-6 py-3 border-t border-border bg-surface-container-low/40">
-          {/* Print/PDF/Email — icon-only on mobile, with labels on sm+ */}
+        <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-center sm:justify-between gap-3 px-4 sm:px-6 py-3 border-t border-border">
+          {/* Print/PDF/Email — pill buttons */}
           <div className="flex items-center gap-2 flex-wrap">
             <button
               type="button"
               onClick={handlePrint}
-              className="px-2.5 sm:px-3 py-1.5 text-xs font-semibold text-text-muted border border-border rounded-md hover:bg-surface-container hover:text-text flex items-center gap-1.5"
+              className="px-3 py-1.5 text-[12px] font-semibold text-text-muted border border-border rounded-full bg-surface-container-low/60 hover:text-text hover:border-white/20 transition-colors flex items-center gap-1.5"
               aria-label="Print"
             >
               <Printer className="h-3.5 w-3.5" />
@@ -728,7 +731,7 @@ export default function PurchaseRequestDetailPage() {
               type="button"
               onClick={handlePdf}
               title="Opens the browser print dialog — select 'Save as PDF'"
-              className="px-2.5 sm:px-3 py-1.5 text-xs font-semibold text-text-muted border border-border rounded-md hover:bg-surface-container hover:text-text flex items-center gap-1.5"
+              className="px-3 py-1.5 text-[12px] font-semibold text-text-muted border border-border rounded-full bg-surface-container-low/60 hover:text-text hover:border-white/20 transition-colors flex items-center gap-1.5"
               aria-label="Save as PDF"
             >
               <Download className="h-3.5 w-3.5" />
@@ -738,7 +741,7 @@ export default function PurchaseRequestDetailPage() {
               type="button"
               onClick={handleEmail}
               title="Opens your email client with PR details prefilled"
-              className="px-2.5 sm:px-3 py-1.5 text-xs font-semibold text-text-muted border border-border rounded-md hover:bg-surface-container hover:text-text flex items-center gap-1.5"
+              className="px-3 py-1.5 text-[12px] font-semibold text-text-muted border border-border rounded-full bg-surface-container-low/60 hover:text-text hover:border-white/20 transition-colors flex items-center gap-1.5"
               aria-label="Email"
             >
               <Mail className="h-3.5 w-3.5" />
@@ -751,9 +754,9 @@ export default function PurchaseRequestDetailPage() {
               type="button"
               onClick={onDelete}
               disabled={submitting}
-              className="w-full sm:w-auto px-4 py-2.5 sm:py-2 text-sm font-bold text-danger border border-danger/30 bg-danger-soft/40 hover:bg-danger-soft rounded-md transition-colors flex items-center justify-center gap-2 disabled:opacity-60"
+              className="w-full sm:w-auto px-4 py-2 text-[12px] font-bold text-danger border border-danger/30 bg-danger-soft/40 hover:bg-danger-soft rounded-full transition-colors flex items-center justify-center gap-1.5 disabled:opacity-60"
             >
-              <Trash2 className="h-4 w-4" />
+              <Trash2 className="h-3.5 w-3.5" />
               Delete PR
             </button>
           )}
@@ -761,9 +764,9 @@ export default function PurchaseRequestDetailPage() {
             <button
               type="button"
               onClick={() => setAssignOpen(true)}
-              className="w-full sm:w-auto px-4 py-2.5 sm:py-2 text-sm font-bold text-text border border-border rounded-md hover:bg-surface-container-low transition-colors flex items-center justify-center gap-2"
+              className="w-full sm:w-auto px-4 py-2 text-[12px] font-bold text-text border border-border rounded-full bg-surface-container-low/60 hover:border-white/20 transition-colors flex items-center justify-center gap-1.5"
             >
-              <UserPlus className="h-4 w-4" />
+              <UserPlus className="h-3.5 w-3.5" />
               {assignedAuthor ? "Reassign RFQ author" : "Assign RFQ author"}
             </button>
           )}
@@ -772,13 +775,13 @@ export default function PurchaseRequestDetailPage() {
               type="button"
               onClick={() => setModalOpen(true)}
               disabled={submitting}
-              className="w-full sm:w-auto px-5 py-2.5 sm:py-2 text-sm font-bold text-primary-foreground bg-primary hover:bg-primary-hover rounded-md transition-colors disabled:opacity-60"
+              className="w-full sm:w-auto px-5 py-2 text-[12px] font-bold text-primary-foreground bg-primary hover:brightness-110 rounded-full transition-all shadow-sm disabled:opacity-60"
             >
               Update Status
             </button>
           ) : pr.status === "pending" && pr.chain_stage !== "done" ? (
             <div
-              className="px-3 py-2 text-xs font-semibold text-text-muted bg-surface-container-low border border-border rounded-md text-center sm:text-left"
+              className="px-3 py-2 text-[11px] font-semibold text-text-muted bg-surface-container-low/60 border border-border rounded-full text-center sm:text-left"
               title={
                 isApproverRole
                   ? `Waiting on ${stageRole} approval. Your role (${userRole ?? "guest"}) cannot act on this stage.`
@@ -805,7 +808,7 @@ export default function PurchaseRequestDetailPage() {
 
       <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 print:block">
         <div className="xl:col-span-8 space-y-6">
-          <section className="bg-surface-container-lowest rounded-xl p-4 sm:p-6 border border-border print-reset">
+          <section className="glass-card rounded-2xl p-4 sm:p-6 print-reset">
             <h2 className="text-sm font-semibold text-text mb-5 flex items-center gap-2">
               <Info className="h-4 w-4 text-text-muted print:hidden" strokeWidth={2} />
               Request Details
@@ -840,7 +843,7 @@ export default function PurchaseRequestDetailPage() {
             </div>
           </section>
 
-          <section className="bg-surface-container-lowest rounded-xl overflow-hidden border border-border print-reset">
+          <section className="glass-card rounded-2xl overflow-hidden print-reset">
             <div className="px-4 sm:px-6 py-4 border-b border-border flex justify-between items-center print:p-0 print:border-0 print:mb-2">
               <h2 className="text-sm font-semibold text-text flex items-center gap-2">
                 <ListChecks className="h-4 w-4 text-text-muted print:hidden" strokeWidth={2} />

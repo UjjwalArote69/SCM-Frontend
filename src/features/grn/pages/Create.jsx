@@ -193,7 +193,7 @@ export default function GRNCreatePage() {
   };
 
   return (
-    <div className="max-w-5xl mx-auto">
+    <div className="max-w-[1400px] mx-auto">
       <PageHeader
         title="Create GRN"
         subtitle="Log goods received against a purchase order"
@@ -368,7 +368,7 @@ export default function GRNCreatePage() {
               type="button"
               onClick={submit}
               disabled={submitting}
-              className="px-6 py-2 text-sm font-bold text-primary-foreground bg-primary hover:bg-primary-hover rounded-md flex items-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
+              className="px-6 py-2 text-sm font-bold text-primary-foreground bg-primary hover:brightness-110 rounded-md flex items-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
             >
               {submitting ? (
                 <>

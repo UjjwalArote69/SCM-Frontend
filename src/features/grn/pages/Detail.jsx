@@ -51,7 +51,7 @@ export default function GRNDetailPage() {
 
   if (loading) {
     return (
-      <div className="max-w-5xl mx-auto flex items-center justify-center py-24 text-text-muted">
+      <div className="max-w-[1400px] mx-auto flex items-center justify-center py-24 text-text-muted">
         <Loader2 className="h-6 w-6 animate-spin mr-2" /> Loading…
       </div>
     );
@@ -68,7 +68,7 @@ export default function GRNDetailPage() {
   const items = Array.isArray(grn.items) ? grn.items : [];
 
   return (
-    <div className="max-w-5xl mx-auto">
+    <div className="max-w-[1400px] mx-auto">
       <PrintLetterhead
         docType="Goods Receipt Note"
         docNumber={grn.number}

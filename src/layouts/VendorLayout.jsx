@@ -5,7 +5,7 @@ import { useUIStore } from "../features/ui/store.js";
 export default function VendorLayout({ children }) {
   const collapsed = useUIStore((s) => s.sidebarCollapsed);
   return (
-    <div className="min-h-screen bg-bg text-text">
+    <div className="min-h-screen text-text">
       <Sidebar audience="vendor" />
       <div
         className={`flex flex-col min-h-screen transition-[margin] duration-200 ${

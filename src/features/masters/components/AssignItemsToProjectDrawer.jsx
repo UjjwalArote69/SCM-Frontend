@@ -34,7 +34,7 @@ export default function AssignItemsToProjectDrawer({ open, project, onClose }) {
         <>
           <span className="text-sm text-text-muted mr-auto">{selected.size} selected</span>
           <button onClick={onClose} className="px-4 py-2 text-sm font-medium text-text border border-border rounded-md hover:bg-surface-container-low">Cancel</button>
-          <button onClick={save} disabled={selected.size === 0} className="px-6 py-2 text-sm font-bold text-primary-foreground bg-primary hover:bg-primary-hover rounded-md disabled:bg-surface-container-high disabled:text-text-muted disabled:cursor-not-allowed">Assign {selected.size > 0 && `(${selected.size})`}</button>
+          <button onClick={save} disabled={selected.size === 0} className="px-6 py-2 text-sm font-bold text-primary-foreground bg-primary hover:brightness-110 rounded-md disabled:bg-surface-container-high disabled:text-text-muted disabled:cursor-not-allowed">Assign {selected.size > 0 && `(${selected.size})`}</button>
         </>
       }
     >

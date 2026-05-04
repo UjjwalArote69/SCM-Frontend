@@ -80,7 +80,7 @@ export default function SubmitQuotePage() {
 
   if (loading) {
     return (
-      <div className="max-w-5xl mx-auto flex items-center justify-center py-24 text-text-muted">
+      <div className="max-w-[1400px] mx-auto flex items-center justify-center py-24 text-text-muted">
         <Loader2 className="h-6 w-6 animate-spin mr-2" /> Loading…
       </div>
     );
@@ -195,7 +195,7 @@ export default function SubmitQuotePage() {
   const disabled = isTerminal || dueDatePassed || ratesLocked;
 
   return (
-    <div className="max-w-5xl mx-auto">
+    <div className="max-w-[1400px] mx-auto">
       <nav className="text-sm font-medium text-text-muted mb-2 flex items-center gap-2">
         <Link to="/vendor/quotation-requests" className="hover:text-primary">
           Quotation Requests

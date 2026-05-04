@@ -15,7 +15,7 @@ export default function ApprovalRulesPage() {
         title="Approval Rules"
         subtitle="Configure multi-stage approval chains based on amount, department, or project"
         actions={
-          <button className="flex items-center gap-2 px-4 py-2 rounded-md bg-primary hover:bg-primary-hover text-primary-foreground text-sm font-bold">
+          <button className="flex items-center gap-2 px-4 py-2 rounded-md bg-primary hover:brightness-110 text-primary-foreground text-sm font-bold">
             <Plus className="h-4 w-4" /> New Rule
           </button>
         }

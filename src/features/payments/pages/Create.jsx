@@ -366,7 +366,7 @@ export default function PaymentCreatePage() {
           type="button"
           onClick={submit}
           disabled={submitting || eligible.length === 0}
-          className="px-5 py-2 text-sm font-bold text-primary-foreground bg-primary hover:bg-primary-hover rounded-md disabled:opacity-60 flex items-center gap-2"
+          className="px-5 py-2 text-sm font-bold text-primary-foreground bg-primary hover:brightness-110 rounded-md disabled:opacity-60 flex items-center gap-2"
         >
           {submitting ? (
             <Loader2 className="h-4 w-4 animate-spin" />

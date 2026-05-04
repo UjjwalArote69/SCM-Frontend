@@ -1,5 +1,5 @@
 // Create PR page — supports inline attachments via prDocumentsApi.
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   FileText,
@@ -22,6 +22,7 @@ import {
   File as FileIcon,
   Image as ImageIcon,
   FileSpreadsheet as FileSpreadsheetIcon,
+  Save,
 } from "lucide-react";
 import { usePRStore } from "../store.js";
 import { prDocumentsApi } from "../documents/api.js";
@@ -108,10 +109,10 @@ function FieldLabel({ children, error, required }) {
 function inputCls(error) {
   // On mobile we use py-3 to hit the ~44px touch-target guideline; tighter
   // on sm+ where the cursor is more precise.
-  return `w-full rounded-lg px-3.5 py-3 sm:py-2.5 text-sm bg-surface-container-lowest border outline-none transition ${
+  return `w-full rounded-xl px-4 py-3 sm:py-2.5 text-sm bg-surface-container-low/60 border outline-none transition-colors placeholder:text-text-subtle ${
     error
       ? "border-danger/60 text-danger focus:border-danger focus:ring-2 focus:ring-danger/20"
-      : "border-border text-text focus:border-primary focus:ring-2 focus:ring-primary/20"
+      : "border-border text-text focus:border-primary/60 focus:ring-2 focus:ring-primary/15"
   }`;
 }
 
@@ -123,6 +124,18 @@ function FieldError({ message }) {
       {message}
     </p>
   );
+}
+
+function fmtTimeAgo(ts, nowMs) {
+  if (!ts) return "";
+  const diff = Math.max(0, nowMs - ts);
+  const m = Math.floor(diff / 60000);
+  if (m < 1) return "just now";
+  if (m < 60) return `${m} min${m === 1 ? "" : "s"} ago`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h} hour${h === 1 ? "" : "s"} ago`;
+  const d = Math.floor(h / 24);
+  return `${d} day${d === 1 ? "" : "s"} ago`;
 }
 
 function emptyItem() {
@@ -168,16 +181,89 @@ export default function PurchaseRequestCreatePage() {
   const user = useAuthStore((s) => s.user);
   const sidebarCollapsed = useUIStore((s) => s.sidebarCollapsed);
 
-  const [form, setForm]             = useState(() => initialForm(user));
+  // Draft persistence — form state is auto-saved to localStorage so the user
+  // can navigate away and come back. The PR is NOT created in the DB until
+  // they click "Submit for Approval". Drafts are scoped per-user so multiple
+  // accounts on the same machine don't collide.
+  const DRAFT_KEY = `scm-pr-draft-${user?.id ?? "guest"}`;
+
+  const [form, setForm] = useState(() => {
+    try {
+      const raw = localStorage.getItem(DRAFT_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed?.form) return parsed.form;
+      }
+    } catch {
+      /* fall through to clean form */
+    }
+    return initialForm(user);
+  });
+  const [draftLoadedAt] = useState(() => {
+    try {
+      const raw = localStorage.getItem(DRAFT_KEY);
+      return raw ? JSON.parse(raw)?.savedAt ?? null : null;
+    } catch {
+      return null;
+    }
+  });
+  const [draftRestored, setDraftRestored] = useState(Boolean(draftLoadedAt));
+  const [savedAt, setSavedAt] = useState(draftLoadedAt);
+
   const [errors, setErrors]         = useState({});
   const [submitting, setSubmitting] = useState(false);
+  // Captured once on mount so derivations stay pure across re-renders.
+  const [nowMs] = useState(() => Date.now());
 
   // Attachments are kept as File objects until the PR is created (we need
   // its number to upload against). On submit, the PR is POSTed first, then
   // each file is uploaded to /pr-documents with the new pr_number.
+  // Note: File objects can't be serialized into the draft, so the draft only
+  // restores the form fields — user re-attaches files when they resume.
   const [attachments, setAttachments] = useState([]); // File[]
   const [dragOver, setDragOver]       = useState(false);
   const fileInputRef = useRef(null);
+
+  // Auto-save draft on form changes (debounced).
+  useEffect(() => {
+    if (submitting) return;
+    const t = setTimeout(() => {
+      try {
+        const payload = { form, savedAt: Date.now() };
+        localStorage.setItem(DRAFT_KEY, JSON.stringify(payload));
+        setSavedAt(payload.savedAt);
+      } catch {
+        /* localStorage full — ignore */
+      }
+    }, 600);
+    return () => clearTimeout(t);
+  }, [form, DRAFT_KEY, submitting]);
+
+  const saveDraftNow = () => {
+    try {
+      const payload = { form, savedAt: Date.now() };
+      localStorage.setItem(DRAFT_KEY, JSON.stringify(payload));
+      setSavedAt(payload.savedAt);
+      setDraftRestored(false);
+      toast.success("Draft saved");
+    } catch {
+      toast.error("Could not save draft (storage full?)");
+    }
+  };
+
+  const discardDraft = () => {
+    try {
+      localStorage.removeItem(DRAFT_KEY);
+    } catch {
+      /* ignore */
+    }
+    setForm(initialForm(user));
+    setAttachments([]);
+    setErrors({});
+    setSavedAt(null);
+    setDraftRestored(false);
+    toast.info("Draft discarded");
+  };
 
   const addFiles = (files) => {
     const list = Array.from(files ?? []);
@@ -309,6 +395,13 @@ export default function PurchaseRequestCreatePage() {
 
       const record = await create(payload);
 
+      // PR successfully created — clear the saved draft.
+      try {
+        localStorage.removeItem(DRAFT_KEY);
+      } catch {
+        /* ignore */
+      }
+
       // Upload attachments — best-effort, sequential (keeps things simple
       // and avoids hammering the dev server with parallel multipart writes).
       let uploaded = 0;
@@ -317,7 +410,7 @@ export default function PurchaseRequestCreatePage() {
         try {
           await prDocumentsApi.upload({ pr_number: record.number, file });
           uploaded += 1;
-        } catch (err) {
+        } catch {
           failed.push(file.name);
         }
       }
@@ -396,21 +489,68 @@ export default function PurchaseRequestCreatePage() {
   const allRequiredOk = requiredOkCount === requiredChecks.length;
 
   return (
-    <div className="max-w-6xl mx-auto pb-24">
-      <div className="mb-8">
+    <div className="max-w-[1400px] mx-auto pb-24">
+      <div className="mb-6">
         <button
           type="button"
           onClick={() => navigate("/app/purchase-requests")}
-          className="inline-flex items-center gap-1 text-xs font-medium text-text-muted hover:text-text mb-3 transition-colors"
+          className="inline-flex items-center gap-1 text-[12px] font-medium text-text-muted hover:text-primary mb-3 transition-colors"
         >
           <ChevronLeft className="h-3.5 w-3.5" /> Purchase Requests
         </button>
         <div className="flex items-end justify-between gap-4 flex-wrap">
-          <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight text-text">
-            New Purchase Request
-          </h1>
-          <span className="text-xs font-medium text-text-muted">Draft</span>
+          <div>
+            <div className="flex items-center gap-1.5 text-text-muted">
+              <FileText className="h-3 w-3" strokeWidth={2} />
+              <span className="text-[10px] font-semibold tracking-[0.22em] uppercase">
+                New Request
+              </span>
+            </div>
+            <h1 className="text-[24px] sm:text-[28px] font-bold text-text leading-tight tracking-tight mt-1">
+              Create Purchase Request
+            </h1>
+          </div>
+          <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-text-muted bg-surface-container-low/60 border border-border rounded-full px-3 py-1.5 inline-flex items-center gap-1.5">
+            <span
+              className={`w-1.5 h-1.5 rounded-full ${savedAt ? "bg-success" : "bg-text-subtle"}`}
+            />
+            {savedAt ? "Draft saved" : "Draft"}
+          </span>
         </div>
+
+        {/* Restore banner — shown when a draft from a previous session was loaded */}
+        {draftRestored && savedAt && (
+          <div className="mt-4 glass-card rounded-2xl px-4 py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="flex items-center gap-2.5 text-[13px]">
+              <CheckCircle2 className="h-4 w-4 text-success shrink-0" />
+              <div>
+                <span className="font-semibold text-text">Draft restored</span>
+                <span className="text-text-muted ml-1.5">
+                  · last saved {fmtTimeAgo(savedAt, nowMs)}
+                </span>
+                <span className="text-text-subtle text-[11px] block sm:inline sm:ml-1.5">
+                  Attachments need to be re-added.
+                </span>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setDraftRestored(false)}
+                className="text-[11px] font-semibold text-text-muted hover:text-text px-3 py-1.5 rounded-full border border-border bg-surface-container-low/60 transition-colors"
+              >
+                Dismiss
+              </button>
+              <button
+                type="button"
+                onClick={discardDraft}
+                className="text-[11px] font-bold text-danger hover:bg-danger-soft px-3 py-1.5 rounded-full border border-danger/30 bg-danger-soft/40 transition-colors"
+              >
+                Discard draft
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -578,7 +718,7 @@ export default function PurchaseRequestCreatePage() {
                   return (
                     <div
                       key={it.id}
-                      className="bg-surface-container-lowest border border-border rounded-lg p-4 hover:border-outline-variant transition-colors"
+                      className="bg-surface-container-low/60 border border-border rounded-xl p-4 hover:border-white/15 transition-colors"
                     >
                       <div className="flex items-center justify-between mb-3">
                         <div className="flex items-center gap-3">
@@ -840,7 +980,7 @@ export default function PurchaseRequestCreatePage() {
             </button>
 
             {attachments.length > 0 && (
-              <ul className="mt-3 divide-y divide-border border border-border rounded-lg bg-surface-container-lowest">
+              <ul className="mt-3 divide-y divide-border border border-border rounded-xl bg-surface-container-low/60">
                 {attachments.map((f, idx) => {
                   const Icon = iconForMime(f.type, f.name);
                   return (
@@ -984,16 +1124,16 @@ export default function PurchaseRequestCreatePage() {
           so it never overlaps the nav and resizes when the user toggles it.
           On mobile the sidebar is an off-canvas drawer so left-0 is correct. */}
       <div
-        className={`fixed bottom-0 right-0 left-0 z-30 bg-surface/95 backdrop-blur border-t border-border transition-[left] duration-200 ${
+        className={`fixed bottom-0 right-0 left-0 z-30 bg-bg/70 backdrop-blur-xl border-t border-border transition-[left] duration-200 ${
           sidebarCollapsed ? "md:left-16" : "md:left-64"
         }`}
       >
-        <div className="max-w-6xl mx-auto px-3 sm:px-6 py-2 sm:py-3 flex items-center justify-between gap-2 sm:gap-3">
-          <div className="flex items-center gap-2 text-xs text-text-muted min-w-0">
+        <div className="max-w-[1400px] mx-auto px-3 sm:px-6 py-3 flex items-center justify-between gap-2 sm:gap-3">
+          <div className="flex items-center gap-2 text-[12px] text-text-muted min-w-0">
             {allRequiredOk ? (
               <>
                 <CheckCircle2 className="h-4 w-4 text-success shrink-0" />
-                <span className="truncate">Ready to submit</span>
+                <span className="truncate font-semibold">Ready to submit</span>
               </>
             ) : (
               <>
@@ -1015,15 +1155,26 @@ export default function PurchaseRequestCreatePage() {
               type="button"
               onClick={() => navigate("/app/purchase-requests")}
               disabled={submitting}
-              className="px-3 sm:px-4 py-2 text-sm font-medium text-text border border-border rounded-md hover:bg-surface-container-low disabled:opacity-60"
+              className="px-4 py-2 text-[12px] font-semibold text-text-muted border border-border bg-surface-container-low/60 rounded-full hover:text-text hover:border-white/20 transition-colors disabled:opacity-60"
             >
               Cancel
             </button>
             <button
               type="button"
+              onClick={saveDraftNow}
+              disabled={submitting}
+              className="px-4 py-2 text-[12px] font-semibold text-text border border-border bg-surface-container-low/60 rounded-full hover:bg-surface-container hover:border-white/20 transition-colors disabled:opacity-60 flex items-center gap-1.5 whitespace-nowrap"
+              title="Save as draft — keeps your progress without submitting for approval"
+            >
+              <Save className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Save as Draft</span>
+              <span className="sm:hidden">Draft</span>
+            </button>
+            <button
+              type="button"
               onClick={handleSubmit}
               disabled={submitting}
-              className="px-4 sm:px-6 py-2 text-sm font-semibold text-primary-foreground bg-primary hover:bg-primary-hover rounded-md disabled:opacity-60 flex items-center gap-2 whitespace-nowrap"
+              className="px-5 sm:px-6 py-2 text-[12px] font-bold text-primary-foreground bg-primary hover:brightness-110 rounded-full transition-all shadow-sm disabled:opacity-60 flex items-center gap-2 whitespace-nowrap"
             >
               {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
               <span className="hidden sm:inline">

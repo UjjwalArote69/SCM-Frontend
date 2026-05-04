@@ -49,7 +49,7 @@ export default function SettingsPage() {
 function SaveButton({ label = "Save" }) {
   const toast = useToast();
   return (
-    <button onClick={() => toast.success(`${label === "Save" ? "Settings" : label.replace("Save ", "")} saved`)} className="px-6 py-2 bg-primary hover:bg-primary-hover text-primary-foreground rounded-md font-bold text-sm">
+    <button onClick={() => toast.success(`${label === "Save" ? "Settings" : label.replace("Save ", "")} saved`)} className="px-6 py-2 bg-primary hover:brightness-110 text-primary-foreground rounded-md font-bold text-sm">
       {label}
     </button>
   );

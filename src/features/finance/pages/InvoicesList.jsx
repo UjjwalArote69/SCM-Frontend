@@ -25,7 +25,7 @@ export default function InvoicesListPage() {
             <Link to="/app/invoices/proforma" className="flex items-center gap-2 px-4 py-2 rounded-md border border-border text-text text-sm font-semibold hover:bg-surface-container-low">
               <FileText className="h-4 w-4" /> New Proforma
             </Link>
-            <Link to="/vendor/invoices/upload" className="flex items-center gap-2 px-4 py-2 rounded-md bg-primary hover:bg-primary-hover text-primary-foreground text-sm font-bold">
+            <Link to="/vendor/invoices/upload" className="flex items-center gap-2 px-4 py-2 rounded-md bg-primary hover:brightness-110 text-primary-foreground text-sm font-bold">
               <Upload className="h-4 w-4" /> Upload Invoice
             </Link>
           </>

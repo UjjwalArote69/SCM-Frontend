@@ -40,7 +40,7 @@
   --color-info: var(--status-info);
   --color-info-soft: var(--status-info-soft);
 
-  --font-sans: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-sans: "Montserrat", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
 }
 
 /* ---------- Light theme (default) ---------- */
@@ -53,14 +53,14 @@
   --brand-primary-soft: #fef2f2;
   --brand-primary-foreground: #ffffff;
 
-  --surface-bg: #f9f9ff;
+  --surface-bg: #fafaf7;
   --surface: #ffffff;
-  --surface-alt: #f1f3ff;
-  --surface-container: #e9edff;
-  --surface-container-low: #f1f3ff;
+  --surface-alt: #f3f3ee;
+  --surface-container: #ededea;
+  --surface-container-low: #f3f3ee;
   --surface-container-lowest: #ffffff;
-  --surface-border: #dce2f7;
-  --surface-outline-variant: #c7cee0;
+  --surface-border: rgba(10, 10, 10, 0.10);
+  --surface-outline-variant: rgba(10, 10, 10, 0.06);
 
   --text: #0f172a;
   --text-muted: #64748b;
@@ -109,34 +109,78 @@
   --status-info-soft: rgba(96, 165, 250, 0.14);
 }
 
-/* Body — pure near-black canvas in dark mode. The reference's "warmth" comes
-   almost entirely from the colourful UI elements (rainbow gauge, sparklines,
-   change pills, brand button). The canvas itself is essentially flat black
-   with only a hint of warm bleed at the corners — anything stronger reads
-   like a marketing splash, not a dashboard. */
+/* ── DARK theme body — near-pure-black with subtle warm corner bleed.
+   Gradient kept low alpha so it doesn't tint sidebar/topbar/cards muddy
+   when they sit on top with translucent backgrounds. ── */
 [data-theme="dark"] body {
   background-color: #0a0a0e;
   background-image:
     radial-gradient(
-      ellipse 50% 35% at 100% 0%,
-      rgba(255, 93, 58, 0.06),
-      transparent 70%
+      ellipse 60% 45% at 100% 0%,
+      rgba(255, 90, 50, 0.14),
+      transparent 65%
     ),
     radial-gradient(
-      ellipse 40% 30% at 0% 100%,
-      rgba(255, 140, 50, 0.04),
+      ellipse 50% 40% at 0% 100%,
+      rgba(255, 130, 50, 0.08),
+      transparent 65%
+    ),
+    radial-gradient(
+      ellipse 55% 45% at 100% 100%,
+      rgba(180, 40, 30, 0.10),
       transparent 70%
     );
   background-attachment: fixed;
 }
 
-/* Glass-morphism card — solid dark surface, hairline white border, with a
-   barely-there warm corner glow inside. */
+/* ── LIGHT theme body — warm bone canvas with apricot corner glow.
+   Selector explicitly excludes dark mode so this rule never wins over
+   the dark-theme body rule above (same specificity = source order wins). */
+html:not([data-theme="dark"]) body {
+  background-color: #fafaf7;
+  background-image:
+    radial-gradient(
+      ellipse 70% 50% at 100% 0%,
+      rgba(255, 100, 40, 0.28),
+      transparent 65%
+    ),
+    radial-gradient(
+      ellipse 55% 40% at 0% 100%,
+      rgba(255, 150, 70, 0.22),
+      transparent 65%
+    ),
+    radial-gradient(
+      ellipse 60% 50% at 100% 100%,
+      rgba(255, 110, 50, 0.18),
+      transparent 70%
+    );
+  background-attachment: fixed;
+}
+
+/* ═════════════════════════════════════════════════════════════════
+   Glass-morphism card — translucent surface + hairline border + warm
+   corner glow. Renders in BOTH themes (dark gets dark glass, light gets
+   white glass with warm bottom-right blush). Tuned to feel clearly
+   "lifted" off the page, not flat — stronger surface opacity, defined
+   border, layered shadow with both ambient and direct components.
+   ═════════════════════════════════════════════════════════════════ */
 .glass-card {
-  background-color: rgba(255, 255, 255, 0.025);
-  border: 1px solid rgba(255, 255, 255, 0.07);
   position: relative;
   overflow: hidden;
+  backdrop-filter: blur(14px) saturate(1.1);
+  -webkit-backdrop-filter: blur(14px) saturate(1.1);
+  background-color: rgba(255, 255, 255, 0.82);
+  border: 1px solid rgba(10, 10, 10, 0.08);
+  box-shadow:
+    /* tight ambient — defines the edge */
+    0 1px 2px rgba(20, 10, 5, 0.04),
+    /* mid lift — gives depth */
+    0 4px 12px -4px rgba(180, 90, 30, 0.10),
+    /* far drop — separates from canvas */
+    0 18px 40px -18px rgba(180, 60, 20, 0.18),
+    /* subtle white inner highlight on top edge */
+    0 1px 0 rgba(255, 255, 255, 0.85) inset;
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
 }
 .glass-card::after {
   content: "";
@@ -144,8 +188,8 @@
   inset: 0;
   background: radial-gradient(
     circle at 100% 100%,
-    rgba(255, 93, 58, 0.07),
-    transparent 55%
+    rgba(255, 110, 60, 0.10),
+    transparent 60%
   );
   pointer-events: none;
   z-index: 0;
@@ -154,19 +198,32 @@
   position: relative;
   z-index: 1;
 }
-/* Light theme falls back to the existing surface tokens — no warm tint. */
+
+/* Dark-mode override — solid-feel dark surface (not translucent enough to
+   pick up the body gradient as muddy brown). Layered shadow gives lift
+   above the near-black canvas. */
 [data-theme="dark"] .glass-card {
-  background-color: rgba(255, 255, 255, 0.025);
-  border-color: rgba(255, 255, 255, 0.07);
+  background-color: rgba(22, 20, 26, 0.94);
+  border-color: rgba(255, 255, 255, 0.08);
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.5),
+    0 4px 12px -4px rgba(0, 0, 0, 0.6),
+    0 18px 40px -18px rgba(0, 0, 0, 0.8),
+    0 1px 0 rgba(255, 255, 255, 0.04) inset;
 }
-:root .glass-card,
-html:not([data-theme="dark"]) .glass-card {
-  background-color: var(--surface-container-lowest);
-  border-color: var(--surface-border);
+[data-theme="dark"] .glass-card::after {
+  background: radial-gradient(
+    circle at 100% 100%,
+    rgba(255, 93, 58, 0.07),
+    transparent 55%
+  );
 }
-:root .glass-card::after,
-html:not([data-theme="dark"]) .glass-card::after {
-  display: none;
+
+/* Sidebar / Topbar in dark mode — keep chrome solid-feeling so the warm
+   body gradient doesn't bleed through and turn the navigation muddy
+   brown. The class is added in Sidebar.jsx and Topbar.jsx. */
+[data-theme="dark"] .scm-chrome {
+  background-color: rgba(13, 13, 19, 0.94) !important;
 }
 
 html,
@@ -252,7 +309,7 @@ body {
     color: #111 !important;
     font-size: 10.5pt !important;
     line-height: 1.45 !important;
-    font-family: "Inter", system-ui, sans-serif !important;
+    font-family: "Montserrat", system-ui, sans-serif !important;
   }
 
   main {

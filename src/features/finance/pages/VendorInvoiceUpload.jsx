@@ -70,7 +70,7 @@ export default function VendorInvoiceUploadPage() {
   );
 
   return (
-    <div className="max-w-5xl mx-auto pb-12">
+    <div className="max-w-[1400px] mx-auto pb-12">
       <button
         type="button"
         onClick={() => nav("/vendor/invoices")}
@@ -108,7 +108,7 @@ export default function VendorInvoiceUploadPage() {
           </p>
           <Link
             to="/vendor/purchase-orders"
-            className="bg-primary hover:bg-primary-hover text-primary-foreground px-5 py-2 rounded-md font-bold text-sm flex items-center gap-2"
+            className="bg-primary hover:brightness-110 text-primary-foreground px-5 py-2 rounded-md font-bold text-sm flex items-center gap-2"
           >
             Go to Purchase Orders
           </Link>
@@ -116,7 +116,7 @@ export default function VendorInvoiceUploadPage() {
       ) : (
         <div className="space-y-4">
           {/* PO picker */}
-          <div className="bg-surface-container-lowest border border-border rounded-lg p-4 sm:p-5">
+          <div className="glass-card rounded-2xl p-4 sm:p-5">
             <label className="block text-[10px] font-bold uppercase tracking-widest text-text-muted mb-2">
               Choose a Purchase Order
             </label>

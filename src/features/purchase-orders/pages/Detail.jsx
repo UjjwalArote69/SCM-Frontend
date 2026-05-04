@@ -461,7 +461,7 @@ export default function PurchaseOrderDetailPage({ view = "admin" }) {
               type="button"
               onClick={() => setChainModalOpen(true)}
               disabled={acting}
-              className="px-5 py-2 text-sm font-bold text-primary-foreground bg-primary hover:bg-primary-hover rounded-md disabled:opacity-60"
+              className="px-5 py-2 text-sm font-bold text-primary-foreground bg-primary hover:brightness-110 rounded-md disabled:opacity-60"
             >
               Update Status
             </button>
@@ -484,7 +484,7 @@ export default function PurchaseOrderDetailPage({ view = "admin" }) {
                 onClick={() => setModal(true)}
                 disabled={acting || !chainDone}
                 title={!chainDone ? "Awaiting buyer approval" : undefined}
-                className="px-5 py-2 text-sm font-bold text-primary-foreground bg-primary hover:bg-primary-hover rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-5 py-2 text-sm font-bold text-primary-foreground bg-primary hover:brightness-110 rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Accept PO
               </button>
@@ -582,7 +582,7 @@ export default function PurchaseOrderDetailPage({ view = "admin" }) {
               (user?.role === "hod" && user.department?.code === "FIN")) && (
               <Link
                 to={`/app/payments/new?po=${po.number}`}
-                className="px-3 py-2 text-xs font-bold text-primary-foreground bg-primary hover:bg-primary-hover rounded-md whitespace-nowrap inline-flex items-center gap-1.5 self-start sm:self-auto"
+                className="px-3 py-2 text-xs font-bold text-primary-foreground bg-primary hover:brightness-110 rounded-md whitespace-nowrap inline-flex items-center gap-1.5 self-start sm:self-auto"
               >
                 Create Payment →
               </Link>

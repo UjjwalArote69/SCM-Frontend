@@ -212,7 +212,7 @@ export default function PaymentsListPage() {
   ];
 
   return (
-    <div className="max-w-7xl mx-auto pb-20 sm:pb-0">
+    <div className="max-w-[1400px] mx-auto pb-20 sm:pb-0">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-3 mb-5 sm:mb-6">
         <div>
@@ -226,7 +226,7 @@ export default function PaymentsListPage() {
         {showCreate && (
           <Link
             to="/app/payments/new"
-            className="hidden sm:inline-flex bg-primary hover:bg-primary-hover text-primary-foreground px-4 py-2 rounded-md font-bold text-sm items-center gap-2 transition-colors shadow-sm whitespace-nowrap"
+            className="hidden sm:inline-flex bg-primary hover:brightness-110 text-primary-foreground px-4 py-2 rounded-md font-bold text-sm items-center gap-2 transition-colors shadow-sm whitespace-nowrap"
           >
             <Plus className="h-4 w-4" /> New Payment
           </Link>
@@ -272,7 +272,7 @@ export default function PaymentsListPage() {
       </div>
 
       {/* Filter chips + search */}
-      <div className="bg-surface-container-lowest border border-border rounded-lg p-3 mb-4 flex flex-col gap-3">
+      <div className="glass-card rounded-2xl p-3 mb-4 flex flex-col gap-3">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-text-muted" />
           <input
@@ -447,7 +447,7 @@ export default function PaymentsListPage() {
       {showCreate && (
         <Link
           to="/app/payments/new"
-          className="sm:hidden fixed bottom-5 right-4 z-30 bg-primary hover:bg-primary-hover text-primary-foreground rounded-full shadow-lg w-14 h-14 flex items-center justify-center active:scale-95 transition-transform"
+          className="sm:hidden fixed bottom-5 right-4 z-30 bg-primary hover:brightness-110 text-primary-foreground rounded-full shadow-lg w-14 h-14 flex items-center justify-center active:scale-95 transition-transform"
           aria-label="New Payment"
         >
           <Plus className="h-6 w-6" strokeWidth={2.5} />

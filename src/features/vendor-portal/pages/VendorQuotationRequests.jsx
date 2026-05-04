@@ -28,7 +28,7 @@ export default function VendorQuotationRequestsPage() {
   const isLoading = loading || identityLoading;
 
   return (
-    <div className="max-w-6xl mx-auto">
+    <div className="max-w-[1400px] mx-auto">
       <PageHeader
         title="Quotation Requests"
         subtitle={

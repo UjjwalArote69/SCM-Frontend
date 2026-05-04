@@ -108,7 +108,7 @@ export default function UsersListPage() {
             <RefreshButton onRefresh={fetchAll} loading={loading} />
             <button
               onClick={() => setEditing({})}
-              className="flex items-center gap-2 px-4 py-2 rounded-md bg-primary hover:bg-primary-hover text-primary-foreground text-sm font-bold"
+              className="flex items-center gap-2 px-4 py-2 rounded-md bg-primary hover:brightness-110 text-primary-foreground text-sm font-bold"
             >
               <Plus className="h-4 w-4" /> Invite User
             </button>
@@ -126,7 +126,7 @@ export default function UsersListPage() {
         ].map((s) => (
           <div
             key={s.label}
-            className="bg-surface-container-lowest border border-border rounded-lg p-4"
+            className="glass-card rounded-2xl p-4"
           >
             <div className="text-[10px] uppercase tracking-widest font-bold text-text-muted">
               {s.label}
@@ -139,7 +139,7 @@ export default function UsersListPage() {
       </div>
 
       {/* Filters */}
-      <div className="bg-surface-container-lowest rounded-lg border border-border p-3 mb-4 flex flex-wrap gap-3 items-center">
+      <div className="glass-card rounded-2xl p-3 mb-4 flex flex-wrap gap-3 items-center">
         <div className="relative flex-1 min-w-[260px]">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-text-muted" />
           <input

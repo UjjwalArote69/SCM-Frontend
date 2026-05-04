@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { Link } from "react-router-dom";
 import {
   Download,
@@ -14,6 +15,8 @@ import {
   CircleDot,
   TrendingUp,
   ChevronRight,
+  Layers,
+  Trash2,
 } from "lucide-react";
 import { usePRStore, chainFromStage } from "../store.js";
 import { useToast } from "../../../hooks/useToast.jsx";
@@ -21,6 +24,16 @@ import { useAuthStore } from "../../auth/store.js";
 import RefreshButton from "../../../components/data/RefreshButton.jsx";
 
 const APPROVER_ROLES = new Set(["admin", "hod", "cfo", "ceo"]);
+
+function fmtDraftSaved(ts) {
+  if (!ts) return "earlier";
+  return new Date(ts).toLocaleString(undefined, {
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
 
 function safe(v) {
   return v === null || v === undefined || v === "" || v === "null" ? "—" : v;
@@ -87,39 +100,40 @@ function StatusPill({ status }) {
 }
 
 function StatCard({ label, value, icon: Icon, tone = "neutral", active, onClick }) {
-  const toneStyles = {
-    neutral: "text-text bg-surface-container-low border-border",
-    info: "text-info bg-info-soft/50 border-info/20",
-    warning: "text-warning bg-warning-soft/50 border-warning/20",
-    success: "text-success bg-success-soft/50 border-success/20",
-    danger: "text-danger bg-danger-soft/50 border-danger/20",
-  };
+  // Tone drives the icon-tile background only; the card itself is always
+  // glass so the aesthetic stays cohesive across cards.
   const iconBg = {
-    neutral: "bg-surface-container-high",
+    neutral: "bg-surface-container",
     info: "bg-info-soft",
     warning: "bg-warning-soft",
     success: "bg-success-soft",
     danger: "bg-danger-soft",
   };
-  const ringActive = active
-    ? "ring-2 ring-primary ring-offset-2 ring-offset-bg"
-    : "";
+  const iconColor = {
+    neutral: "text-text-muted",
+    info: "text-info",
+    warning: "text-warning",
+    success: "text-success",
+    danger: "text-danger",
+  };
   return (
     <button
       type="button"
       onClick={onClick}
-      className={`text-left flex items-center gap-2.5 sm:gap-3 p-3 sm:p-4 rounded-lg border transition-all duration-200 shadow-sm hover:shadow-lg hover:-translate-y-0.5 shrink-0 snap-start min-w-[140px] sm:min-w-0 ${toneStyles[tone]} ${ringActive}`}
+      className={`glass-card text-left flex items-center gap-3 p-4 rounded-2xl transition-all duration-200 shrink-0 snap-start min-w-[140px] sm:min-w-0 hover:shadow-lg hover:-translate-y-0.5 ${
+        active ? "ring-2 ring-primary/40" : ""
+      }`}
     >
       <div
-        className={`w-9 h-9 sm:w-10 sm:h-10 rounded-md flex items-center justify-center shrink-0 ${iconBg[tone]}`}
+        className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${iconBg[tone]}`}
       >
-        <Icon className="h-4 w-4 sm:h-5 sm:w-5" strokeWidth={2.25} />
+        <Icon className={`h-4 w-4 ${iconColor[tone]}`} strokeWidth={2.25} />
       </div>
       <div className="min-w-0">
-        <div className="text-[10px] uppercase tracking-widest font-bold text-text-muted">
+        <div className="text-[10px] uppercase tracking-[0.18em] font-semibold text-text-muted">
           {label}
         </div>
-        <div className="text-xl sm:text-2xl font-black tracking-tight leading-tight">
+        <div className="text-2xl font-bold tracking-tight tabular-nums leading-tight text-text">
           {value}
         </div>
       </div>
@@ -127,24 +141,80 @@ function StatCard({ label, value, icon: Icon, tone = "neutral", active, onClick 
   );
 }
 
-function FilterBar({ query, setQuery, dateRange, setDateRange }) {
+function FilterBar({
+  query,
+  setQuery,
+  dateRange,
+  setDateRange,
+  departments,
+  companies,
+  priorities,
+  deptFilter,
+  setDeptFilter,
+  companyFilter,
+  setCompanyFilter,
+  priorityFilter,
+  setPriorityFilter,
+}) {
+  const [moreOpen, setMoreOpen] = useState(false);
+  const [popPos, setPopPos] = useState(null);
+  const triggerRef = useRef(null);
+  const popRef = useRef(null);
+
+  // Compute portal position relative to the trigger when opening.
+  useEffect(() => {
+    if (!moreOpen || !triggerRef.current) return;
+    const rect = triggerRef.current.getBoundingClientRect();
+    setPopPos({
+      top: rect.bottom + 8,
+      right: window.innerWidth - rect.right,
+    });
+  }, [moreOpen]);
+
+  // Close popover on outside click + on scroll/resize.
+  useEffect(() => {
+    if (!moreOpen) return;
+    const onDown = (e) => {
+      if (
+        triggerRef.current?.contains(e.target) ||
+        popRef.current?.contains(e.target)
+      )
+        return;
+      setMoreOpen(false);
+    };
+    const onScroll = () => setMoreOpen(false);
+    document.addEventListener("mousedown", onDown);
+    window.addEventListener("scroll", onScroll, true);
+    window.addEventListener("resize", onScroll);
+    return () => {
+      document.removeEventListener("mousedown", onDown);
+      window.removeEventListener("scroll", onScroll, true);
+      window.removeEventListener("resize", onScroll);
+    };
+  }, [moreOpen]);
+
+  const activeMoreCount =
+    (deptFilter && deptFilter !== "all" ? 1 : 0) +
+    (companyFilter && companyFilter !== "all" ? 1 : 0) +
+    (priorityFilter && priorityFilter !== "all" ? 1 : 0);
+
   return (
-    <div className="bg-surface-container-lowest border border-border rounded-lg p-3 flex flex-col sm:flex-row sm:flex-wrap gap-2 sm:gap-3 sm:items-center mb-4">
-      <div className="relative w-full sm:min-w-[260px] sm:flex-1">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-text-muted" />
+    <div className="glass-card rounded-2xl p-3 flex flex-col sm:flex-row sm:flex-wrap gap-2 sm:gap-3 sm:items-center">
+      <label className="relative w-full sm:min-w-[260px] sm:flex-1 flex items-center gap-2 bg-surface-container-low/60 border border-border rounded-full pl-4 pr-3 py-2 cursor-text hover:border-primary/40 focus-within:border-primary/60 transition-colors">
+        <Search className="h-3.5 w-3.5 text-text-muted shrink-0" />
         <input
           type="text"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Search PR number, requester, department…"
-          className="w-full bg-transparent border border-border rounded-md focus:border-primary focus:ring-0 pl-10 pr-3 py-2 text-sm text-text outline-none"
+          className="w-full bg-transparent text-sm text-text placeholder:text-text-subtle outline-none min-w-0"
         />
-      </div>
+      </label>
       <div className="flex gap-2">
         <select
           value={dateRange}
           onChange={(e) => setDateRange(e.target.value)}
-          className="flex-1 sm:flex-initial bg-transparent border border-border rounded-md focus:border-primary focus:ring-0 py-2 pl-3 pr-8 text-sm text-text outline-none"
+          className="flex-1 sm:flex-initial bg-surface-container-low/60 border border-border rounded-full focus:border-primary py-2 pl-4 pr-8 text-[12px] font-semibold text-text-muted hover:text-text outline-none transition-colors"
         >
           <option>Last 30 Days</option>
           <option>Last 7 Days</option>
@@ -152,12 +222,127 @@ function FilterBar({ query, setQuery, dateRange, setDateRange }) {
           <option>All Time</option>
         </select>
         <button
+          ref={triggerRef}
           type="button"
-          className="px-3 py-2 text-sm font-medium text-text-muted rounded-md border border-border hover:bg-surface-container-low flex items-center gap-1 whitespace-nowrap"
+          onClick={() => setMoreOpen((o) => !o)}
+          className={`px-4 py-2 text-[12px] font-semibold rounded-full border flex items-center gap-1.5 whitespace-nowrap transition-colors ${
+            moreOpen || activeMoreCount > 0
+              ? "border-primary/40 bg-primary-soft text-primary"
+              : "border-border bg-surface-container-low/60 text-text-muted hover:text-text hover:border-white/20"
+          }`}
         >
-          <ListFilter className="h-4 w-4" />
+          <ListFilter className="h-3.5 w-3.5" />
           <span className="hidden sm:inline">More filters</span>
+          {activeMoreCount > 0 && (
+            <span className="inline-flex items-center justify-center min-w-[16px] h-[16px] px-1 rounded-full bg-primary text-primary-foreground text-[9px] font-bold tabular-nums">
+              {activeMoreCount}
+            </span>
+          )}
         </button>
+        {moreOpen &&
+          popPos &&
+          createPortal(
+            <div
+              ref={popRef}
+              className="rounded-2xl border border-border p-4 space-y-3"
+              style={{
+                position: "fixed",
+                top: popPos.top,
+                right: popPos.right,
+                zIndex: 1000,
+                width: 288,
+                backgroundColor: "var(--color-surface)",
+                backdropFilter: "blur(14px) saturate(1.1)",
+                WebkitBackdropFilter: "blur(14px) saturate(1.1)",
+                boxShadow:
+                  "0 1px 2px rgba(0,0,0,0.06), 0 4px 16px -4px rgba(0,0,0,0.10), 0 24px 48px -16px rgba(0,0,0,0.18)",
+              }}
+            >
+              <div className="flex items-center justify-between">
+                <h4 className="text-[11px] font-bold uppercase tracking-[0.18em] text-text-muted">
+                  More filters
+                </h4>
+                {activeMoreCount > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setDeptFilter("all");
+                      setCompanyFilter("all");
+                      setPriorityFilter("all");
+                    }}
+                    className="text-[11px] font-semibold text-primary hover:underline"
+                  >
+                    Reset
+                  </button>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-bold uppercase tracking-[0.16em] text-text-muted mb-1.5">
+                  Department
+                </label>
+                <select
+                  value={deptFilter}
+                  onChange={(e) => setDeptFilter(e.target.value)}
+                  className="w-full bg-surface-container-low/60 border border-border rounded-xl py-2 px-3 text-sm text-text outline-none focus:border-primary/60 focus:ring-2 focus:ring-primary/15 transition-colors"
+                >
+                  <option value="all">All departments</option>
+                  {departments.map((d) => (
+                    <option key={d} value={d}>
+                      {d}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-bold uppercase tracking-[0.16em] text-text-muted mb-1.5">
+                  Company
+                </label>
+                <select
+                  value={companyFilter}
+                  onChange={(e) => setCompanyFilter(e.target.value)}
+                  className="w-full bg-surface-container-low/60 border border-border rounded-xl py-2 px-3 text-sm text-text outline-none focus:border-primary/60 focus:ring-2 focus:ring-primary/15 transition-colors"
+                >
+                  <option value="all">All companies</option>
+                  {companies.map((c) => (
+                    <option key={c} value={c}>
+                      {c}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-bold uppercase tracking-[0.16em] text-text-muted mb-1.5">
+                  Priority
+                </label>
+                <select
+                  value={priorityFilter}
+                  onChange={(e) => setPriorityFilter(e.target.value)}
+                  className="w-full bg-surface-container-low/60 border border-border rounded-xl py-2 px-3 text-sm text-text outline-none focus:border-primary/60 focus:ring-2 focus:ring-primary/15 transition-colors capitalize"
+                >
+                  <option value="all">Any priority</option>
+                  {priorities.map((p) => (
+                    <option key={p} value={p}>
+                      {p}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="pt-2 border-t border-border">
+                <button
+                  type="button"
+                  onClick={() => setMoreOpen(false)}
+                  className="w-full text-[12px] font-bold text-primary-foreground bg-primary hover:brightness-110 rounded-full py-2 transition-all shadow-sm"
+                >
+                  Apply
+                </button>
+              </div>
+            </div>,
+            document.body,
+          )}
       </div>
     </div>
   );
@@ -165,9 +350,9 @@ function FilterBar({ query, setQuery, dateRange, setDateRange }) {
 
 function EmptyState() {
   return (
-    <div className="w-full bg-surface-container-low rounded-2xl p-16 flex flex-col items-center text-center border border-dashed border-border">
-      <div className="w-20 h-20 bg-surface-container-lowest rounded-full flex items-center justify-center shadow-sm border border-border mb-6">
-        <FileText className="h-9 w-9 text-text-subtle" strokeWidth={1.5} />
+    <div className="glass-card w-full rounded-2xl p-16 flex flex-col items-center text-center">
+      <div className="w-20 h-20 bg-primary-soft text-primary rounded-2xl flex items-center justify-center mb-6">
+        <FileText className="h-9 w-9" strokeWidth={1.5} />
       </div>
       <h2 className="text-xl font-bold text-text mb-2 tracking-tight">
         No purchase requests yet
@@ -178,7 +363,7 @@ function EmptyState() {
       </p>
       <Link
         to="/app/purchase-requests/new"
-        className="bg-primary hover:bg-primary-hover text-primary-foreground px-6 py-2.5 rounded-md font-bold text-sm flex items-center gap-2 transition-colors shadow-sm"
+        className="bg-primary hover:brightness-110 text-primary-foreground px-6 py-2.5 rounded-full font-bold text-sm flex items-center gap-2 transition-all shadow-sm"
       >
         <Plus className="h-4 w-4" />
         New Purchase Request
@@ -197,6 +382,42 @@ export default function PurchaseRequestListPage() {
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState("all");
   const [dateRange, setDateRange] = useState("Last 30 Days");
+  const [deptFilter, setDeptFilter] = useState("all");
+  const [companyFilter, setCompanyFilter] = useState("all");
+  const [priorityFilter, setPriorityFilter] = useState("all");
+
+  // Local draft (saved by Create.jsx in localStorage). Surface it here so the
+  // user can resume an unsaved PR. The Create page key is per-user.
+  const DRAFT_KEY = `scm-pr-draft-${user?.id ?? "guest"}`;
+  const readDraft = () => {
+    try {
+      const raw = localStorage.getItem(DRAFT_KEY);
+      return raw ? JSON.parse(raw) : null;
+    } catch {
+      return null;
+    }
+  };
+  const [draft, setDraft] = useState(readDraft);
+  // Re-read draft when the tab regains focus — Create.jsx may have updated it.
+  useEffect(() => {
+    const onFocus = () => setDraft(readDraft());
+    window.addEventListener("focus", onFocus);
+    return () => window.removeEventListener("focus", onFocus);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [DRAFT_KEY]);
+
+  const draftCount = draft ? 1 : 0;
+
+  const discardDraft = () => {
+    try {
+      localStorage.removeItem(DRAFT_KEY);
+    } catch {
+      /* ignore */
+    }
+    setDraft(null);
+    setView("list");
+    toast.info("Draft discarded");
+  };
 
   useEffect(() => {
     fetchAll();
@@ -217,50 +438,112 @@ export default function PurchaseRequestListPage() {
     return c;
   }, [rows]);
 
+  // Captured once on mount so date-range filter stays pure across re-renders.
+  const [nowMs] = useState(() => Date.now());
+
+  // Resolve the date-range option into a "since" timestamp (or null for All Time).
+  const sinceMs = useMemo(() => {
+    if (dateRange === "Last 7 Days") return nowMs - 7 * 86400000;
+    if (dateRange === "Last 30 Days") return nowMs - 30 * 86400000;
+    if (dateRange === "This Quarter") {
+      const d = new Date(nowMs);
+      const qMonth = Math.floor(d.getMonth() / 3) * 3;
+      return new Date(d.getFullYear(), qMonth, 1, 0, 0, 0).getTime();
+    }
+    return null; // All Time
+  }, [dateRange, nowMs]);
+
+  // Build option lists for the More-filters popover from actual data so we
+  // never show options the user has no rows for.
+  const departments = useMemo(() => {
+    const set = new Set();
+    rows.forEach((r) => r.department && set.add(r.department));
+    return [...set].sort();
+  }, [rows]);
+  const companies = useMemo(() => {
+    const set = new Set();
+    rows.forEach((r) => r.business_unit && set.add(r.business_unit));
+    return [...set].sort();
+  }, [rows]);
+  const priorities = useMemo(() => {
+    const set = new Set();
+    rows.forEach((r) => r.priority && set.add(r.priority));
+    return [...set].sort();
+  }, [rows]);
+
   const filtered = rows.filter((r) => {
     const requester = r.requester_name ?? r.requester ?? "";
     const q = query.toLowerCase();
+    // Search across PR number, requester, department, AND title.
     const matchQuery =
       !q ||
       r.number.toLowerCase().includes(q) ||
       requester.toLowerCase().includes(q) ||
-      (r.department ?? "").toLowerCase().includes(q);
+      (r.department ?? "").toLowerCase().includes(q) ||
+      (r.title ?? "").toLowerCase().includes(q);
     const matchStatus = status === "all" || r.status === status;
-    return matchQuery && matchStatus;
+    // Date-range gate — uses created_at; rows without one always pass through.
+    let matchDate = true;
+    if (sinceMs && r.created_at) {
+      matchDate = new Date(r.created_at).getTime() >= sinceMs;
+    }
+    const matchDept = deptFilter === "all" || r.department === deptFilter;
+    const matchCompany =
+      companyFilter === "all" || r.business_unit === companyFilter;
+    const matchPriority =
+      priorityFilter === "all" || r.priority === priorityFilter;
+    return (
+      matchQuery &&
+      matchStatus &&
+      matchDate &&
+      matchDept &&
+      matchCompany &&
+      matchPriority
+    );
   });
+
+  // View tab — "list" (default, all PRs from DB) vs "drafts" (local).
+  const [view, setView] = useState("list");
+  const showDraftsView = view === "drafts";
 
   const toggleStatus = (s) =>
     setStatus((prev) => (prev === s ? "all" : s));
 
   return (
-    <div className="max-w-7xl mx-auto pb-20 sm:pb-0">
-      {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between mb-6 gap-4">
+    <div className="max-w-[1400px] mx-auto pb-20 sm:pb-0 space-y-6">
+      {/* Header — eyebrow + bold title (matches dashboard aesthetic) */}
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-text tracking-tight">
+          <div className="flex items-center gap-1.5 text-text-muted">
+            <Layers className="h-3 w-3" strokeWidth={2} />
+            <span className="text-[10px] font-semibold tracking-[0.22em] uppercase">
+              Procurement
+            </span>
+          </div>
+          <h1 className="text-[22px] sm:text-[28px] font-bold text-text leading-tight tracking-tight mt-1">
             Purchase Requests
           </h1>
-          <p className="text-text-muted text-sm mt-1">
+          <p className="text-text-muted text-sm mt-1.5">
             Track and approve internal purchase requisitions
           </p>
         </div>
-        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+        <div className="flex flex-wrap items-center gap-2">
           <RefreshButton onRefresh={fetchAll} loading={loading} />
           <button
             type="button"
             onClick={() =>
               toast.success(`Exported ${filtered.length} records to CSV`)
             }
-            className="px-3 sm:px-4 py-2 text-sm font-semibold text-text rounded-md border border-border hover:bg-surface-container-low flex items-center gap-2 bg-surface-container-lowest"
+            className="px-4 py-2 text-[12px] font-semibold text-text-muted rounded-full border border-border bg-surface-container-low/60 hover:text-text hover:border-white/20 flex items-center gap-1.5 whitespace-nowrap transition-colors"
           >
-            <Download className="h-4 w-4" />
+            <Download className="h-3.5 w-3.5" />
             <span className="hidden sm:inline">Export</span>
           </button>
           <Link
             to="/app/purchase-requests/new"
-            className="bg-primary hover:bg-primary-hover text-primary-foreground px-3 sm:px-4 py-2 rounded-md font-bold text-sm flex items-center gap-2 transition-colors shadow-sm whitespace-nowrap"
+            className="bg-primary hover:brightness-110 text-primary-foreground px-4 py-2 rounded-full font-bold text-[12px] flex items-center gap-1.5 transition-all shadow-sm whitespace-nowrap"
           >
-            <Plus className="h-4 w-4" />
+            <Plus className="h-3.5 w-3.5" />
             <span className="hidden sm:inline">New Purchase Request</span>
             <span className="sm:hidden">New PR</span>
           </Link>
@@ -268,8 +551,8 @@ export default function PurchaseRequestListPage() {
       </div>
 
       {/* KPI stats — horizontal scroll on mobile, 5-col grid on md+ */}
-      <div className="-mx-4 sm:mx-0 mb-4">
-        <div className="flex sm:grid sm:grid-cols-5 gap-2 sm:gap-3 px-4 sm:px-0 overflow-x-auto sm:overflow-visible snap-x snap-mandatory pb-1 sm:pb-0 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+      <div className="-mx-4 sm:mx-0">
+        <div className="flex sm:grid sm:grid-cols-5 gap-3 sm:gap-4 px-4 sm:px-0 overflow-x-auto sm:overflow-visible snap-x snap-mandatory pb-1 sm:pb-0 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
           <StatCard
             label="Total"
             value={counts.total}
@@ -318,57 +601,298 @@ export default function PurchaseRequestListPage() {
         setQuery={setQuery}
         dateRange={dateRange}
         setDateRange={setDateRange}
+        departments={departments}
+        companies={companies}
+        priorities={priorities}
+        deptFilter={deptFilter}
+        setDeptFilter={setDeptFilter}
+        companyFilter={companyFilter}
+        setCompanyFilter={setCompanyFilter}
+        priorityFilter={priorityFilter}
+        setPriorityFilter={setPriorityFilter}
       />
 
-      {status !== "all" && (
-        <div className="flex items-center gap-2 mb-3 text-xs text-text-muted">
-          <span>Filtering by:</span>
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-primary-soft text-primary font-bold uppercase tracking-wider text-[10px]">
-            {status}
+      {/* View tabs — switch between all PRs (DB) and local drafts */}
+      <div className="flex items-center gap-1 border-b border-border">
+        <button
+          type="button"
+          onClick={() => setView("list")}
+          className={`relative px-4 py-2.5 text-[13px] font-semibold transition-colors ${
+            view === "list"
+              ? "text-text"
+              : "text-text-muted hover:text-text"
+          }`}
+        >
+          All PRs
+          <span className="ml-1.5 text-[11px] tabular-nums text-text-subtle">
+            {counts.total}
+          </span>
+          {view === "list" && (
+            <span
+              className="absolute left-0 right-0 -bottom-px h-[2px] bg-primary rounded-full"
+              aria-hidden
+            />
+          )}
+        </button>
+        <button
+          type="button"
+          onClick={() => setView("drafts")}
+          className={`relative px-4 py-2.5 text-[13px] font-semibold transition-colors ${
+            view === "drafts"
+              ? "text-text"
+              : "text-text-muted hover:text-text"
+          }`}
+        >
+          My Drafts
+          <span
+            className={`ml-1.5 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1.5 rounded-full text-[10px] font-bold tabular-nums ${
+              draftCount > 0
+                ? "bg-primary text-primary-foreground"
+                : "bg-surface-container text-text-subtle"
+            }`}
+          >
+            {draftCount}
+          </span>
+          {view === "drafts" && (
+            <span
+              className="absolute left-0 right-0 -bottom-px h-[2px] bg-primary rounded-full"
+              aria-hidden
+            />
+          )}
+        </button>
+      </div>
+
+      {view === "list" &&
+        (status !== "all" ||
+          dateRange !== "Last 30 Days" ||
+          query ||
+          deptFilter !== "all" ||
+          companyFilter !== "all" ||
+          priorityFilter !== "all") && (
+          <div className="flex flex-wrap items-center gap-2 text-xs text-text-muted">
+            <span>Filtering by:</span>
+            {status !== "all" && (
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-primary-soft text-primary font-bold uppercase tracking-wider text-[10px]">
+                {status}
+                <button
+                  type="button"
+                  onClick={() => setStatus("all")}
+                  className="hover:brightness-110"
+                  aria-label="Clear status filter"
+                >
+                  ×
+                </button>
+              </span>
+            )}
+            {dateRange !== "Last 30 Days" && (
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-info-soft text-info font-bold uppercase tracking-wider text-[10px]">
+                {dateRange}
+                <button
+                  type="button"
+                  onClick={() => setDateRange("Last 30 Days")}
+                  className="hover:brightness-110"
+                  aria-label="Reset date range"
+                >
+                  ×
+                </button>
+              </span>
+            )}
+            {deptFilter !== "all" && (
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-info-soft text-info font-semibold text-[10px]">
+                Dept: {deptFilter}
+                <button
+                  type="button"
+                  onClick={() => setDeptFilter("all")}
+                  className="hover:brightness-110"
+                  aria-label="Clear department filter"
+                >
+                  ×
+                </button>
+              </span>
+            )}
+            {companyFilter !== "all" && (
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-info-soft text-info font-semibold text-[10px]">
+                Co: {companyFilter}
+                <button
+                  type="button"
+                  onClick={() => setCompanyFilter("all")}
+                  className="hover:brightness-110"
+                  aria-label="Clear company filter"
+                >
+                  ×
+                </button>
+              </span>
+            )}
+            {priorityFilter !== "all" && (
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-warning-soft text-warning font-semibold text-[10px] capitalize">
+                {priorityFilter}
+                <button
+                  type="button"
+                  onClick={() => setPriorityFilter("all")}
+                  className="hover:brightness-110"
+                  aria-label="Clear priority filter"
+                >
+                  ×
+                </button>
+              </span>
+            )}
+            {query && (
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-surface-container border border-border text-text font-semibold text-[10px]">
+                &ldquo;{query}&rdquo;
+                <button
+                  type="button"
+                  onClick={() => setQuery("")}
+                  className="text-text-muted hover:text-text"
+                  aria-label="Clear search"
+                >
+                  ×
+                </button>
+              </span>
+            )}
             <button
               type="button"
-              onClick={() => setStatus("all")}
-              className="hover:text-primary-hover"
-              aria-label="Clear status filter"
+              onClick={() => {
+                setStatus("all");
+                setDateRange("Last 30 Days");
+                setQuery("");
+                setDeptFilter("all");
+                setCompanyFilter("all");
+                setPriorityFilter("all");
+              }}
+              className="text-[11px] text-text-muted hover:text-primary font-semibold underline-offset-2 hover:underline ml-auto"
             >
-              ×
+              Clear all
             </button>
-          </span>
-        </div>
-      )}
+          </div>
+        )}
 
-      {loading && rows.length === 0 ? (
-        <div className="flex items-center justify-center py-16 text-text-muted">
-          <Loader2 className="h-6 w-6 animate-spin mr-2" /> Loading…
+      {showDraftsView ? (
+        draft ? (
+          <div>
+            <Link
+              to="/app/purchase-requests/new"
+              className="group relative flex items-center gap-3 sm:gap-4 pl-4 sm:pl-5 pr-3 sm:pr-4 py-4 rounded-xl border border-border bg-surface shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all overflow-hidden"
+            >
+              <span
+                className="absolute left-0 top-0 bottom-0 w-1"
+                style={{ background: "var(--color-info)" }}
+                aria-hidden
+              />
+              <div className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0 bg-info-soft text-info">
+                <FileText className="h-[18px] w-[18px]" strokeWidth={2} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="font-mono text-[13px] font-bold text-info">
+                    DRAFT
+                  </span>
+                  <span className="text-text-subtle">·</span>
+                  <span className="text-[11px] text-text-muted">
+                    saved {fmtDraftSaved(draft.savedAt)}
+                  </span>
+                </div>
+                <div className="text-[14px] font-semibold text-text truncate mt-0.5">
+                  {draft.form?.items?.[0]?.name?.trim() ||
+                    "Untitled draft"}
+                </div>
+                <div className="text-[11px] text-text-muted truncate mt-0.5">
+                  {draft.form?.requester_name && (
+                    <span className="text-text font-medium">
+                      {draft.form.requester_name}
+                    </span>
+                  )}
+                  {draft.form?.department && (
+                    <>
+                      {" · "}
+                      {draft.form.department}
+                    </>
+                  )}
+                  {draft.form?.items?.length > 0 && (
+                    <>
+                      {" · "}
+                      {draft.form.items.length}{" "}
+                      {draft.form.items.length === 1 ? "item" : "items"}
+                    </>
+                  )}
+                </div>
+              </div>
+              <div className="flex flex-col items-end gap-1 shrink-0 text-right min-w-[120px]">
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold border bg-info-soft text-info border-info/30">
+                  <FileText className="h-3 w-3" strokeWidth={2.5} />
+                  Draft
+                </span>
+                <span className="text-[10px] font-medium text-text-subtle">
+                  Tap to resume
+                </span>
+              </div>
+              <div className="flex items-center gap-1 shrink-0">
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    discardDraft();
+                  }}
+                  className="hidden sm:inline-flex text-text-muted hover:text-danger p-1.5 rounded-full hover:bg-danger-soft opacity-0 group-hover:opacity-100 transition-all"
+                  aria-label="Discard draft"
+                  title="Discard draft"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </button>
+                <ChevronRight className="h-4 w-4 text-text-subtle group-hover:text-primary group-hover:translate-x-0.5 transition-all" />
+              </div>
+            </Link>
+          </div>
+        ) : (
+          <div className="glass-card rounded-2xl p-12 text-center">
+            <div className="w-16 h-16 mx-auto rounded-2xl bg-info-soft text-info flex items-center justify-center mb-4">
+              <FileText className="h-7 w-7" strokeWidth={1.5} />
+            </div>
+            <h2 className="text-base font-bold text-text mb-1">
+              No saved drafts
+            </h2>
+            <p className="text-text-muted text-sm max-w-md mx-auto mb-5">
+              Start a new request — your progress saves automatically until you
+              submit it.
+            </p>
+            <Link
+              to="/app/purchase-requests/new"
+              className="inline-flex items-center gap-2 bg-primary hover:brightness-110 text-primary-foreground px-5 py-2 rounded-full font-bold text-[12px] transition-all shadow-sm"
+            >
+              <Plus className="h-3.5 w-3.5" />
+              New Purchase Request
+            </Link>
+          </div>
+        )
+      ) : loading && rows.length === 0 ? (
+        <div className="glass-card rounded-2xl py-16 flex items-center justify-center text-text-muted">
+          <Loader2 className="h-5 w-5 animate-spin mr-2" /> Loading…
         </div>
       ) : filtered.length === 0 ? (
         <EmptyState />
       ) : (
-        <div className="bg-surface-container-lowest rounded-lg overflow-hidden border border-border shadow-sm">
-          {/* Column header — desktop only; mobile uses card layout per row */}
-          <div className="hidden md:flex items-center bg-surface-container-low border-b border-border px-4 py-3 text-[10px] font-bold text-text-muted uppercase tracking-widest">
-            <div className="w-10">#</div>
-            <div className="w-28">Date</div>
-            <div className="w-40">PR Number</div>
-            <div className="flex-1 min-w-[180px]">Requester · Department</div>
-            {isApproverRole && (
-              <div className="w-48 hidden lg:block">Approval Chain</div>
-            )}
-            <div className="w-36">Status</div>
-            <div className="w-16 text-right">—</div>
-          </div>
-
-          {/* Rows */}
-          <div className="divide-y divide-border">
-            {filtered.map((row, idx) => {
-              const strip =
+        <div className="flex flex-col gap-2">
+          {filtered.map((row) => {
+              const tone = STATUS_TONE[row.status] ?? STATUS_TONE.pending;
+              const StatusIcon = tone.icon;
+              const iconBg =
                 row.status === "approved"
-                  ? "bg-success"
+                  ? "bg-success-soft text-success"
                   : row.status === "rejected"
-                    ? "bg-danger"
+                    ? "bg-danger-soft text-danger"
                     : row.status === "cancelled"
-                      ? "bg-text-subtle"
-                      : "bg-warning";
+                      ? "bg-surface-container text-text-subtle"
+                      : "bg-warning-soft text-warning";
+              // Colored left strip carries the status without needing a full
+              // tinted background — keeps the row visually anchored.
+              const stripColor =
+                row.status === "approved"
+                  ? "var(--color-success)"
+                  : row.status === "rejected"
+                    ? "var(--color-danger)"
+                    : row.status === "cancelled"
+                      ? "var(--color-text-subtle)"
+                      : "var(--color-warning)";
               const chain =
                 row.chain ?? chainFromStage(row.chain_stage, row.status);
               const requester = safe(row.requester_name ?? row.requester);
@@ -394,93 +918,67 @@ export default function PurchaseRequestListPage() {
                     : row.status === "cancelled"
                       ? "Cancelled"
                       : "Pending review";
+
               return (
-                <div
+                <Link
                   key={row.id ?? row.number}
-                  className="hover:bg-surface-container-low transition-colors relative group"
+                  to={`/app/purchase-requests/${row.number}`}
+                  className="group relative flex items-center gap-3 sm:gap-4 pl-4 sm:pl-5 pr-3 sm:pr-4 py-4 rounded-xl border border-border bg-surface shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all overflow-hidden"
                 >
-                  <div
-                    className={`absolute left-0 top-1.5 bottom-1.5 w-1 ${strip} rounded-r`}
+                  {/* Colored left strip — status indicator */}
+                  <span
+                    className="absolute left-0 top-0 bottom-0 w-1"
+                    style={{ background: stripColor }}
+                    aria-hidden
                   />
 
-                  {/* Mobile card layout — tap anywhere to open detail */}
-                  <Link
-                    to={`/app/purchase-requests/${row.number}`}
-                    className="md:hidden flex items-center gap-3 px-4 py-3.5 pl-5 active:bg-surface-container-low"
+                  {/* Status icon avatar */}
+                  <div
+                    className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 ${iconBg}`}
                   >
-                    <div className="min-w-0 flex-1 space-y-1.5">
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="font-bold text-primary font-mono text-[13px] truncate">
-                          {row.number}
-                        </span>
-                        <StatusPill status={row.status} />
-                      </div>
-                      {row.title && (
-                        <div className="text-sm font-medium text-text truncate">
-                          {row.title}
-                        </div>
-                      )}
-                      <div className="text-xs text-text-muted truncate">
-                        <span className="font-medium text-text">{requester}</span>
-                        {department !== "—" && <> · {department}</>}
-                        <> · {formatDate(row.created_at)}</>
-                      </div>
-                      {isApproverRole && (
-                        <div className="flex gap-1 pt-0.5">
-                          <ApprovalBadge role="HOD" state={chain.hod} />
-                          <ApprovalBadge role="CFO" state={chain.cfo} />
-                          <ApprovalBadge role="CEO" state={chain.ceo} />
-                        </div>
-                      )}
-                      {sub && (
-                        <div
-                          className={`text-[10px] font-medium ${
-                            row.status === "pending"
-                              ? "text-warning"
-                              : "text-text-subtle"
-                          }`}
-                        >
-                          {sub}
-                        </div>
-                      )}
-                    </div>
-                    <ChevronRight className="h-4 w-4 text-text-subtle shrink-0" />
-                  </Link>
+                    <StatusIcon className="h-[18px] w-[18px]" strokeWidth={2} />
+                  </div>
 
-                  {/* Desktop row layout */}
-                  <div className="hidden md:flex items-center px-4 py-3 text-sm">
-                    <div className="w-10 text-text-muted font-medium">
-                      {idx + 1}
-                    </div>
-                    <div className="w-28 text-text-muted">
-                      {formatDate(row.created_at)}
-                    </div>
-                    <div className="w-40">
-                      <Link
-                        to={`/app/purchase-requests/${row.number}`}
-                        className="font-bold text-primary hover:underline font-mono text-[13px]"
-                      >
+                  {/* Primary column — PR number + title + meta */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="font-mono text-[13px] font-bold text-primary">
                         {row.number}
-                      </Link>
-                      {row.title && (
-                        <div className="text-[11px] text-text-subtle truncate max-w-[160px] mt-0.5">
-                          {row.title}
-                        </div>
-                      )}
+                      </span>
+                      <span className="text-text-subtle">·</span>
+                      <span className="text-[11px] text-text-muted tabular-nums">
+                        {formatDate(row.created_at)}
+                      </span>
                     </div>
-                    <div className="flex-1 min-w-[180px]">
-                      <div className="font-semibold text-text">{requester}</div>
-                      <div className="text-xs text-text-muted">{department}</div>
-                    </div>
-                    {isApproverRole && (
-                      <div className="w-48 hidden lg:flex gap-1.5">
-                        <ApprovalBadge role="HOD" state={chain.hod} />
-                        <ApprovalBadge role="CFO" state={chain.cfo} />
-                        <ApprovalBadge role="CEO" state={chain.ceo} />
+                    {row.title && (
+                      <div className="text-[14px] font-semibold text-text truncate mt-0.5">
+                        {row.title}
                       </div>
                     )}
-                    <div className="w-36 flex flex-col items-start gap-1">
-                      <StatusPill status={row.status} />
+                    <div className="text-[11px] text-text-muted truncate mt-0.5">
+                      <span className="text-text font-medium">{requester}</span>
+                      {department !== "—" && (
+                        <>
+                          {" · "}
+                          {department}
+                        </>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Approval chain (lg+, approver only) */}
+                  {isApproverRole && (
+                    <div className="hidden lg:flex gap-1.5 shrink-0">
+                      <ApprovalBadge role="HOD" state={chain.hod} />
+                      <ApprovalBadge role="CFO" state={chain.cfo} />
+                      <ApprovalBadge role="CEO" state={chain.ceo} />
+                    </div>
+                  )}
+
+                  {/* Status pill + sub-text */}
+                  <div className="flex flex-col items-end gap-1 shrink-0 text-right min-w-[120px]">
+                    <StatusPill status={row.status} />
+                    {sub && (
                       <span
                         className={`text-[10px] font-medium ${
                           row.status === "pending"
@@ -490,33 +988,33 @@ export default function PurchaseRequestListPage() {
                       >
                         {sub}
                       </span>
-                    </div>
-                    <div className="w-16 flex items-center justify-end gap-2">
-                      <Link
-                        to={`/app/purchase-requests/${row.number}`}
-                        className="text-xs font-bold text-primary hover:brightness-110 px-2 py-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                      >
-                        View
-                      </Link>
-                      <button
-                        type="button"
-                        onClick={() => toast.info("Quick actions coming soon")}
-                        className="text-text-muted hover:text-text p-1 rounded hover:bg-surface-container-high"
-                        aria-label="More actions"
-                      >
-                        <MoreVertical className="h-4 w-4" />
-                      </button>
-                    </div>
+                    )}
                   </div>
-                </div>
+
+                  {/* Actions cluster — chevron always; more-actions on hover */}
+                  <div className="flex items-center gap-1 shrink-0">
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        toast.info("Quick actions coming soon");
+                      }}
+                      className="hidden sm:inline-flex text-text-muted hover:text-text p-1.5 rounded-full hover:bg-white/[0.06] opacity-0 group-hover:opacity-100 transition-all"
+                      aria-label="More actions"
+                    >
+                      <MoreVertical className="h-4 w-4" />
+                    </button>
+                    <ChevronRight className="h-4 w-4 text-text-subtle group-hover:text-primary group-hover:translate-x-0.5 transition-all" />
+                  </div>
+                </Link>
               );
             })}
-          </div>
         </div>
       )}
 
       {filtered.length > 0 && (
-        <div className="flex items-center justify-between mt-4 text-xs text-text-muted">
+        <div className="flex items-center justify-between text-xs text-text-muted">
           <span>
             Showing <strong className="text-text">{filtered.length}</strong>
             {filtered.length !== counts.total && (
@@ -531,7 +1029,7 @@ export default function PurchaseRequestListPage() {
           button which is hidden on small screens. */}
       <Link
         to="/app/purchase-requests/new"
-        className="sm:hidden fixed bottom-5 right-4 z-30 bg-primary hover:bg-primary-hover text-primary-foreground rounded-full shadow-lg w-14 h-14 flex items-center justify-center transition-transform active:scale-95"
+        className="sm:hidden fixed bottom-5 right-4 z-30 bg-primary hover:brightness-110 text-primary-foreground rounded-full shadow-2xl w-14 h-14 flex items-center justify-center transition-transform active:scale-95"
         aria-label="New Purchase Request"
       >
         <Plus className="h-6 w-6" strokeWidth={2.5} />

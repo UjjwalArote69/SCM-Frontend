@@ -640,7 +640,7 @@ function VendorDrawerInner({ vendor, onClose }) {
           type="button"
           onClick={save}
           disabled={submitting}
-          className="px-6 py-2 text-sm font-bold text-primary-foreground bg-primary hover:bg-primary-hover rounded-md disabled:opacity-60"
+          className="px-6 py-2 text-sm font-bold text-primary-foreground bg-primary hover:brightness-110 rounded-md disabled:opacity-60"
         >
           {submitting
             ? "Saving…"

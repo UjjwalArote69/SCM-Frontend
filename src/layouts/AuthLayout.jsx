@@ -10,18 +10,11 @@ import ThemeToggle from "../components/ui/ThemeToggle.jsx";
  * bold serif-feel heading, brand stats — keeps the experience cohesive
  * across vendor + internal sign-in.
  */
-const DEFAULT_STATS = [
-  { v: "45+", k: "Years" },
-  { v: "1.2k", k: "Vendors" },
-  { v: "₹3k cr", k: "PO/yr" },
-];
-
 export default function AuthLayout({
   children,
   brandEyebrow,
   brandTitle,
   brandSubtitle,
-  brandStats = DEFAULT_STATS,
 }) {
   return (
     <div className="min-h-screen w-full flex bg-bg text-text">
@@ -73,16 +66,8 @@ export default function AuthLayout({
           </p>
         </div>
 
-        <div className="relative grid grid-cols-3 gap-4">
-          {brandStats.map((s) => (
-            <div key={s.k}>
-              <div className="text-2xl font-bold text-text">{s.v}</div>
-              <div className="text-[10px] tracking-[0.22em] uppercase text-text-subtle mt-1">
-                {s.k}
-              </div>
-            </div>
-          ))}
-        </div>
+        {/* placeholder div to preserve flex spacing */}
+        <div />
       </aside>
 
       {/* Right: scrollable form pane */}

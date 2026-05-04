@@ -30,7 +30,7 @@ export default function ReportBuilderPage() {
             <select className="w-full bg-surface-container-lowest border-0 border-b-2 border-outline-variant focus:border-primary px-3 py-2 text-sm outline-none"><option>Department</option><option>Vendor</option><option>Month</option></select></div>
         </div>
         <div className="mt-4 flex justify-end">
-          <button onClick={() => setRan(true)} className="flex items-center gap-2 px-5 py-2 bg-primary hover:bg-primary-hover text-primary-foreground rounded-md font-bold text-sm">
+          <button onClick={() => setRan(true)} className="flex items-center gap-2 px-5 py-2 bg-primary hover:brightness-110 text-primary-foreground rounded-md font-bold text-sm">
             <Play className="h-4 w-4" /> Run Report
           </button>
         </div>

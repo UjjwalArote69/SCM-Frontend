@@ -61,7 +61,7 @@ export default function Sidebar({ audience = "user" }) {
       )}
 
       <nav
-        className={`fixed left-0 top-0 h-full w-64 flex flex-col z-40 bg-surface-container-lowest border-r border-border transition-transform duration-200 md:transition-[width] ${widthCls} ${mobileTransformCls}`}
+        className={`scm-chrome fixed left-0 top-0 h-full w-64 flex flex-col z-40 bg-surface-container-lowest/85 backdrop-blur-xl border-r border-border transition-transform duration-200 md:transition-[width] ${widthCls} ${mobileTransformCls}`}
       >
         {/* ── Brand ── */}
         <div className={`shrink-0 flex items-center gap-3 h-16 ${collapsed ? "justify-center px-0" : "px-4"}`}>

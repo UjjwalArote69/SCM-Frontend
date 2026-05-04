@@ -41,7 +41,7 @@ export default function VendorPOListPage() {
   }, [pos]);
 
   return (
-    <div className="max-w-6xl mx-auto">
+    <div className="max-w-[1400px] mx-auto">
       <PageHeader
         title="My Purchase Orders"
         subtitle="Orders placed by your buyers"

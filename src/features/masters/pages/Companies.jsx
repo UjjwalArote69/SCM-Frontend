@@ -26,14 +26,14 @@ export default function CompaniesPage() {
         title="Companies"
         subtitle="Legal entities within your organization"
         actions={
-          <button onClick={() => setDrawer({})} className="flex items-center gap-2 px-4 py-2 rounded-md bg-primary hover:bg-primary-hover text-primary-foreground text-sm font-bold">
+          <button onClick={() => setDrawer({})} className="flex items-center gap-2 px-4 py-2 rounded-md bg-primary hover:brightness-110 text-primary-foreground text-sm font-bold">
             <Plus className="h-4 w-4" /> New Company
           </button>
         }
       />
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {COMPANIES.map((c) => (
-          <div key={c.id} onClick={() => setDrawer(c)} className="bg-surface-container-lowest border border-border rounded-lg p-5 shadow-sm hover:shadow-lg hover:-translate-y-0.5 hover:border-primary cursor-pointer transition-all duration-200 group">
+          <div key={c.id} onClick={() => setDrawer(c)} className="glass-card rounded-2xl p-5 shadow-sm hover:shadow-lg hover:-translate-y-0.5 hover:border-primary cursor-pointer transition-all duration-200 group">
             <div className="flex items-start justify-between mb-4">
               <div className="w-10 h-10 rounded-md bg-primary-soft flex items-center justify-center">
                 <Building2 className="h-5 w-5 text-primary" />

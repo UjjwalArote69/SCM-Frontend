@@ -155,7 +155,7 @@ function ProfileSummaryCard({ user }) {
   };
 
   return (
-    <div className="bg-surface-container-lowest border border-border rounded-xl shadow-sm overflow-hidden hover:shadow-md transition-shadow">
+    <div className="glass-card rounded-2xl shadow-sm overflow-hidden hover:shadow-md transition-shadow">
       <div className="p-5 sm:p-6">
         {/* Avatar — click to upload, hover overlay shows camera icon */}
         <div className="flex items-center gap-4 mb-4">
@@ -342,7 +342,7 @@ function AccountSection({ user }) {
           type="button"
           onClick={save}
           disabled={busy}
-          className="w-full sm:w-auto px-5 py-2.5 sm:py-2 bg-primary hover:bg-primary-hover text-primary-foreground rounded-md font-bold text-sm disabled:opacity-60 inline-flex items-center justify-center gap-2"
+          className="w-full sm:w-auto px-5 py-2.5 sm:py-2 bg-primary hover:brightness-110 text-primary-foreground rounded-md font-bold text-sm disabled:opacity-60 inline-flex items-center justify-center gap-2"
         >
           {busy && <Loader2 className="h-4 w-4 animate-spin" />}
           {busy ? "Saving…" : "Save Changes"}
@@ -462,7 +462,7 @@ function PasswordSection() {
           type="button"
           onClick={save}
           disabled={busy}
-          className="w-full sm:w-auto px-5 py-2.5 sm:py-2 bg-primary hover:bg-primary-hover text-primary-foreground rounded-md font-bold text-sm disabled:opacity-60 inline-flex items-center justify-center gap-2"
+          className="w-full sm:w-auto px-5 py-2.5 sm:py-2 bg-primary hover:brightness-110 text-primary-foreground rounded-md font-bold text-sm disabled:opacity-60 inline-flex items-center justify-center gap-2"
         >
           {busy && <Loader2 className="h-4 w-4 animate-spin" />}
           {busy ? "Updating…" : "Update Password"}
@@ -614,7 +614,7 @@ export default function ProfilePage() {
   const isVendor = user.role === "vendor";
 
   return (
-    <div className="max-w-7xl mx-auto">
+    <div className="max-w-[1400px] mx-auto">
       {/* Page header — matches PR/Quotations/PO list pattern */}
       <div className="mb-6 sm:mb-8">
         <h1 className="text-2xl sm:text-3xl font-bold text-text tracking-tight">

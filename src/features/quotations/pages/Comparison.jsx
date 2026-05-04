@@ -15,6 +15,7 @@ import {
   MessageSquareQuote,
   UserPlus,
   UserCheck,
+  FileSpreadsheet,
 } from "lucide-react";
 import { useRFQStore } from "../store.js";
 import { useToast } from "../../../hooks/useToast.jsx";
@@ -92,12 +93,12 @@ function VendorCard({
 
   return (
     <article
-      className={`bg-surface-container-lowest border rounded-xl overflow-hidden transition-colors ${
+      className={`glass-card rounded-2xl overflow-hidden transition-colors ${
         isAwarded
-          ? "border-success ring-2 ring-success/30"
+          ? "ring-2 ring-success/40 border-success/40"
           : rank === 0
             ? "border-primary/40"
-            : "border-border"
+            : ""
       }`}
     >
       {/* Card header — always visible */}
@@ -190,9 +191,9 @@ function VendorCard({
               type="button"
               onClick={() => onAward(resp.vendor)}
               disabled={acting}
-              className="px-4 py-2 text-sm font-bold text-primary-foreground bg-primary hover:bg-primary-hover rounded-md disabled:opacity-60 flex items-center gap-2"
+              className="px-4 py-2 text-[12px] font-bold text-primary-foreground bg-primary hover:brightness-110 rounded-full transition-all shadow-sm disabled:opacity-60 flex items-center gap-1.5"
             >
-              <Award className="h-4 w-4" /> Award to {resp.vendor.split(" ")[0]}
+              <Award className="h-3.5 w-3.5" /> Award to {resp.vendor.split(" ")[0]}
             </button>
           ) : isAgreedVendor ? (
             <span className="text-[11px] text-text-muted italic">
@@ -290,7 +291,6 @@ function ComparisonView({
   items,
   responses,
   vendors,
-  isBackoffice,
   isTerminal,
   acting,
   sortBy,
@@ -338,7 +338,7 @@ function ComparisonView({
   return (
     <div className="space-y-6">
       {/* Items requested summary */}
-      <section className="bg-surface-container-lowest border border-border rounded-lg p-5">
+      <section className="glass-card rounded-2xl p-5">
         <div className="flex items-center justify-between mb-3">
           <h2 className="text-sm font-bold uppercase tracking-wider text-text">
             What was requested
@@ -383,7 +383,7 @@ function ComparisonView({
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search vendor…"
-            className="w-full bg-surface-container-lowest border border-border focus:border-primary pl-10 pr-3 py-2 text-sm text-text outline-none rounded-md"
+            className="w-full bg-surface-container-low/60 border border-border focus:border-primary/60 focus:ring-2 focus:ring-primary/15 pl-10 pr-3 py-2 text-sm text-text placeholder:text-text-subtle outline-none rounded-full transition-colors"
           />
         </div>
         <div className="flex items-center gap-2 text-xs">
@@ -393,7 +393,7 @@ function ComparisonView({
           <select
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value)}
-            className="bg-surface-container-lowest border border-border rounded-md px-3 py-2 text-sm text-text outline-none focus:border-primary"
+            className="bg-surface-container-low/60 border border-border rounded-full px-4 py-2 text-[12px] font-semibold text-text-muted hover:text-text outline-none focus:border-primary/60 focus:ring-2 focus:ring-primary/15 transition-colors"
           >
             <option value="total">Lowest grand total</option>
             <option value="eta">Earliest ETA</option>
@@ -445,7 +445,7 @@ function ComparisonView({
 
       {/* Invited but not yet quoted */}
       {notYetQuoted.length > 0 && (
-        <section className="bg-surface-container-low/50 border border-dashed border-border rounded-lg p-5">
+        <section className="glass-card rounded-2xl p-5 border-dashed">
           <h3 className="text-xs font-bold uppercase tracking-widest text-text-muted mb-3 flex items-center gap-2">
             <Clock className="h-3.5 w-3.5" />
             Awaiting response from {notYetQuoted.length} vendor
@@ -455,7 +455,7 @@ function ComparisonView({
             {notYetQuoted.map((v) => (
               <span
                 key={v}
-                className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-surface-container-lowest border border-border text-xs text-text"
+                className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-surface-container-low/60 border border-border text-xs text-text"
               >
                 <span className="w-1.5 h-1.5 rounded-full bg-warning" />
                 {v}
@@ -479,7 +479,9 @@ function StatusBanner({
 }) {
   if (status === "awarded") {
     return (
-      <div className="bg-success-soft border border-success/30 rounded-lg px-5 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
+      <div className="glass-card rounded-2xl border-success/30 px-5 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6"
+        style={{ background: "rgba(34, 197, 94, 0.06)" }}
+      >
         <div className="flex items-center gap-3 min-w-0">
           <div className="w-10 h-10 rounded-full bg-success text-white flex items-center justify-center shrink-0">
             <Award className="h-5 w-5" strokeWidth={2.5} />
@@ -513,7 +515,7 @@ function StatusBanner({
             <button
               type="button"
               onClick={onOpenAssign}
-              className="px-3 py-2 text-xs font-bold text-text border border-border bg-surface-container-lowest hover:bg-surface-container-low rounded-md whitespace-nowrap inline-flex items-center gap-1.5"
+              className="px-4 py-2 text-[12px] font-bold text-text border border-border bg-surface-container-low/60 hover:border-white/20 rounded-full transition-colors whitespace-nowrap inline-flex items-center gap-1.5"
             >
               <UserPlus className="h-3.5 w-3.5" />
               {poAuthor ? "Reassign" : "Assign PO author"}
@@ -522,7 +524,7 @@ function StatusBanner({
           {canCreatePO && (
             <Link
               to={`/app/purchase-orders/new?rfq=${rfqNumber}`}
-              className="px-4 py-2 text-xs font-bold text-primary-foreground bg-primary hover:bg-primary-hover rounded-md whitespace-nowrap"
+              className="px-4 py-2 text-[12px] font-bold text-primary-foreground bg-primary hover:brightness-110 rounded-full transition-all shadow-sm whitespace-nowrap"
             >
               Create PO →
             </Link>
@@ -533,7 +535,7 @@ function StatusBanner({
   }
   if (status === "closed") {
     return (
-      <div className="bg-surface-container-high border border-border rounded-lg px-5 py-4 flex items-center gap-3 mb-6">
+      <div className="glass-card rounded-2xl px-5 py-4 flex items-center gap-3 mb-6">
         <div className="w-10 h-10 rounded-full bg-surface-container text-text-muted flex items-center justify-center shrink-0">
           <XCircle className="h-5 w-5" strokeWidth={2.5} />
         </div>
@@ -704,27 +706,36 @@ export default function QuotationComparisonPage() {
   };
 
   return (
-    <div className="max-w-6xl mx-auto">
+    <div className="max-w-[1400px] mx-auto">
       <PrintLetterhead
         docType="Request for Quotation"
         docNumber={rfq.number}
         subtitle={rfq.title ?? null}
       />
 
-      <nav className="text-sm font-medium text-text-muted mb-2 flex items-center gap-2 print:hidden">
-        <Link to="/app/quotations" className="hover:text-primary">
+      <nav className="text-[12px] font-medium text-text-muted mb-3 flex items-center gap-1.5 print:hidden">
+        <Link
+          to="/app/quotations"
+          className="hover:text-primary transition-colors"
+        >
           Quotations
         </Link>
-        <ChevronRight className="h-4 w-4" />
-        <span className="text-text">{rfq.number}</span>
+        <ChevronRight className="h-3.5 w-3.5 text-text-subtle" />
+        <span className="text-text font-mono">{rfq.number}</span>
       </nav>
 
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-3 mb-6 print:hidden">
         <div>
-          <h1 className="text-3xl font-bold text-text tracking-tight mb-1">
+          <div className="flex items-center gap-1.5 text-text-muted">
+            <FileSpreadsheet className="h-3 w-3" strokeWidth={2} />
+            <span className="text-[10px] font-semibold tracking-[0.22em] uppercase">
+              Quotation
+            </span>
+          </div>
+          <h1 className="text-[24px] sm:text-[28px] font-bold text-text leading-tight tracking-tight mt-1">
             {rfq.title}
           </h1>
-          <p className="text-text-muted text-sm">
+          <p className="text-text-muted text-sm mt-1.5 font-mono">
             {rfq.number}
             {rfq.pr_number ? ` · From ${rfq.pr_number}` : ""}
             {rfq.due_date ? ` · Due ${rfq.due_date}` : ""}
@@ -737,9 +748,9 @@ export default function QuotationComparisonPage() {
             type="button"
             onClick={doClose}
             disabled={acting}
-            className="px-4 py-2 text-sm font-semibold text-text-muted border border-border rounded-md hover:bg-surface-container-low disabled:opacity-60 flex items-center gap-2"
+            className="px-4 py-2 text-[12px] font-semibold text-text-muted border border-border bg-surface-container-low/60 rounded-full hover:text-text hover:border-white/20 transition-colors disabled:opacity-60 flex items-center gap-1.5"
           >
-            <XCircle className="h-4 w-4" /> Close without award
+            <XCircle className="h-3.5 w-3.5" /> Close without award
           </button>
         )}
         {(user?.role === "admin" ||
@@ -751,9 +762,9 @@ export default function QuotationComparisonPage() {
             type="button"
             onClick={doDelete}
             disabled={acting}
-            className="px-4 py-2 text-sm font-semibold text-danger border border-danger/30 bg-danger-soft/40 rounded-md hover:bg-danger-soft disabled:opacity-60 flex items-center gap-2"
+            className="px-4 py-2 text-[12px] font-bold text-danger border border-danger/30 bg-danger-soft/40 rounded-full hover:bg-danger-soft transition-colors disabled:opacity-60 flex items-center gap-1.5"
           >
-            <Trash2 className="h-4 w-4" /> Delete
+            <Trash2 className="h-3.5 w-3.5" /> Delete
           </button>
         )}
         </div>

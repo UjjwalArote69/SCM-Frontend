@@ -69,7 +69,7 @@ export default function VendorQuotationsPage() {
   const isLoading = loading || identityLoading;
 
   return (
-    <div className="max-w-6xl mx-auto">
+    <div className="max-w-[1400px] mx-auto">
       <PageHeader
         title="My Quotations"
         subtitle="Quotes you've submitted and RFQs inviting you to bid"

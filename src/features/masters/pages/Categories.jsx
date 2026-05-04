@@ -27,7 +27,7 @@ export default function CategoriesPage() {
         title="Categories"
         subtitle="Organize items into a catalog hierarchy"
         actions={
-          <button onClick={() => setDrawer({})} className="flex items-center gap-2 px-4 py-2 rounded-md bg-primary hover:bg-primary-hover text-primary-foreground text-sm font-bold">
+          <button onClick={() => setDrawer({})} className="flex items-center gap-2 px-4 py-2 rounded-md bg-primary hover:brightness-110 text-primary-foreground text-sm font-bold">
             <Plus className="h-4 w-4" /> New Category
           </button>
         }

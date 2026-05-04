@@ -1,11 +1,15 @@
-import { useEffect, useId, useMemo, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { Link } from "react-router-dom";
 import {
+  AlertCircle,
   ArrowDownRight,
   ArrowUpRight,
+  CheckCircle2,
   ChevronDown,
   ChevronRight,
   ClipboardList,
+  Clock,
   Eye,
   EyeOff,
   FileSpreadsheet,
@@ -13,11 +17,15 @@ import {
   Package,
   ReceiptText,
   RefreshCw,
+  XCircle,
 } from "lucide-react";
 import { usePRStore } from "../../purchase-requests/store.js";
 import { usePOStore } from "../../purchase-orders/store.js";
 import { useRFQStore } from "../../quotations/store.js";
+import { useGRNStore } from "../../grn/store.js";
 import { useAuthStore } from "../../auth/store.js";
+
+const APPROVER_ROLES = new Set(["admin", "hod", "cfo", "ceo"]);
 
 /* ═════════════════════════════════════════════════════════════════
    Format helpers
@@ -70,17 +78,137 @@ function Eyebrow({ icon: Icon, label }) {
   );
 }
 
-function ToolbarBtn({ children, onClick, title, ariaLabel }) {
+function ToolbarBtn({ children, onClick, title, ariaLabel, active }) {
   return (
     <button
       type="button"
       onClick={onClick}
       title={title}
       aria-label={ariaLabel ?? title}
-      className="inline-flex items-center gap-1.5 h-8 px-3.5 rounded-full border border-border bg-surface-container-low/60 text-text-muted hover:text-text hover:border-white/20 transition-colors text-[11px] font-semibold tabular-nums"
+      className={`inline-flex items-center gap-1.5 h-8 px-3.5 rounded-full border transition-colors text-[11px] font-semibold tabular-nums ${
+        active
+          ? "border-primary/40 bg-primary-soft text-primary"
+          : "border-border bg-surface-container-low/60 text-text-muted hover:text-text hover:border-white/20"
+      }`}
     >
       {children}
     </button>
+  );
+}
+
+/* Real dropdown — fixed-width trigger + portal-rendered menu.
+   The trigger pill width is FIXED via the `width` prop and the trigger only
+   shows a SHORT label so picking a different option never resizes the
+   trigger. The menu is rendered via createPortal into <body> so it cannot
+   affect any parent flex layout, and we use a document-level mousedown
+   listener for click-outside (no fixed-position overlay anywhere in the
+   tree, which was the source of the previous layout-shift bug). */
+function ToolbarDropdown({ value, options, onChange, label, width = 76 }) {
+  const [open, setOpen] = useState(false);
+  const [menuPos, setMenuPos] = useState(null);
+  const triggerRef = useRef(null);
+  const menuRef = useRef(null);
+  const current = options.find((o) => o.value === value);
+
+  // Position the portal menu directly below the trigger.
+  // Anchor to whichever side is closer to the viewport edge so the menu
+  // doesn't overflow off-screen.
+  useEffect(() => {
+    if (!open || !triggerRef.current) return;
+    const rect = triggerRef.current.getBoundingClientRect();
+    const spaceRight = window.innerWidth - rect.right;
+    const fromRight = spaceRight < rect.left;
+    setMenuPos({
+      top: rect.bottom + 4,
+      ...(fromRight
+        ? { right: spaceRight }
+        : { left: rect.left }),
+    });
+  }, [open]);
+
+  // Click-outside via document mousedown.
+  useEffect(() => {
+    if (!open) return;
+    const onDocDown = (e) => {
+      if (
+        triggerRef.current?.contains(e.target) ||
+        menuRef.current?.contains(e.target)
+      ) {
+        return;
+      }
+      setOpen(false);
+    };
+    const onScroll = () => setOpen(false);
+    document.addEventListener("mousedown", onDocDown);
+    window.addEventListener("scroll", onScroll, true);
+    window.addEventListener("resize", onScroll);
+    return () => {
+      document.removeEventListener("mousedown", onDocDown);
+      window.removeEventListener("scroll", onScroll, true);
+      window.removeEventListener("resize", onScroll);
+    };
+  }, [open]);
+
+  return (
+    <div className="inline-block" style={{ width }}>
+      <button
+        ref={triggerRef}
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        aria-label={label}
+        className={`w-full inline-flex items-center justify-center gap-1 h-8 px-3 rounded-full border transition-colors text-[11px] font-semibold tabular-nums ${
+          open
+            ? "border-primary/40 bg-primary-soft text-primary"
+            : "border-border bg-surface-container-low/60 text-text-muted hover:text-text hover:border-white/20"
+        }`}
+      >
+        <span className="truncate">
+          {current?.short ?? current?.label ?? value}
+        </span>
+        <ChevronDown
+          className={`h-3 w-3 shrink-0 transition-transform ${open ? "rotate-180" : ""}`}
+        />
+      </button>
+      {open &&
+        menuPos &&
+        createPortal(
+          <div
+            ref={menuRef}
+            className="rounded-xl py-1 border border-border shadow-2xl"
+            style={{
+              position: "fixed",
+              top: menuPos.top,
+              ...(menuPos.right !== undefined
+                ? { right: menuPos.right }
+                : { left: menuPos.left }),
+              zIndex: 1000,
+              width: 180,
+              backgroundColor: "var(--color-surface)",
+              backdropFilter: "blur(12px)",
+              WebkitBackdropFilter: "blur(12px)",
+            }}
+          >
+            {options.map((o) => (
+              <button
+                key={o.value}
+                type="button"
+                onClick={() => {
+                  onChange(o.value);
+                  setOpen(false);
+                }}
+                className={`w-full text-left px-3 py-2 text-[12px] font-medium transition-colors ${
+                  o.value === value
+                    ? "text-primary bg-primary-soft"
+                    : "text-text-muted hover:text-text hover:bg-surface-container-low"
+                }`}
+              >
+                {o.label}
+              </button>
+            ))}
+          </div>,
+          document.body,
+        )}
+    </div>
   );
 }
 
@@ -129,7 +257,7 @@ function ChangePill({ pct }) {
 /* ═════════════════════════════════════════════════════════════════
    Sparkline — single line, dotted center reference, halo'd endpoint
    ═════════════════════════════════════════════════════════════════ */
-function Sparkline({ values, tone = "success", height = 64 }) {
+function Sparkline({ values, tone = "success", height = 80 }) {
   const reactId = useId();
   const w = 280;
   const h = height;
@@ -194,13 +322,29 @@ function Sparkline({ values, tone = "success", height = 64 }) {
         d={linePath}
         fill="none"
         stroke={stroke}
-        strokeWidth="1.6"
+        strokeWidth="2"
         strokeLinecap="round"
         strokeLinejoin="round"
         vectorEffect="non-scaling-stroke"
       />
+      {/* peak highlight (max point) */}
+      {(() => {
+        let peakIdx = 0;
+        for (let i = 1; i < values.length - 1; i++) {
+          if (values[i] >= values[peakIdx]) peakIdx = i;
+        }
+        if (peakIdx === 0 || peakIdx === values.length - 1) return null;
+        const [px, py] = points[peakIdx];
+        return (
+          <g>
+            <circle cx={px} cy={py} r="6" fill={stroke} fillOpacity="0.20" />
+            <circle cx={px} cy={py} r="2.5" fill={stroke} />
+            <circle cx={px} cy={py} r="1" fill="white" />
+          </g>
+        );
+      })()}
       {/* halo'd endpoint */}
-      <circle cx={lastX} cy={lastY} r="7" fill={stroke} fillOpacity="0.18" />
+      <circle cx={lastX} cy={lastY} r="8" fill={stroke} fillOpacity="0.20" />
       <circle cx={lastX} cy={lastY} r="3.5" fill={stroke} />
       <circle cx={lastX} cy={lastY} r="1.5" fill="white" />
     </svg>
@@ -408,43 +552,47 @@ function TokenStatCard({
     <Link
       to={to}
       style={{ animationDelay: `${delay}ms` }}
-      className="glass-card rounded-2xl p-5 flex flex-col fade-up hover:border-white/20 transition-colors"
+      className="glass-card rounded-2xl p-6 flex flex-col fade-up hover:shadow-lg transition-all"
     >
-      {/* top row */}
-      <div className="flex items-start gap-3">
-        <div
-          className="w-11 h-11 rounded-full flex items-center justify-center text-sm font-black shrink-0 shadow-sm"
-          style={{ background: iconBg, color: "#1a1a22" }}
-        >
-          {iconChar ?? iconLetter}
-        </div>
-        <div className="flex-1 min-w-0 pt-0.5">
-          <div className="text-[10px] font-bold tracking-[0.22em] text-text-muted uppercase">
-            {eyebrow}
+      {/* top row — icon+name on left, change pill in top-right corner */}
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex items-center gap-3 min-w-0">
+          <div
+            className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold shrink-0"
+            style={{ background: iconBg, color: "#1a1a22" }}
+          >
+            {iconChar ?? iconLetter}
           </div>
-          <div className="text-[15px] font-bold text-text truncate leading-tight">
-            {name}
-          </div>
-        </div>
-      </div>
-      {/* value row */}
-      <div className="mt-5 flex items-end justify-between gap-2">
-        <div className="min-w-0">
-          <div className="text-[26px] font-black text-text leading-none tabular-nums tracking-tight truncate">
-            {value}
-          </div>
-          {subValue && (
-            <div className="text-[11.5px] text-text-muted mt-1.5 truncate">
-              {subValue}
+          <div className="min-w-0">
+            <div className="text-[11px] font-medium tracking-[0.04em] text-text-muted uppercase">
+              {eyebrow}
             </div>
-          )}
+            <div className="text-[15px] font-semibold text-text leading-tight mt-0.5 whitespace-nowrap">
+              {name}
+            </div>
+          </div>
         </div>
         <ChangePill pct={changePct} />
       </div>
-      {/* sparkline */}
-      <div className="mt-4 -mx-1">
-        <div className="text-[11px] font-semibold tabular-nums px-1 mb-0.5"
-             style={{ color: positive ? "#22c55e" : "#f87171" }}>
+
+      {/* value + sub-value */}
+      <div className="mt-6">
+        <div className="text-[24px] font-bold text-text leading-tight tabular-nums tracking-tight truncate">
+          {value}
+        </div>
+        {subValue && (
+          <div className="text-[13px] text-text-muted mt-1 truncate">
+            {subValue}
+          </div>
+        )}
+      </div>
+
+      {/* delta + sparkline — directly below sub-value, no flex-spacer */}
+      <div className="mt-5 -mx-1">
+        <div
+          className="text-[12px] font-medium tabular-nums px-1 mb-1 text-right"
+          style={{ color: positive ? "#22c55e" : "#f87171" }}
+        >
           {delta}
         </div>
         <Sparkline values={spark} tone={positive ? "success" : "danger"} />
@@ -461,14 +609,12 @@ function SpendBalanceCard({ total, deltaAmt, deltaPct, slices, tickAt, betterPct
   return (
     <div
       style={{ animationDelay: `${delay}ms` }}
-      className="glass-card rounded-2xl p-5 flex flex-col fade-up"
+      className="glass-card rounded-2xl p-6 flex flex-col fade-up"
     >
-      <div className="flex items-baseline gap-3">
-        <div className="text-[28px] font-black text-text leading-none tabular-nums tracking-tight">
-          {fmtINR(total)}
-        </div>
+      <div className="text-[28px] font-bold text-text leading-tight tabular-nums tracking-tight">
+        {fmtINR(total)}
       </div>
-      <div className="mt-2.5 inline-flex items-center gap-2 text-[12.5px]">
+      <div className="mt-2 inline-flex items-center gap-2 text-[13px]">
         <span
           className={`inline-flex items-center justify-center h-5 w-5 rounded-full ${
             positive ? "bg-primary text-white" : "bg-danger text-white"
@@ -481,20 +627,21 @@ function SpendBalanceCard({ total, deltaAmt, deltaPct, slices, tickAt, betterPct
           )}
         </span>
         <span
-          className="font-bold tabular-nums"
+          className="font-semibold tabular-nums"
           style={{ color: positive ? "#ff5d3a" : "#f87171" }}
         >
           {positive ? "+" : "-"}
           {fmtINR(Math.abs(deltaAmt))}
         </span>
         <span className="text-text-muted tabular-nums">
-          ({deltaPct.toFixed(2)}%)
+          ({deltaPct.toFixed(2)})
         </span>
       </div>
 
-      <div className="relative mt-2 -mb-2">
+      {/* gauge fills the rest of the card */}
+      <div className="relative flex-1 flex items-end mt-2">
         <RainbowGauge slices={slices} tickAt={tickAt} />
-        <div className="absolute inset-x-0 bottom-3 text-center text-[11.5px] text-text-muted leading-tight">
+        <div className="absolute inset-x-0 bottom-2 text-center text-[12px] text-text-muted leading-snug pointer-events-none">
           {betterPct >= 0 ? "+" : ""}
           {betterPct.toFixed(2)}% More than
           <br />
@@ -519,13 +666,13 @@ function TrendChartCard({ series, xLabels, totals, delay = 0 }) {
   return (
     <div
       style={{ animationDelay: `${delay}ms` }}
-      className="glass-card rounded-2xl p-5 flex flex-col fade-up"
+      className="glass-card rounded-2xl p-6 flex flex-col fade-up"
     >
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-[15px] font-bold text-text">Procurement Trend</h3>
+      <div className="flex items-center justify-between mb-5">
+        <h3 className="text-[16px] font-semibold text-text">Procurement Trend</h3>
         <Link
           to="/app/purchase-requests"
-          className="text-[11px] font-semibold text-text-muted hover:text-primary"
+          className="text-[12px] text-text-muted hover:text-primary"
         >
           See all
         </Link>
@@ -533,22 +680,22 @@ function TrendChartCard({ series, xLabels, totals, delay = 0 }) {
 
       <FilterPills tabs={tabs} active={tab} onChange={setTab} />
 
-      <div className="flex-1 min-h-[240px] mt-4">
+      <div className="flex-1 min-h-[260px] mt-5">
         <MultiLineChart series={visible} xLabels={xLabels} />
       </div>
 
-      <div className="mt-3 flex flex-wrap gap-2">
+      <div className="mt-4 flex flex-wrap gap-2">
         {totals.map((t) => (
           <span
             key={t.label}
-            className="inline-flex items-center gap-1.5 text-[11px] bg-surface-container-low/60 border border-white/5 rounded-full pl-2 pr-3 py-1 tabular-nums"
+            className="inline-flex items-center gap-2 text-[12px] bg-surface-container-low/50 border border-white/5 rounded-full pl-2.5 pr-3.5 py-1.5 tabular-nums"
           >
             <span
-              className="w-2 h-2 rounded-full"
+              className="w-1.5 h-1.5 rounded-full"
               style={{ background: t.color }}
             />
             <span className="text-text-muted">{t.label}</span>
-            <span className="text-text font-bold">{t.value}</span>
+            <span className="text-text font-semibold">{t.value}</span>
           </span>
         ))}
       </div>
@@ -574,13 +721,13 @@ function TopVendorsCard({ vendors, delay = 0 }) {
   return (
     <div
       style={{ animationDelay: `${delay}ms` }}
-      className="glass-card rounded-2xl p-5 flex flex-col fade-up"
+      className="glass-card rounded-2xl p-6 flex flex-col fade-up"
     >
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-[15px] font-bold text-text">Top Vendors</h3>
+      <div className="flex items-center justify-between mb-5">
+        <h3 className="text-[16px] font-semibold text-text">Top Vendors</h3>
         <Link
           to="/admin/vendors"
-          className="text-[11px] font-semibold text-text-muted hover:text-primary"
+          className="text-[12px] text-text-muted hover:text-primary"
         >
           See all
         </Link>
@@ -588,7 +735,7 @@ function TopVendorsCard({ vendors, delay = 0 }) {
 
       <FilterPills tabs={tabs} active={tab} onChange={setTab} />
 
-      <div className="mt-4 flex flex-col gap-0.5">
+      <div className="mt-5 flex flex-col gap-1">
         {sorted.length === 0 && (
           <div className="text-[12px] text-text-muted py-8 text-center">
             No vendor activity yet.
@@ -597,35 +744,292 @@ function TopVendorsCard({ vendors, delay = 0 }) {
         {sorted.slice(0, 6).map((v) => (
           <Link
             key={v.name}
-            to="#"
-            className="flex items-center gap-3 px-1 py-2.5 rounded-xl hover:bg-white/[0.02] transition-colors group"
+            to={`/admin/vendors?search=${encodeURIComponent(v.name)}`}
+            className="flex items-center gap-3 px-1 py-3 rounded-xl hover:bg-white/[0.02] transition-colors group"
           >
             <div
-              className="w-9 h-9 rounded-full flex items-center justify-center text-[11px] font-black shrink-0 shadow-sm"
+              className="w-9 h-9 rounded-full flex items-center justify-center text-[12px] font-bold shrink-0"
               style={{ background: v.color, color: "#1a1a22" }}
             >
               {v.initial}
             </div>
             <div className="flex-1 min-w-0">
-              <div className="text-[13px] font-bold text-text truncate">
+              <div className="text-[14px] font-semibold text-text truncate">
                 {v.name}
               </div>
-              <div className="text-[10px] text-text-muted tabular-nums">
+              <div className="text-[11px] text-text-muted tabular-nums mt-0.5">
                 {v.share.toFixed(0)}%
               </div>
             </div>
             <div className="text-right shrink-0">
-              <div className="text-[14px] font-black text-text tabular-nums leading-none">
+              <div className="text-[15px] font-semibold text-text tabular-nums leading-tight">
                 {v.orders}
               </div>
-              <div className="text-[10px] text-text-muted tabular-nums mt-1">
+              <div className="text-[11px] text-text-muted tabular-nums">
                 {fmtCompact(v.amount)}
               </div>
             </div>
-            <ChevronRight className="h-4 w-4 text-text-subtle ml-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
+            <ChevronRight className="h-4 w-4 text-text-subtle ml-1 opacity-40 group-hover:opacity-100 transition-opacity shrink-0" />
           </Link>
         ))}
       </div>
+    </div>
+  );
+}
+
+/* ═════════════════════════════════════════════════════════════════
+   Pipeline Strip — 4 stages PR → RFQ → PO → GRN with counts + alerts
+   ═════════════════════════════════════════════════════════════════ */
+function PipelineStrip({ prs, rfqs, pos, grns, delay = 0 }) {
+  const stages = [
+    {
+      label: "Requests",
+      Icon: ClipboardList,
+      iconBg: "linear-gradient(135deg, #fbbf24, #f59e0b)",
+      total: prs.length,
+      pending: prs.filter((p) => p.status === "pending").length,
+      pendingLabel: "pending",
+      to: "/app/purchase-requests",
+    },
+    {
+      label: "Quotations",
+      Icon: FileSpreadsheet,
+      iconBg: "linear-gradient(135deg, #a78bfa, #8b5cf6)",
+      total: rfqs.length,
+      pending: rfqs.filter(
+        (r) => r.status === "open" || r.status === "compared",
+      ).length,
+      pendingLabel: "open",
+      to: "/app/quotations",
+    },
+    {
+      label: "Orders",
+      Icon: ReceiptText,
+      iconBg: "linear-gradient(135deg, #60a5fa, #3b82f6)",
+      total: pos.length,
+      pending: pos.filter(
+        (p) => p.status === "pending" || p.status === "accepted",
+      ).length,
+      pendingLabel: "active",
+      to: "/app/purchase-orders",
+    },
+    {
+      label: "Receipts",
+      Icon: Package,
+      iconBg: "linear-gradient(135deg, #34d399, #10b981)",
+      total: grns.length,
+      pending: grns.filter((g) => g.status === "partial").length,
+      pendingLabel: "partial",
+      to: "/app/grn",
+    },
+  ];
+
+  return (
+    <div
+      className="glass-card rounded-2xl p-2 fade-up"
+      style={{ animationDelay: `${delay}ms` }}
+    >
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
+        {stages.map((s) => (
+          <Link
+            key={s.label}
+            to={s.to}
+            className="group flex items-center gap-3 p-3 rounded-xl hover:bg-white/[0.04] transition-colors"
+          >
+            <div
+              className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
+              style={{ background: s.iconBg, color: "#1a1a22" }}
+            >
+              <s.Icon className="h-4 w-4" strokeWidth={2.25} />
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-baseline gap-2">
+                <span className="text-[20px] font-bold text-text tabular-nums leading-none">
+                  {s.total}
+                </span>
+                <span className="text-[12px] text-text-muted font-medium truncate">
+                  {s.label}
+                </span>
+              </div>
+              <div className="text-[11px] mt-1 tabular-nums">
+                {s.pending > 0 ? (
+                  <span className="text-primary font-semibold">
+                    {s.pending} {s.pendingLabel}
+                  </span>
+                ) : (
+                  <span className="text-text-subtle">All clear</span>
+                )}
+              </div>
+            </div>
+            <ChevronRight className="h-4 w-4 text-text-subtle opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
+          </Link>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* ═════════════════════════════════════════════════════════════════
+   Recent Activity — chronological feed of PR/RFQ/PO/GRN events
+   ═════════════════════════════════════════════════════════════════ */
+const ACTIVITY_KIND = {
+  success: { Icon: CheckCircle2, bg: "bg-success-soft", iconColor: "text-success" },
+  warning: { Icon: Clock, bg: "bg-warning-soft", iconColor: "text-warning" },
+  danger: { Icon: XCircle, bg: "bg-danger-soft", iconColor: "text-danger" },
+  info: { Icon: AlertCircle, bg: "bg-info-soft", iconColor: "text-info" },
+};
+
+const TYPE_PILL = {
+  PR: "bg-warning-soft text-warning",
+  RFQ: "bg-primary-soft text-primary",
+  PO: "bg-info-soft text-info",
+  GRN: "bg-success-soft text-success",
+};
+
+function timeAgo(iso, nowMs) {
+  if (!iso) return "—";
+  const t = new Date(iso).getTime();
+  const diff = Math.max(0, nowMs - t);
+  const m = Math.floor(diff / 60000);
+  if (m < 1) return "just now";
+  if (m < 60) return `${m}m ago`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h}h ago`;
+  const d = Math.floor(h / 24);
+  if (d < 7) return `${d}d ago`;
+  return new Date(iso).toLocaleDateString(undefined, {
+    month: "short",
+    day: "numeric",
+  });
+}
+
+function ActivityCard({ items, delay = 0 }) {
+  return (
+    <div
+      className="glass-card rounded-2xl p-6 flex flex-col fade-up"
+      style={{ animationDelay: `${delay}ms` }}
+    >
+      <div className="flex items-center justify-between mb-5">
+        <h3 className="text-[16px] font-semibold text-text">Recent Activity</h3>
+        <span className="text-[11px] text-text-muted tabular-nums">
+          {items.length} events
+        </span>
+      </div>
+      <div className="flex flex-col gap-1">
+        {items.length === 0 && (
+          <div className="text-[12px] text-text-muted py-10 text-center">
+            No recent activity yet.
+          </div>
+        )}
+        {items.map((ev) => {
+          const style = ACTIVITY_KIND[ev.kind] ?? ACTIVITY_KIND.info;
+          const { Icon } = style;
+          return (
+            <Link
+              key={ev.key}
+              to={ev.to ?? "#"}
+              className="flex items-start gap-3 px-2 py-2.5 rounded-xl hover:bg-white/[0.04] transition-colors group"
+            >
+              <div
+                className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${style.bg}`}
+              >
+                <Icon className={`h-4 w-4 ${style.iconColor}`} strokeWidth={2} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <span
+                    className={`text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded ${TYPE_PILL[ev.docType] ?? "bg-surface-container text-text-muted"}`}
+                  >
+                    {ev.docType}
+                  </span>
+                  <span className="text-[13px] text-text font-medium truncate">
+                    {ev.text}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2 mt-0.5">
+                  <span className="text-[11px] font-mono text-text-muted">
+                    {ev.ref}
+                  </span>
+                  <span className="text-[11px] text-text-subtle">·</span>
+                  <span className="text-[11px] text-text-subtle">{ev.ago}</span>
+                </div>
+              </div>
+              <ChevronRight className="h-4 w-4 text-text-subtle opacity-0 group-hover:opacity-100 transition-opacity shrink-0 mt-1" />
+            </Link>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+/* ═════════════════════════════════════════════════════════════════
+   Approvals Queue — PRs/POs awaiting current user's action
+   ═════════════════════════════════════════════════════════════════ */
+function ApprovalsCard({ approvals, role, delay = 0 }) {
+  return (
+    <div
+      className="glass-card rounded-2xl p-6 flex flex-col fade-up"
+      style={{ animationDelay: `${delay}ms` }}
+    >
+      <div className="flex items-center justify-between mb-5">
+        <h3 className="text-[16px] font-semibold text-text">My Approvals</h3>
+        <span
+          className={`text-[11px] font-bold tabular-nums px-2 py-0.5 rounded-full ${
+            approvals.length > 0
+              ? "bg-primary text-primary-foreground"
+              : "bg-surface-container-low text-text-muted"
+          }`}
+        >
+          {approvals.length}
+        </span>
+      </div>
+
+      {approvals.length === 0 ? (
+        <div className="flex-1 flex items-center justify-center py-10 text-center">
+          <div>
+            <CheckCircle2 className="h-7 w-7 text-success mx-auto mb-2 opacity-60" />
+            <p className="text-[12px] text-text-muted">
+              {APPROVER_ROLES.has(role)
+                ? "Nothing needs your attention right now."
+                : "Approval queues are scoped to HOD / CFO / CEO."}
+            </p>
+          </div>
+        </div>
+      ) : (
+        <div className="flex flex-col gap-1">
+          {approvals.slice(0, 5).map((a) => (
+            <Link
+              key={a.id}
+              to={a.to}
+              className="flex items-center gap-3 px-2 py-2.5 rounded-xl hover:bg-white/[0.04] transition-colors group"
+            >
+              <div className="w-9 h-9 rounded-xl bg-warning-soft text-warning flex items-center justify-center shrink-0">
+                <Clock className="h-4 w-4" strokeWidth={2} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="text-[13px] font-mono font-semibold text-text truncate">
+                  {a.id}
+                </div>
+                <div className="text-[11px] text-text-muted truncate mt-0.5">
+                  {a.meta}
+                </div>
+              </div>
+              <span className="text-[10px] font-bold uppercase tracking-wider text-primary px-2.5 py-1 rounded-full border border-primary/30 group-hover:bg-primary group-hover:text-primary-foreground group-hover:border-primary transition-colors shrink-0">
+                Review
+              </span>
+            </Link>
+          ))}
+          {approvals.length > 5 && (
+            <Link
+              to="/app/purchase-requests"
+              className="text-[11px] text-text-muted hover:text-primary text-center py-2"
+            >
+              View all {approvals.length} →
+            </Link>
+          )}
+        </div>
+      )}
     </div>
   );
 }
@@ -646,13 +1050,19 @@ const VENDOR_PALETTE = [
 export default function HomeView() {
   const user = useAuthStore((s) => s.user);
   const prs = usePRStore((s) => s.items);
+  const prLoading = usePRStore((s) => s.loading);
   const fetchPRs = usePRStore((s) => s.fetchAll);
   const pos = usePOStore((s) => s.items);
   const fetchPOs = usePOStore((s) => s.fetchAll);
   const rfqs = useRFQStore((s) => s.items);
   const fetchRFQs = useRFQStore((s) => s.fetchAll);
+  const grns = useGRNStore((s) => s.items);
+  const fetchGRNs = useGRNStore((s) => s.fetchAll);
 
   const [hidden, setHidden] = useState(false);
+  const [range, setRange] = useState(7); // 7 / 14 / 30 days
+  const [vendorFilter, setVendorFilter] = useState("all"); // all / top5 / active
+  const [refreshing, setRefreshing] = useState(false);
   // Capture "now" once on mount so memoized derivations stay pure across re-renders.
   const [nowMs] = useState(() => Date.now());
 
@@ -660,17 +1070,19 @@ export default function HomeView() {
     fetchPRs();
     fetchPOs();
     fetchRFQs();
-  }, [fetchPRs, fetchPOs, fetchRFQs]);
+    fetchGRNs();
+  }, [fetchPRs, fetchPOs, fetchRFQs, fetchGRNs]);
 
-  const refreshAll = () => {
-    fetchPRs();
-    fetchPOs();
-    fetchRFQs();
+  const refreshAll = async () => {
+    setRefreshing(true);
+    await Promise.all([fetchPRs(), fetchPOs(), fetchRFQs(), fetchGRNs()]);
+    setRefreshing(false);
   };
 
   /* ── PR card ── */
   const prCard = useMemo(() => {
-    const days = 14;
+    const days = range * 2; // sparkline shows 2× the active range so we can compare halves
+    const half = range;
     const buckets = Array.from({ length: days }, (_, i) => {
       const d = new Date(nowMs);
       d.setDate(d.getDate() - (days - 1 - i));
@@ -689,29 +1101,32 @@ export default function HomeView() {
           );
         }).length,
     );
-    const recent = spark.slice(-7).reduce((a, b) => a + b, 0);
-    const prior = spark.slice(0, 7).reduce((a, b) => a + b, 0);
+    const recent = spark.slice(-half).reduce((a, b) => a + b, 0);
+    const prior = spark.slice(0, half).reduce((a, b) => a + b, 0);
     const change =
       prior === 0 ? (recent === 0 ? 0 : 100) : ((recent - prior) / prior) * 100;
     const approved = prs.filter((p) => p.status === "approved").length;
     const pending = prs.filter((p) => p.status === "pending").length;
+    const rangeLabel =
+      range === 7 ? "this week" : range === 14 ? "last 2w" : `last ${range}d`;
     return {
       iconBg: "linear-gradient(135deg, #fbbf24, #f59e0b)",
       iconChar: "P",
       eyebrow: "PR",
-      name: "Purchase Requests",
+      name: "Requests",
       value: hidden ? "•••" : String(prs.length),
       subValue: hidden ? "•••" : `${approved} approved · ${pending} pending`,
       changePct: change,
-      delta: `${recent >= 0 ? "+" : ""}${recent} this week`,
+      delta: `${recent >= 0 ? "+" : ""}${recent} ${rangeLabel}`,
       spark: spark.length >= 2 ? spark : [0, 1],
       to: "/app/purchase-requests",
     };
-  }, [prs, hidden, nowMs]);
+  }, [prs, hidden, nowMs, range]);
 
   /* ── PO card ── */
   const poCard = useMemo(() => {
-    const days = 14;
+    const days = range * 2;
+    const half = range;
     const buckets = Array.from({ length: days }, (_, i) => {
       const d = new Date(nowMs);
       d.setDate(d.getDate() - (days - 1 - i));
@@ -731,28 +1146,30 @@ export default function HomeView() {
         })
         .reduce((s, p) => s + (Number(p.total) || 0), 0),
     );
-    const recent = spark.slice(-7).reduce((a, b) => a + b, 0);
-    const prior = spark.slice(0, 7).reduce((a, b) => a + b, 0);
+    const recent = spark.slice(-half).reduce((a, b) => a + b, 0);
+    const prior = spark.slice(0, half).reduce((a, b) => a + b, 0);
     const change =
       prior === 0 ? (recent === 0 ? 0 : 100) : ((recent - prior) / prior) * 100;
     const totalSpend = pos
       .filter((p) => p.status !== "rejected")
       .reduce((s, p) => s + (Number(p.total) || 0), 0);
+    const rangeLabel =
+      range === 7 ? "this week" : range === 14 ? "last 2w" : `last ${range}d`;
     return {
       iconBg: "linear-gradient(135deg, #60a5fa, #3b82f6)",
       iconChar: "O",
       eyebrow: "PO",
-      name: "Purchase Orders",
+      name: "Orders",
       value: hidden ? "•••" : String(pos.length),
       subValue: hidden ? "•••" : `${fmtCompact(totalSpend)} spent`,
       changePct: change,
       delta: hidden
         ? "•••"
-        : `${recent >= 0 ? "+" : ""}${fmtCompact(recent)} this week`,
+        : `${recent >= 0 ? "+" : ""}${fmtCompact(recent)} ${rangeLabel}`,
       spark: spark.length >= 2 ? spark : [0, 1],
       to: "/app/purchase-orders",
     };
-  }, [pos, hidden, nowMs]);
+  }, [pos, hidden, nowMs, range]);
 
   /* ── Spend balance + gauge ── */
   const balance = useMemo(() => {
@@ -813,9 +1230,9 @@ export default function HomeView() {
     };
   }, [pos, rfqs, nowMs]);
 
-  /* ── Trend chart series — last 10 days ── */
+  /* ── Trend chart series — driven by range dropdown ── */
   const trend = useMemo(() => {
-    const days = 10;
+    const days = range === 7 ? 7 : range === 14 ? 14 : 30;
     const buckets = Array.from({ length: days }, (_, i) => {
       const d = new Date(nowMs);
       d.setDate(d.getDate() - (days - 1 - i));
@@ -891,14 +1308,20 @@ export default function HomeView() {
       value: s.values.reduce((a, b) => a + b, 0),
     }));
     return { series, xLabels, totals };
-  }, [prs, rfqs, nowMs]);
+  }, [prs, rfqs, nowMs, range]);
 
-  /* ── Top vendors ── */
+  /* ── Top vendors (filtered by vendorFilter dropdown) ── */
   const vendors = useMemo(() => {
     const map = new Map();
     let grand = 0;
+    const cutoff = nowMs - 30 * 86400000;
     pos.forEach((po) => {
       if (po.status === "rejected") return;
+      // "active" filter: only POs created in the last 30 days
+      if (vendorFilter === "active") {
+        const ts = new Date(po.created_at ?? 0).getTime();
+        if (ts < cutoff) return;
+      }
       const key = po.vendor || "Unassigned";
       const cur = map.get(key) || { orders: 0, amount: 0, lastTs: 0 };
       cur.orders += 1;
@@ -908,7 +1331,7 @@ export default function HomeView() {
       grand += Number(po.total) || 0;
       map.set(key, cur);
     });
-    return [...map.entries()].map(([name, v], i) => ({
+    let list = [...map.entries()].map(([name, v], i) => ({
       name,
       orders: v.orders,
       amount: v.amount,
@@ -917,30 +1340,177 @@ export default function HomeView() {
       color: VENDOR_PALETTE[i % VENDOR_PALETTE.length],
       initial: name[0]?.toUpperCase() ?? "?",
     }));
-  }, [pos]);
+    if (vendorFilter === "top5") {
+      list = [...list].sort((a, b) => b.amount - a.amount).slice(0, 5);
+    }
+    return list;
+  }, [pos, vendorFilter, nowMs]);
 
-  void user;
+  /* ── Activity feed (cross-domain, sorted by recency) ── */
+  const activity = useMemo(() => {
+    const events = [];
+    [...prs]
+      .sort((a, b) => (b.updated_at ?? "").localeCompare(a.updated_at ?? ""))
+      .slice(0, 4)
+      .forEach((p) => {
+        const kind =
+          p.status === "approved"
+            ? "success"
+            : p.status === "rejected" || p.status === "cancelled"
+              ? "danger"
+              : p.status === "pending"
+                ? "warning"
+                : "info";
+        const verb =
+          p.status === "approved"
+            ? "approved"
+            : p.status === "rejected"
+              ? "rejected"
+              : p.status === "cancelled"
+                ? "cancelled"
+                : `awaiting ${p.chain_stage?.toUpperCase() ?? "review"}`;
+        events.push({
+          key: `pr-${p.number}`,
+          docType: "PR",
+          ref: p.number,
+          to: `/app/purchase-requests/${p.number}`,
+          text: `Request ${verb}`,
+          kind,
+          ago: timeAgo(p.updated_at, nowMs),
+          ts: p.updated_at,
+        });
+      });
+    [...pos]
+      .sort((a, b) => (b.updated_at ?? "").localeCompare(a.updated_at ?? ""))
+      .slice(0, 3)
+      .forEach((po) => {
+        const kind =
+          po.status === "accepted" || po.status === "fulfilled"
+            ? "success"
+            : po.status === "rejected"
+              ? "danger"
+              : "info";
+        const verb =
+          po.status === "accepted"
+            ? `accepted by ${po.vendor}`
+            : po.status === "fulfilled"
+              ? `fulfilled by ${po.vendor}`
+              : po.status === "rejected"
+                ? `rejected by ${po.vendor}`
+                : `issued to ${po.vendor}`;
+        events.push({
+          key: `po-${po.number}`,
+          docType: "PO",
+          ref: po.number,
+          to: `/app/purchase-orders/${po.number}`,
+          text: `Order ${verb}`,
+          kind,
+          ago: timeAgo(po.updated_at, nowMs),
+          ts: po.updated_at,
+        });
+      });
+    [...rfqs]
+      .sort((a, b) => (b.updated_at ?? "").localeCompare(a.updated_at ?? ""))
+      .slice(0, 3)
+      .forEach((r) => {
+        const kind =
+          r.status === "awarded"
+            ? "success"
+            : r.status === "closed"
+              ? "danger"
+              : "info";
+        const verb =
+          r.status === "awarded"
+            ? `awarded to ${r.awarded_vendor ?? "vendor"}`
+            : r.status === "closed"
+              ? "closed"
+              : "open for bids";
+        events.push({
+          key: `rfq-${r.number}`,
+          docType: "RFQ",
+          ref: r.number,
+          to: `/app/quotations/${r.number}`,
+          text: `Quotation ${verb}`,
+          kind,
+          ago: timeAgo(r.updated_at, nowMs),
+          ts: r.updated_at,
+        });
+      });
+    [...grns]
+      .sort((a, b) => (b.updated_at ?? "").localeCompare(a.updated_at ?? ""))
+      .slice(0, 2)
+      .forEach((g) => {
+        events.push({
+          key: `grn-${g.number}`,
+          docType: "GRN",
+          ref: g.number,
+          to: `/app/grn/${g.number}`,
+          text: `Receipt logged from ${g.vendor ?? "vendor"}`,
+          kind: g.status === "fulfilled" ? "success" : "info",
+          ago: timeAgo(g.updated_at, nowMs),
+          ts: g.updated_at,
+        });
+      });
+    return events
+      .sort((a, b) => (b.ts ?? "").localeCompare(a.ts ?? ""))
+      .slice(0, 8);
+  }, [prs, pos, rfqs, grns, nowMs]);
+
+  /* ── My approvals (role-gated) ── */
+  const approvals = useMemo(() => {
+    if (!user || !APPROVER_ROLES.has(user.role)) return [];
+    return prs
+      .filter(
+        (p) =>
+          p.status === "pending" &&
+          (user.role === "admin" || p.chain_stage === user.role),
+      )
+      .map((p) => ({
+        id: p.number,
+        meta: `${p.title ?? "—"}${p.requester_name ? ` · by ${p.requester_name}` : ""}`,
+        to: `/app/purchase-requests/${p.number}`,
+      }));
+  }, [prs, user]);
+
+  // Initial loading: show skeleton while the very first PR fetch is pending
+  // AND we have no data yet.
+  const initialLoading = prLoading && prs.length === 0;
 
   /* ── render ── */
   return (
     <div className="max-w-[1400px] mx-auto space-y-6">
-      {/* ─── 2-section header row, positioned to mirror hero card columns ─── */}
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_1.4fr_1fr] gap-4 lg:gap-6 items-end">
-        {/* Left section heading — sits over PR + Spend cards */}
-        <div className="lg:col-span-2 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
+      {initialLoading && (
+        <div className="glass-card rounded-2xl p-8 text-center fade-up">
+          <RefreshCw className="h-5 w-5 text-text-muted mx-auto mb-2 animate-spin" />
+          <p className="text-[12px] text-text-muted">Loading procurement data…</p>
+        </div>
+      )}
+      {/* ─── Section header — single row, positioned to mirror reference ─── */}
+      <div className="flex flex-col lg:flex-row lg:items-end gap-4 lg:gap-6">
+        {/* Left heading + its toolbar (covers PR + center Spend cards) */}
+        <div className="flex items-end gap-4 lg:gap-6 flex-1">
           <div>
             <Eyebrow icon={Layers} label="All Activity" />
-            <h2 className="text-2xl font-bold text-text leading-tight tracking-tight mt-1">
+            <h2 className="text-[22px] font-bold text-text leading-tight tracking-tight mt-1">
               My Pipeline
             </h2>
           </div>
-          <div className="flex items-center gap-2">
-            <ToolbarBtn ariaLabel="Time range">
-              7d <ChevronDown className="h-3 w-3" />
-            </ToolbarBtn>
+          <div className="flex items-center gap-2 mb-1">
+            <ToolbarDropdown
+              label="Time range"
+              value={range}
+              onChange={setRange}
+              width={76}
+              options={[
+                { value: 7, short: "7d", label: "Last 7 days" },
+                { value: 14, short: "14d", label: "Last 14 days" },
+                { value: 30, short: "30d", label: "Last 30 days" },
+              ]}
+            />
             <ToolbarBtn
               ariaLabel="Toggle hidden values"
               onClick={() => setHidden((h) => !h)}
+              active={hidden}
             >
               {hidden ? (
                 <EyeOff className="h-3.5 w-3.5" />
@@ -949,33 +1519,63 @@ export default function HomeView() {
               )}
             </ToolbarBtn>
             <ToolbarBtn ariaLabel="Refresh data" onClick={refreshAll}>
-              <RefreshCw className="h-3.5 w-3.5" />
+              <RefreshCw
+                className={`h-3.5 w-3.5 ${refreshing ? "animate-spin" : ""}`}
+              />
             </ToolbarBtn>
           </div>
-        </div>
-        {/* Right section heading — sits over PO card */}
-        <div className="flex items-end justify-between gap-3">
-          <div>
-            <Eyebrow icon={Layers} label="All Orders" />
-            <h2 className="text-2xl font-bold text-text leading-tight tracking-tight mt-1">
-              Order Pulse
+          {/* Center heading — sits over the wide spend card */}
+          <div className="hidden lg:block ml-8">
+            <Eyebrow icon={Layers} label="All Spend" />
+            <h2 className="text-[22px] font-bold text-text leading-tight tracking-tight mt-1">
+              Spend Snapshot
             </h2>
           </div>
-          <ToolbarBtn ariaLabel="Vendor filter">
-            All Vendors <ChevronDown className="h-3 w-3" />
-          </ToolbarBtn>
+        </div>
+        {/* Right toolbar */}
+        <div className="flex items-center gap-2 mb-1">
+          <ToolbarDropdown
+            label="Vendor filter"
+            value={vendorFilter}
+            onChange={setVendorFilter}
+            width={108}
+            options={[
+              { value: "all", short: "All", label: "All Vendors" },
+              { value: "top5", short: "Top 5", label: "Top 5 by spend" },
+              { value: "active", short: "Active", label: "Active (30d)" },
+            ]}
+          />
+          <ToolbarDropdown
+            label="Time range"
+            value={range}
+            onChange={setRange}
+            options={[
+              { value: 7, label: "Last 7 days" },
+              { value: 14, label: "Last 14 days" },
+              { value: 30, label: "Last 30 days" },
+            ]}
+          />
         </div>
       </div>
 
-      {/* ─── 3-card hero row ─── */}
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_1.4fr_1fr] gap-4 lg:gap-6">
+      {/* ─── 3-card hero row — 1 : 2 : 1 ratio ─── */}
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_2fr_1fr] gap-4 lg:gap-6">
         <TokenStatCard {...prCard} delay={0} />
         <SpendBalanceCard {...balance} delay={80} />
         <TokenStatCard {...poCard} delay={160} />
       </div>
 
-      {/* ─── 2/3 + 1/3 lower row ─── */}
-      <div className="grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-4 lg:gap-6">
+      {/* ─── Pipeline strip — 4 stages PR / RFQ / PO / GRN ─── */}
+      <PipelineStrip
+        prs={prs}
+        rfqs={rfqs}
+        pos={pos}
+        grns={grns}
+        delay={200}
+      />
+
+      {/* ─── 2/3 + 1/3 lower row — chart + vendors ─── */}
+      <div className="grid grid-cols-1 lg:grid-cols-[2.3fr_1fr] gap-4 lg:gap-6">
         <TrendChartCard
           series={trend.series}
           xLabels={trend.xLabels}
@@ -983,6 +1583,16 @@ export default function HomeView() {
           delay={240}
         />
         <TopVendorsCard vendors={vendors} delay={320} />
+      </div>
+
+      {/* ─── 2/3 + 1/3 row — activity + approvals ─── */}
+      <div className="grid grid-cols-1 lg:grid-cols-[2.3fr_1fr] gap-4 lg:gap-6">
+        <ActivityCard items={activity} delay={360} />
+        <ApprovalsCard
+          approvals={approvals}
+          role={user?.role}
+          delay={400}
+        />
       </div>
 
       {/* ─── Quick actions footer ─── */}

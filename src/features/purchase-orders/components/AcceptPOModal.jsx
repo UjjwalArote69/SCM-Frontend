@@ -60,7 +60,7 @@ export default function AcceptPOModal({ poNumber, onClose, onAccept, busy = fals
             type="button"
             onClick={handleAccept}
             disabled={!terms || busy}
-            className="px-6 py-2 text-sm font-bold text-primary-foreground bg-primary hover:bg-primary-hover rounded-md disabled:bg-surface-container-high disabled:text-text-muted disabled:cursor-not-allowed"
+            className="px-6 py-2 text-sm font-bold text-primary-foreground bg-primary hover:brightness-110 rounded-md disabled:bg-surface-container-high disabled:text-text-muted disabled:cursor-not-allowed"
           >
             {busy ? "Accepting…" : "Accept PO"}
           </button>

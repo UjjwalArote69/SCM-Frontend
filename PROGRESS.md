@@ -4,6 +4,48 @@ Running changelog of what's been built, session by session, plus the current imp
 
 ---
 
+## Session — 2026-05-02
+
+Polish + onboarding-flow split day. Mostly small surgical changes to vendor onboarding, plus two architectural conversations (multi-tenancy, fine-grained RBAC) that were scoped but **not** implemented yet.
+
+### ✅ Vendor login & registration on separate routes
+
+Previously a single `/vendor-registration` route handled both screens via internal state. Split into two real URLs so the address bar reflects the user's intent and links can deep-link straight to either screen.
+
+- `routes.jsx` — added `/vendor-login` and `/vendor-register`. Legacy `/vendor-registration` and `/vendor-registration/:step` now redirect to `/vendor-register` so old links still work.
+- `VendorRegistrationPage.jsx` — initial `screen` state derived from `useLocation().pathname` (`/vendor-login` → "login", anything else → "register"). The in-page "Sign in" / "Create account" links now also call `navigate()` so the URL stays in sync.
+- `reset()` and the email-already-registered branch both navigate to `/vendor-login` after `setScreen("login")`.
+- `Login.jsx` (the internal-user login page) — "Register as Vendor" button now points at `/vendor-register`.
+
+### ✅ Vendor onboarding SidePanel rebalance
+
+User flagged the left panel as "very bad — not even properly placed": brand glued to the top, tagline glued to the bottom, gigantic void in the middle (`justify-between` with only two children).
+
+Rebuilt as a proper editorial three-zone layout:
+
+- **Top**: brand mark
+- **Middle (vertically centered)**: small red `VENDOR PORTAL` eyebrow → bold display headline `Built on tide & steel.` (was previously a separate italic line, promoted to the H1) → italic supporting line `Become a Meka Group vendor.` → 45-year paragraph → 3-step "what to expect" list with small numbered red dots (`Verify in minutes` / `Tell us about your business` / `Start receiving RFQs once approved`)
+- **Bottom**: hairline rule + `MEKA GROUP` wordmark + `procurement@meka.in` contact
+
+Restrained red — only the eyebrow and tiny step numerals carry the accent. Matches the dashboard / PR aesthetic.
+
+### ✅ Onboarding page — desktop fits viewport, mobile scrolls naturally
+
+Followed up with two layout requests on `Page` (the shared shell for register/login/otp/details):
+
+1. "Remove the scrollbar" — outer container changed to `lg:h-screen lg:overflow-hidden` so desktop is clamped to one viewport, with the right column scrolling internally only if needed (`lg:overflow-y-auto`). Tightened vertical rhythm (`py-6 sm:py-8`, `mt-6` instead of `mt-8`, slightly smaller H1) so the form fits comfortably.
+2. "Mobile is bad — make it responsive without changing UI" — switched outer container to `min-h-screen lg:h-screen lg:overflow-hidden` and main padding to `py-8 sm:py-10 lg:py-8`. On mobile the page grows naturally with content (no fixed-height clipping); on desktop the no-scrollbar behavior is preserved.
+
+### 💬 Architectural conversations (no code yet)
+
+Two design discussions that we explicitly deferred to later sessions:
+
+- **Vendor data model** — confirmed the current hybrid (one `users` table for identity + `app_vendors` for business profile, joined via `app_vendors.user_id`) is the right answer. Not merging vendors into `users`, not splitting auth out either.
+- **Multi-tenancy / super-admin** — sketched the row-level tenancy approach (a `tenants` table, `tenant_id` FK on every customer-scoped table, a `super_admin` role with its own `/super-admin` console for managing tenants/billing/feature flags, while existing `admin` becomes the per-tenant company admin). Real refactor cost — touches every controller, every seeder, the auth flow. **Set aside for later.**
+- **Fine-grained RBAC (admin-editable permissions)** — sketched phase 1: migrate `src/data/permissions.js` into three DB tables (`permissions`, `roles`, `role_permissions`), swap every `in_array($role, BACKOFFICE_ROLES)` check for `$user->can('pr.approve')`, ship the existing `/admin/roles` page as a real matrix UI. Phase 2 adds scope qualifiers (own/dept/all), phase 3 adds per-user overrides. **Stopped before implementation — to be picked up next session.**
+
+---
+
 ## Session — 2026-05-01
 
 Big visual-polish + features day. Several rounds of "make it look better" feedback shaped the final designs.

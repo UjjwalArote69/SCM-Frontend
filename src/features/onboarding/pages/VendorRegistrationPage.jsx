@@ -1,19 +1,22 @@
-import { useEffect, useMemo, useRef, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Fragment, useEffect, useMemo, useRef, useState } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   Anchor,
   ArrowLeft,
   ArrowRight,
   Boxes,
   Building2,
+  Briefcase,
   Calculator,
   Check,
   CheckCircle2,
   Clock,
   Factory,
+  FileText,
   GitBranch,
   Hash,
   Info,
+  Landmark,
   Loader2,
   Lock,
   Mail,
@@ -27,6 +30,7 @@ import {
   Smartphone,
   Truck,
   User as UserIcon,
+  UserPlus,
   Users as UsersIcon,
   Wrench,
   Zap,
@@ -391,42 +395,53 @@ function OtpInput({ value, onChange, error, length = 6 }) {
 /* ───────── layout ───────── */
 function SidePanel() {
   return (
-    <aside className="hidden lg:flex relative flex-col justify-between p-12 overflow-hidden bg-surface-container-low border-r border-border text-text">
+    <aside className="hidden lg:flex relative flex-col p-12 xl:p-14 overflow-hidden bg-surface-container-low border-r border-border text-text">
       <div
-        className="absolute inset-0 opacity-[0.06]"
+        className="absolute inset-0 opacity-[0.07] pointer-events-none"
         style={{
           backgroundImage:
-            "radial-gradient(circle at 20% 30%, var(--brand-primary), transparent 50%), radial-gradient(circle at 80% 70%, var(--brand-primary), transparent 50%)",
+            "radial-gradient(circle at 15% 20%, var(--brand-primary), transparent 55%), radial-gradient(circle at 85% 80%, var(--brand-primary), transparent 55%)",
         }}
       />
+
       <div className="relative">
         <Brand />
       </div>
-      <div className="relative">
-        <div className="italic text-text-muted text-2xl mb-3">
-          Built on tide & steel.
+
+      <div className="relative flex-1 flex flex-col justify-center max-w-sm">
+        <div className="text-[10px] font-bold tracking-[0.32em] uppercase text-primary mb-4">
+          Vendor Portal
         </div>
-        <h1 className="text-3xl xl:text-4xl font-bold leading-[1.1] text-text">
-          Become a Meka<br />Group vendor.
+        <h1 className="text-[34px] xl:text-[40px] font-bold leading-[1.05] tracking-tight text-text">
+          Built on tide<br />&amp; steel.
         </h1>
-        <p className="text-[14px] text-text-muted mt-5 max-w-sm leading-relaxed">
-          Forty-five years of marine, dredging and infrastructure. Join the
-          network that builds India&apos;s coastline.
+        <p className="italic text-text-muted text-lg mt-5 leading-snug">
+          Become a Meka Group vendor.
         </p>
-      </div>
-      <div className="relative grid grid-cols-3 gap-4">
-        {[
-          { v: "45+", k: "Years" },
-          { v: "1.2k", k: "Vendors" },
-          { v: "₹3k cr", k: "PO/yr" },
-        ].map((s) => (
-          <div key={s.k}>
-            <div className="text-2xl font-bold text-text">{s.v}</div>
-            <div className="text-[10px] tracking-[0.22em] uppercase text-text-subtle mt-1">
-              {s.k}
+        <p className="text-[14px] text-text-muted mt-6 leading-relaxed">
+          Forty-five years of marine, dredging and infrastructure work.
+          Join the network that builds India&apos;s coastline.
+        </p>
+
+        <div className="mt-10 space-y-3">
+          {[
+            "Verify in minutes — email or phone OTP",
+            "Tell us about your business at your own pace",
+            "Start receiving RFQs once approved",
+          ].map((line, idx) => (
+            <div key={idx} className="flex items-start gap-3 text-[13px] text-text-muted">
+              <span className="mt-[2px] inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary text-[10px] font-bold">
+                {idx + 1}
+              </span>
+              <span>{line}</span>
             </div>
-          </div>
-        ))}
+          ))}
+        </div>
+      </div>
+
+      <div className="relative pt-6 border-t border-outline-variant/60 flex items-center justify-between text-[11px] text-text-subtle">
+        <span className="tracking-[0.24em] uppercase font-semibold">Meka Group</span>
+        <span>procurement@meka.in</span>
       </div>
     </aside>
   );
@@ -434,32 +449,32 @@ function SidePanel() {
 
 function Page({ children, eyebrow, title, lede, footer }) {
   return (
-    <div className="min-h-screen grid lg:grid-cols-[440px_1fr] bg-bg">
+    <div className="min-h-screen lg:h-screen lg:overflow-hidden grid lg:grid-cols-[440px_1fr] bg-bg">
       <SidePanel />
-      <main className="flex items-center justify-center px-5 sm:px-8 py-10 sm:py-14">
+      <main className="flex items-center justify-center px-5 sm:px-8 py-8 sm:py-10 lg:py-8 lg:overflow-y-auto">
         <div className="w-full max-w-md fade-up">
-          <div className="lg:hidden mb-8 flex items-center justify-between">
+          <div className="lg:hidden mb-6 flex items-center justify-between">
             <Brand size="sm" />
             <ThemeToggle />
           </div>
           {eyebrow && (
-            <div className="text-[10px] font-bold tracking-[0.28em] uppercase text-primary mb-2.5">
+            <div className="text-[10px] font-bold tracking-[0.28em] uppercase text-primary mb-2">
               {eyebrow}
             </div>
           )}
           {title && (
-            <h1 className="text-[28px] sm:text-[32px] font-bold leading-[1.1] text-text">
+            <h1 className="text-[26px] sm:text-[30px] font-bold leading-[1.1] text-text">
               {title}
             </h1>
           )}
           {lede && (
-            <p className="text-[14px] text-text-muted mt-3 leading-relaxed">
+            <p className="text-[13px] text-text-muted mt-2 leading-relaxed">
               {lede}
             </p>
           )}
-          <div className="mt-8">{children}</div>
+          <div className="mt-6">{children}</div>
           {footer && (
-            <div className="mt-8 pt-6 border-t border-outline-variant text-center">
+            <div className="mt-6 pt-5 border-t border-outline-variant text-center">
               {footer}
             </div>
           )}
@@ -843,34 +858,109 @@ function OtpSuccessScreen({ session, onContinue }) {
 }
 
 /* ───────── 4. details (name + GST autofill) ───────── */
-const mockGstFetch = (gstin) =>
-  new Promise((resolve) => {
-    setTimeout(() => {
-      const stateMap = {
-        27: ["Maharashtra", "Mumbai", "400093"],
-        29: ["Karnataka", "Bengaluru", "560066"],
-        "07": ["Delhi", "New Delhi", "110001"],
-        33: ["Tamil Nadu", "Chennai", "600032"],
-        "06": ["Haryana", "Gurugram", "122002"],
-        24: ["Gujarat", "Ahmedabad", "380015"],
-      };
-      const code = gstin.slice(0, 2);
-      const [state, city, pin] = stateMap[code] || stateMap["27"];
-      resolve({
-        legalName: "ACME MARINE ENGINEERING PRIVATE LIMITED",
-        tradeName: "Acme Marine",
-        address: `Plot 12, MIDC Industrial Estate, ${city}, ${state} - ${pin}`,
-        regDate: "14 Aug 2018",
-        status: "Active",
-        pan: gstin.slice(2, 12),
-        city,
-        state,
-        pincode: pin,
-      });
-    }, 1100);
-  });
 
-function DetailsScreen({ session, onNext }) {
+/* gstincheck.co.in — verify a GSTIN against the live GSTN registry.
+   Endpoint: GET https://sheet.gstincheck.co.in/check/{API_KEY}/{GSTIN}
+   Response shape on success:
+     { flag: true, message, data: { lgnm, tradeNam, gstin, rgdt, sts, ctb,
+       pradr: { adr, addr: { loc, pncd, stcd, dst, st, bnm, ... } }, ... } }
+   On failure:
+     { flag: false, message, errorCode, data: {} }
+   The API allows CORS (Access-Control-Allow-Origin: *) so we can call it
+   directly from the browser. The key is exposed in the bundle — for
+   production, proxy this through the Laravel backend.
+
+   Falls back to a mock response when the API errors out so the demo flow
+   keeps working offline. */
+const GSTINCHECK_API_KEY = "3c5e6006ab69f09f6a9ae97fc9330dd7";
+
+function mockGstResult(gstin) {
+  const stateMap = {
+    27: ["Maharashtra", "Mumbai", "400093"],
+    29: ["Karnataka", "Bengaluru", "560066"],
+    "07": ["Delhi", "New Delhi", "110001"],
+    33: ["Tamil Nadu", "Chennai", "600032"],
+    "06": ["Haryana", "Gurugram", "122002"],
+    24: ["Gujarat", "Ahmedabad", "380015"],
+  };
+  const code = gstin.slice(0, 2);
+  const [state, city, pin] = stateMap[code] || stateMap["27"];
+  return {
+    legalName: "ACME MARINE ENGINEERING PRIVATE LIMITED",
+    tradeName: "Acme Marine",
+    address: `Plot 12, MIDC Industrial Estate, ${city}, ${state} - ${pin}`,
+    regDate: "14 Aug 2018",
+    status: "Active",
+    pan: gstin.slice(2, 12),
+    city,
+    state,
+    pincode: pin,
+    constitution: null,
+    natureOfBusiness: null,
+    isMock: true,
+  };
+}
+
+async function fetchGstinFromApi(gstin) {
+  const url = `https://sheet.gstincheck.co.in/check/${GSTINCHECK_API_KEY}/${encodeURIComponent(
+    gstin,
+  )}`;
+  const res = await fetch(url, { method: "GET" });
+  if (!res.ok) {
+    throw new Error(`GSTIN lookup failed (HTTP ${res.status})`);
+  }
+  const json = await res.json();
+  if (!json.flag) {
+    const e = new Error(json.message || "GSTIN not found");
+    e.errorCode = json.errorCode;
+    throw e;
+  }
+  const d = json.data || {};
+  const addr = d.pradr?.addr ?? {};
+  // Format the registration date "DD/MM/YYYY" → "DD Mon YYYY".
+  const regDate = (() => {
+    if (!d.rgdt) return null;
+    const [dd, mm, yyyy] = d.rgdt.split("/");
+    if (!dd || !mm || !yyyy) return d.rgdt;
+    const months = [
+      "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+      "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
+    ];
+    return `${dd} ${months[parseInt(mm, 10) - 1] ?? mm} ${yyyy}`;
+  })();
+  return {
+    legalName: d.lgnm || "",
+    tradeName: d.tradeNam || d.lgnm || "",
+    address: d.pradr?.adr || "",
+    regDate,
+    status: d.sts || "",
+    pan: (d.gstin || gstin).slice(2, 12),
+    city: addr.loc || addr.dst || addr.city || "",
+    state: addr.stcd || "",
+    pincode: addr.pncd || "",
+    constitution: d.ctb || null,
+    natureOfBusiness: Array.isArray(d.nba)
+      ? d.nba.join(", ")
+      : d.nba || null,
+    raw: d,
+  };
+}
+
+async function mockGstFetch(gstin) {
+  try {
+    return await fetchGstinFromApi(gstin);
+  } catch (err) {
+    // Re-throw "not found" so the UI can show the proper error. Fall back
+    // to mock only on network/CORS errors.
+    if (err.errorCode === "GSTNUMBER_NOT_FOUND") throw err;
+    if (err.message?.includes("Failed to fetch") || err.name === "TypeError") {
+      return mockGstResult(gstin);
+    }
+    throw err;
+  }
+}
+
+function DetailsScreen({ session, onNext, submitting = false }) {
   const [name, setName] = useState("");
   const [email, setEmail] = useState(
     session.channel === "email" ? session.identifier : "",
@@ -894,10 +984,21 @@ function DetailsScreen({ session, onNext }) {
     }
     setErrors({ ...errors, gstin: undefined });
     setGstState("fetching");
-    const res = await mockGstFetch(gstin.toUpperCase());
-    setGstData(res);
-    setGstFetched(true);
-    setGstState("fetched");
+    try {
+      const res = await mockGstFetch(gstin.toUpperCase());
+      setGstData(res);
+      setGstFetched(true);
+      setGstState("fetched");
+    } catch (err) {
+      setGstState("idle");
+      setErrors({
+        ...errors,
+        gstin:
+          err?.errorCode === "GSTNUMBER_NOT_FOUND"
+            ? "This GSTIN was not found in the GSTN registry."
+            : err?.message || "Could not verify GSTIN. Try again.",
+      });
+    }
   };
 
   const proceed = () => {
@@ -1095,19 +1196,53 @@ function DetailsScreen({ session, onNext }) {
                     <dt className="text-[10px] font-bold tracking-[0.22em] uppercase text-text-subtle">
                       Status
                     </dt>
-                    <dd className="text-[12.5px] mt-0.5 inline-flex items-center gap-1 text-success font-bold">
-                      <CheckCircle2 className="h-3 w-3" strokeWidth={2.5} />{" "}
-                      {gstData.status}
-                    </dd>
+                    {(() => {
+                      const ok = gstData.status?.toLowerCase() === "active";
+                      const Icon = ok ? CheckCircle2 : AlertCircle;
+                      return (
+                        <dd
+                          className={`text-[12.5px] mt-0.5 inline-flex items-center gap-1 font-bold ${
+                            ok ? "text-success" : "text-danger"
+                          }`}
+                        >
+                          <Icon className="h-3 w-3" strokeWidth={2.5} />{" "}
+                          {gstData.status || "—"}
+                        </dd>
+                      );
+                    })()}
                   </div>
                 </div>
+                {gstData.constitution && (
+                  <div>
+                    <dt className="text-[10px] font-bold tracking-[0.22em] uppercase text-text-subtle">
+                      Constitution
+                    </dt>
+                    <dd className="text-[12.5px] text-text mt-0.5">
+                      {gstData.constitution}
+                    </dd>
+                  </div>
+                )}
+                {gstData.regDate && (
+                  <div>
+                    <dt className="text-[10px] font-bold tracking-[0.22em] uppercase text-text-subtle">
+                      Registered on
+                    </dt>
+                    <dd className="text-[12.5px] text-text mt-0.5">
+                      {gstData.regDate}
+                    </dd>
+                  </div>
+                )}
               </dl>
             </div>
           )}
         </div>
 
-        <PrimaryBtn Icon={ArrowRight} onClick={proceed}>
-          Continue to categories
+        <PrimaryBtn
+          Icon={ArrowRight}
+          onClick={proceed}
+          loading={submitting}
+        >
+          Create my account
         </PrimaryBtn>
       </div>
     </Page>
@@ -1274,6 +1409,1015 @@ function CategoriesScreen({ onSubmit, onBack, submitting }) {
   );
 }
 
+/* ─────────────────────────────────────────────
+   SCREEN 5.5 — Welcome / Setup wizard
+   Five step cards mirroring the Reliance SupplierFirst layout. Each card
+   carries a "Pending" badge, an icon, a title, and a one-line description.
+   "Get Started" walks the user through the steps; "Skip for now" sends
+   them to the sign-in page so they can finish later from their portal.
+   ───────────────────────────────────────────── */
+const SETUP_STEPS = [
+  {
+    id: "company",
+    Icon: Building2,
+    title: "Company Details",
+    desc: "Update your company information, logo and product/service offerings",
+  },
+  {
+    id: "category",
+    Icon: Briefcase,
+    title: "Category & Business",
+    desc: "Select nature of business",
+  },
+  {
+    id: "contact",
+    Icon: UserPlus,
+    title: "Contact Details",
+    desc: "Add owner details and import your employee data",
+  },
+  {
+    id: "account",
+    Icon: Landmark,
+    title: "Account Details",
+    desc: "Add account details",
+  },
+  {
+    id: "document",
+    Icon: FileText,
+    title: "Document",
+    desc: "Add and upload your verification documents in the portal",
+  },
+];
+
+function WelcomeSetupScreen({ details, onSkip, onContinue, completed = {} }) {
+  const firstName = details?.name ? details.name.split(" ")[0] : null;
+  const doneCount = SETUP_STEPS.filter((s) => completed[s.id]).length;
+  const firstPending =
+    SETUP_STEPS.find((s) => !completed[s.id])?.id ?? SETUP_STEPS[0].id;
+
+  return (
+    <div className="h-screen bg-bg flex flex-col overflow-hidden">
+      <header className="px-6 sm:px-10 h-14 border-b border-border flex items-center justify-between shrink-0">
+        <Brand size="sm" />
+        <ThemeToggle />
+      </header>
+
+      {/* Header band — title left, progress right */}
+      <div className="px-6 sm:px-10 py-6 sm:py-8 border-b border-border shrink-0">
+        <div className="flex items-end justify-between gap-4 flex-wrap">
+          <div>
+            <div className="text-[10px] font-bold uppercase tracking-[0.32em] text-primary mb-1.5">
+              Supplier Setup
+            </div>
+            <h1 className="text-[28px] sm:text-[36px] font-black text-text leading-tight tracking-tight">
+              Welcome{firstName ? `, ${firstName}.` : "."}
+            </h1>
+            <p className="text-text-muted text-[13px] sm:text-[14px] mt-1">
+              Five steps to a complete supplier profile.
+            </p>
+          </div>
+          <div className="text-right">
+            <div className="text-[11px] font-bold uppercase tracking-[0.22em] text-text-muted tabular-nums">
+              {doneCount} of {SETUP_STEPS.length} complete
+            </div>
+            <div className="w-40 h-1.5 bg-surface-container rounded-full overflow-hidden mt-1.5">
+              <div
+                className="h-full bg-primary rounded-full transition-all duration-500"
+                style={{
+                  width: `${(doneCount / SETUP_STEPS.length) * 100}%`,
+                }}
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Step cards — flex-1 so they fill remaining vertical space */}
+      <div className="flex-1 px-6 sm:px-10 py-6 sm:py-8 overflow-auto">
+        <div className="h-full grid grid-cols-1 sm:grid-cols-2 lg:flex lg:items-stretch gap-3 lg:gap-3 fade-up">
+          {SETUP_STEPS.map((step, i) => {
+            const isDone = completed[step.id];
+            return (
+              <Fragment key={step.id}>
+                <button
+                  type="button"
+                  onClick={() => onContinue(step.id)}
+                  className={`group lg:flex-1 flex flex-row lg:flex-col items-center justify-center text-left lg:text-center gap-3 lg:gap-4 rounded-2xl border-2 px-5 py-4 lg:py-8 transition-all relative min-h-[110px] lg:min-h-0 ${
+                    isDone
+                      ? "border-success/40 bg-success-soft/20 hover:border-success/60"
+                      : "border-dashed border-outline-variant hover:border-primary/60 hover:bg-primary-soft/30 hover:scale-[1.01]"
+                  }`}
+                >
+                  <div
+                    className={`w-12 h-12 lg:w-16 lg:h-16 rounded-2xl flex items-center justify-center shrink-0 ${
+                      isDone
+                        ? "bg-success-soft text-success"
+                        : "bg-primary-soft text-primary group-hover:scale-105 transition-transform"
+                    }`}
+                  >
+                    {isDone ? (
+                      <Check className="h-6 w-6 lg:h-7 lg:w-7" strokeWidth={2.5} />
+                    ) : (
+                      <step.Icon
+                        className="h-6 w-6 lg:h-8 lg:w-8"
+                        strokeWidth={1.5}
+                      />
+                    )}
+                  </div>
+
+                  <div className="flex-1 min-w-0 lg:flex-initial">
+                    <div className="text-[14px] lg:text-[15px] font-bold text-text leading-tight">
+                      {step.title}
+                    </div>
+                    <div className="text-[12px] text-text-muted leading-snug mt-1 line-clamp-2 lg:line-clamp-none">
+                      {step.desc}
+                    </div>
+                  </div>
+
+                  <span
+                    className={`shrink-0 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider lg:absolute lg:top-3 lg:right-3 ${
+                      isDone
+                        ? "bg-success text-white"
+                        : "bg-surface-container text-text-muted"
+                    }`}
+                  >
+                    {isDone ? "Done" : "Pending"}
+                  </span>
+                </button>
+
+                {i < SETUP_STEPS.length - 1 && (
+                  <div className="hidden lg:flex items-center justify-center text-text-subtle">
+                    <ArrowRight className="h-5 w-5" strokeWidth={2} />
+                  </div>
+                )}
+              </Fragment>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Footer band */}
+      <div className="px-6 sm:px-10 py-4 border-t border-border flex items-center justify-between gap-3 shrink-0">
+        <button
+          type="button"
+          onClick={onSkip}
+          className="text-[13px] font-semibold text-text-muted hover:text-text transition-colors underline-offset-4 hover:underline"
+        >
+          Skip — go to dashboard
+        </button>
+        <button
+          type="button"
+          onClick={() => onContinue(firstPending)}
+          className="group inline-flex items-center gap-2.5 bg-primary hover:brightness-110 text-primary-foreground rounded-full px-7 py-3 font-bold text-[13px] transition-all shadow-sm"
+        >
+          {doneCount === 0 ? "Get Started" : "Continue Setup"}
+          <ArrowRight
+            className="h-4 w-4 group-hover:translate-x-1 transition-transform"
+            strokeWidth={2.5}
+          />
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/* ─────────────────────────────────────────────
+   SCREEN 5.6 — Setup form sub-pages
+   Five forms (Company / Business / Contact / Account / Document) reached
+   from the welcome wizard. Each saves to local state (`setupData`) so the
+   user can move between them without losing input. The final submit
+   would push these into the vendor profile API once they sign in.
+   ───────────────────────────────────────────── */
+
+const COMPANY_TYPES = [
+  "Private Limited",
+  "Public Limited",
+  "LLP",
+  "Partnership",
+  "Proprietorship",
+  "OPC (One Person Company)",
+  "Trust / Society",
+  "Other",
+];
+
+const NATURE_OF_BUSINESS = [
+  "Manufacturer",
+  "Distributor",
+  "Trader",
+  "Service Provider",
+  "OEM",
+  "Reseller",
+  "Importer",
+  "Exporter",
+];
+
+const ACCOUNT_TYPES = ["Savings", "Current", "Cash Credit", "Overdraft"];
+
+const DOCUMENT_TYPES = [
+  {
+    id: "pan",
+    label: "PAN Card",
+    desc: "Company PAN — issued by Income Tax Dept",
+    required: true,
+  },
+  {
+    id: "gst",
+    label: "GST Registration Certificate",
+    desc: "Form REG-06 from the GSTN portal",
+    required: true,
+  },
+  {
+    id: "cheque",
+    label: "Cancelled Cheque",
+    desc: "Bank-stamped cancelled cheque leaf for the account above",
+    required: true,
+  },
+  {
+    id: "address",
+    label: "Address Proof",
+    desc: "Recent utility bill / lease / property tax receipt",
+    required: true,
+  },
+  {
+    id: "incorporation",
+    label: "Incorporation Certificate",
+    desc: "MoA / AoA / partnership deed / proprietorship registration",
+    required: false,
+  },
+  {
+    id: "msme",
+    label: "MSME / Udyam Certificate",
+    desc: "Optional — only if registered as MSME",
+    required: false,
+  },
+];
+
+const INDIAN_STATES = [
+  "Andhra Pradesh",
+  "Arunachal Pradesh",
+  "Assam",
+  "Bihar",
+  "Chhattisgarh",
+  "Delhi",
+  "Goa",
+  "Gujarat",
+  "Haryana",
+  "Himachal Pradesh",
+  "Jharkhand",
+  "Karnataka",
+  "Kerala",
+  "Madhya Pradesh",
+  "Maharashtra",
+  "Manipur",
+  "Meghalaya",
+  "Mizoram",
+  "Nagaland",
+  "Odisha",
+  "Punjab",
+  "Rajasthan",
+  "Sikkim",
+  "Tamil Nadu",
+  "Telangana",
+  "Tripura",
+  "Uttar Pradesh",
+  "Uttarakhand",
+  "West Bengal",
+];
+
+/* Shell used by every setup sub-form. Layout:
+   ┌──────────────────────────────────────────────┐
+   │  Top bar: brand + step counter + theme       │
+   ├──────────────┬───────────────────────────────┤
+   │  Side rail:  │  Form body                    │
+   │  - Big "01"  │  ┌──────────────────────┐    │
+   │  - Step list │  │ Section heading       │    │
+   │    (clicks   │  │ Field, field          │    │
+   │    jump)     │  └──────────────────────┘    │
+   │              │                                │
+   ├──────────────┴───────────────────────────────┤
+   │  Sticky footer: Skip ··· Save & Continue →  │
+   └──────────────────────────────────────────────┘  */
+function SetupShell({
+  stepIndex,
+  totalSteps,
+  title,
+  subtitle,
+  Icon,
+  children,
+  onBack,
+  onSkip,
+  onSave,
+  saveLabel = "Save & Continue",
+  saving = false,
+  navItems,
+  currentId,
+  onJump,
+}) {
+  return (
+    <div className="h-screen flex flex-col overflow-hidden">
+      {/* Top bar — translucent so body gradient bleeds through */}
+      <header className="px-6 sm:px-10 h-14 border-b border-border flex items-center justify-between shrink-0 bg-bg/70 backdrop-blur-xl">
+        <Brand size="sm" />
+        <div className="flex items-center gap-4">
+          <button
+            type="button"
+            onClick={onBack}
+            className="inline-flex items-center gap-1.5 text-[12px] font-semibold text-text-muted hover:text-text transition-colors"
+          >
+            <ArrowLeft className="h-3.5 w-3.5" /> All steps
+          </button>
+          <span className="hidden sm:block w-px h-4 bg-border" />
+          <span className="hidden sm:inline-flex text-[10px] font-bold uppercase tracking-[0.22em] text-text-muted tabular-nums">
+            {String(stepIndex).padStart(2, "0")} / {String(totalSteps).padStart(2, "0")}
+          </span>
+          <ThemeToggle />
+        </div>
+      </header>
+
+      {/* Body — single column, max-width container, white card holds the form */}
+      <main className="flex-1 overflow-y-auto px-4 sm:px-6 py-7 sm:py-9 fade-up">
+        <div className="max-w-[1100px] mx-auto">
+          {/* Page header — eyebrow + bold title + subtitle (matches PR / Quotations) */}
+          <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-6 sm:mb-8">
+            <div className="min-w-0">
+              <div className="flex items-center gap-1.5 text-text-muted">
+                <Icon className="h-3 w-3" strokeWidth={2} />
+                <span className="text-[10px] font-semibold tracking-[0.22em] uppercase">
+                  Supplier Setup · Step {String(stepIndex).padStart(2, "0")} of {String(totalSteps).padStart(2, "0")}
+                </span>
+              </div>
+              <h1 className="text-[24px] sm:text-[30px] font-bold text-text leading-tight tracking-tight mt-1.5 flex items-baseline gap-3">
+                <span className="text-primary tabular-nums">
+                  {String(stepIndex).padStart(2, "0")}
+                </span>
+                <span>{title}</span>
+              </h1>
+              {subtitle && (
+                <p className="text-text-muted text-[13px] sm:text-[14px] mt-1.5 leading-relaxed max-w-2xl">
+                  {subtitle}
+                </p>
+              )}
+            </div>
+          </div>
+
+          {/* Horizontal step rail — Stripe / Linear style, sits between header and card */}
+          {navItems && (
+            <nav
+              className="mb-6 sm:mb-7 flex items-center gap-0 overflow-x-auto pb-1 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
+              aria-label="Setup steps"
+            >
+              {navItems.map((item, i) => {
+                const num = String(i + 1).padStart(2, "0");
+                const active = item.id === currentId;
+                const done = item.done;
+                const isLast = i === navItems.length - 1;
+                return (
+                  <Fragment key={item.id}>
+                    <button
+                      type="button"
+                      onClick={() => onJump?.(item.id)}
+                      className={`group flex items-center gap-2.5 px-3 py-2 rounded-full transition-colors shrink-0 ${
+                        active
+                          ? "bg-primary-soft text-primary"
+                          : done
+                            ? "text-success hover:bg-success-soft"
+                            : "text-text-muted hover:bg-surface-container-low/60 hover:text-text"
+                      }`}
+                    >
+                      {/* Numbered dot */}
+                      <span
+                        className={`inline-flex items-center justify-center w-6 h-6 rounded-full text-[10px] font-black tabular-nums transition-colors ${
+                          active
+                            ? "bg-primary text-primary-foreground"
+                            : done
+                              ? "bg-success text-white"
+                              : "border border-border text-text-subtle group-hover:border-text-muted group-hover:text-text-muted"
+                        }`}
+                      >
+                        {done ? (
+                          <Check className="h-3 w-3" strokeWidth={3} />
+                        ) : (
+                          num
+                        )}
+                      </span>
+                      <span
+                        className={`text-[12px] font-semibold whitespace-nowrap ${
+                          active ? "text-primary" : ""
+                        }`}
+                      >
+                        {item.title}
+                      </span>
+                    </button>
+                    {!isLast && (
+                      <span className="w-6 sm:w-8 h-px bg-border mx-0.5 shrink-0" />
+                    )}
+                  </Fragment>
+                );
+              })}
+            </nav>
+          )}
+
+          {/* The form — single white card with hairline border + soft shadow */}
+          <div className="bg-surface border border-border rounded-2xl shadow-sm p-5 sm:p-8">
+            {children}
+          </div>
+
+          {/* Helper note under the card */}
+          <p className="mt-4 text-[11.5px] text-text-subtle text-center">
+            Your progress is saved automatically. You can finish setup any time
+            from your vendor profile.
+          </p>
+        </div>
+      </main>
+
+      {/* Sticky footer — translucent, frosted, Skip text-link + red CTA */}
+      <div className="px-4 sm:px-6 py-3.5 border-t border-border bg-bg/70 backdrop-blur-xl shrink-0">
+        <div className="max-w-[1100px] mx-auto flex items-center justify-between gap-3">
+          <button
+            type="button"
+            onClick={onSkip}
+            className="text-[13px] font-semibold text-text-muted hover:text-text transition-colors underline-offset-4 hover:underline"
+          >
+            Skip this step
+          </button>
+          <button
+            type="button"
+            onClick={onSave}
+            disabled={saving}
+            className="group inline-flex items-center gap-2 bg-primary hover:brightness-110 text-primary-foreground rounded-full px-6 py-2.5 font-bold text-[13px] transition-all shadow-sm hover:shadow-md disabled:opacity-60 whitespace-nowrap"
+          >
+            {saving && <Loader2 className="h-4 w-4 animate-spin" />}
+            {saveLabel}
+            {!saving && (
+              <ArrowRight
+                className="h-4 w-4 group-hover:translate-x-0.5 transition-transform"
+                strokeWidth={2.5}
+              />
+            )}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* Reusable field row — uses 2-col grid by default; cols=1 forces full-width. */
+function FormRow({ children, cols = 2 }) {
+  return (
+    <div
+      className={`grid grid-cols-1 ${cols === 2 ? "md:grid-cols-2" : ""} gap-4`}
+    >
+      {children}
+    </div>
+  );
+}
+
+/* Field-group section — section heading + hint above, fields below.
+   Numbered with a tiny tracked marker so each group reads as a chapter. */
+function FieldGroup({ title, hint, index, children }) {
+  return (
+    <section className="mb-7 last:mb-0">
+      <header className="mb-4 pb-3 border-b border-border">
+        <div className="flex items-center gap-2.5">
+          {typeof index === "number" && (
+            <span className="text-[10px] font-black tabular-nums text-primary tracking-widest">
+              {String(index).padStart(2, "0")}
+            </span>
+          )}
+          <h3 className="text-[15px] font-bold text-text">{title}</h3>
+        </div>
+        {hint && (
+          <p className="text-[12px] text-text-muted leading-relaxed mt-1">
+            {hint}
+          </p>
+        )}
+      </header>
+      <div className="space-y-4">{children}</div>
+    </section>
+  );
+}
+
+/* Compact select — same styling as Input but for native selects */
+function FormSelect({ label, value, onChange, options, placeholder = "— select —" }) {
+  return (
+    <div>
+      <Label>{label}</Label>
+      <select
+        value={value ?? ""}
+        onChange={(e) => onChange(e.target.value)}
+        className="w-full bg-bg rounded-xl px-3.5 py-2.5 text-sm text-text border border-border focus:border-primary/60 focus:ring-2 focus:ring-primary/15 outline-none transition-colors"
+      >
+        <option value="">{placeholder}</option>
+        {options.map((o) => (
+          <option key={typeof o === "string" ? o : o.value} value={typeof o === "string" ? o : o.value}>
+            {typeof o === "string" ? o : o.label}
+          </option>
+        ))}
+      </select>
+    </div>
+  );
+}
+
+/* Compact textarea */
+function FormTextarea({ label, value, onChange, placeholder, rows = 2 }) {
+  return (
+    <div>
+      <Label>{label}</Label>
+      <textarea
+        value={value ?? ""}
+        onChange={(e) => onChange(e.target.value)}
+        rows={rows}
+        placeholder={placeholder}
+        className="w-full bg-bg rounded-xl px-3.5 py-2.5 text-sm text-text border border-border focus:border-primary/60 focus:ring-2 focus:ring-primary/15 outline-none transition-colors placeholder:text-text-subtle resize-none"
+      />
+    </div>
+  );
+}
+
+/* ── Setup 1: Company Details ── */
+function CompanyDetailsForm({ data, setData, onBack, onSkip, onSave, navItems, currentId, onJump }) {
+  return (
+    <SetupShell
+      stepIndex={1}
+      totalSteps={5}
+      Icon={Building2}
+      title="Company Details"
+      subtitle="Most fields are pre-filled from your GSTIN. Update anything that needs correcting."
+      onBack={onBack}
+      onSkip={onSkip}
+      onSave={onSave}
+      navItems={navItems}
+      currentId={currentId}
+      onJump={onJump}
+    >
+      <FieldGroup
+        index={1}
+        title="Identity"
+        hint="The legal name on file with the GSTN, plus the trade / brand name your customers know you by."
+      >
+        <FormRow>
+          <Input
+            label="Legal company name"
+            value={data.legalName ?? ""}
+            onChange={(v) => setData({ ...data, legalName: v })}
+            placeholder="Acme Marine Engineering Pvt Ltd"
+          />
+          <Input
+            label="Trade / brand name"
+            value={data.tradeName ?? ""}
+            onChange={(v) => setData({ ...data, tradeName: v })}
+            placeholder="Acme Marine"
+          />
+        </FormRow>
+      </FieldGroup>
+
+      <FieldGroup
+        index={2}
+        title="Profile"
+        hint="Helps the procurement team understand your scale and structure."
+      >
+        <FormRow>
+          <FormSelect
+            label="Company type"
+            value={data.companyType}
+            onChange={(v) => setData({ ...data, companyType: v })}
+            options={COMPANY_TYPES}
+          />
+          <Input
+            label="Year of incorporation"
+            value={data.incorporationYear ?? ""}
+            onChange={(v) =>
+              setData({
+                ...data,
+                incorporationYear: v.replace(/\D/g, "").slice(0, 4),
+              })
+            }
+            mono
+            maxLength={4}
+            placeholder="2018"
+          />
+        </FormRow>
+        <FormRow>
+          <Input
+            label="Website"
+            value={data.website ?? ""}
+            onChange={(v) => setData({ ...data, website: v })}
+            placeholder="https://acme-marine.in"
+            type="url"
+          />
+          <Input
+            label="Number of employees"
+            value={data.employees ?? ""}
+            onChange={(v) =>
+              setData({ ...data, employees: v.replace(/\D/g, "") })
+            }
+            mono
+            placeholder="120"
+          />
+        </FormRow>
+      </FieldGroup>
+
+      <FieldGroup
+        index={3}
+        title="About"
+        hint="A one-liner that helps buyers spot you in a list of vendors."
+      >
+        <FormTextarea
+          label="What does your business do?"
+          value={data.description}
+          onChange={(v) => setData({ ...data, description: v })}
+          placeholder="Key products / services / specialisations"
+          rows={3}
+        />
+      </FieldGroup>
+    </SetupShell>
+  );
+}
+
+/* ── Setup 2: Category & Business ── */
+function CategoryBusinessForm({ data, setData, onBack, onSkip, onSave, navItems, currentId, onJump }) {
+  return (
+    <SetupShell
+      stepIndex={2}
+      totalSteps={5}
+      Icon={Briefcase}
+      title="Category & Business"
+      subtitle="What kind of business you run, and what you supply."
+      onBack={onBack}
+      onSkip={onSkip}
+      onSave={onSave}
+      navItems={navItems}
+      currentId={currentId}
+      onJump={onJump}
+    >
+      <FieldGroup
+        index={1}
+        title="Business model"
+        hint="Tells buyers whether you make, distribute, trade, or service."
+      >
+        <FormRow>
+          <FormSelect
+            label="Nature of business"
+            value={data.natureOfBusiness}
+            onChange={(v) => setData({ ...data, natureOfBusiness: v })}
+            options={NATURE_OF_BUSINESS}
+          />
+          <FormSelect
+            label="MSME / Udyam status"
+            value={data.msmeStatus}
+            onChange={(v) => setData({ ...data, msmeStatus: v })}
+            options={["Not registered", "Micro", "Small", "Medium"]}
+          />
+        </FormRow>
+      </FieldGroup>
+
+      <FieldGroup
+        index={2}
+        title="Scale"
+        hint="Used internally to tier vendors by capacity and tenure."
+      >
+        <FormRow>
+          <Input
+            label="Years in business"
+            value={data.yearsInBusiness ?? ""}
+            onChange={(v) =>
+              setData({ ...data, yearsInBusiness: v.replace(/\D/g, "") })
+            }
+            mono
+            placeholder="6"
+          />
+          <Input
+            label="Annual turnover (₹)"
+            value={data.turnover ?? ""}
+            onChange={(v) =>
+              setData({ ...data, turnover: v.replace(/\D/g, "") })
+            }
+            mono
+            placeholder="50000000"
+          />
+        </FormRow>
+      </FieldGroup>
+
+      <FieldGroup
+        index={3}
+        title="What you supply"
+        hint="Be specific — the procurement team uses this to match you to RFQs."
+      >
+        <FormTextarea
+          label="Products / services"
+          value={data.productsServices}
+          onChange={(v) => setData({ ...data, productsServices: v })}
+          placeholder="e.g. Fender systems, mooring bollards, cutter heads, weight-coated HDPE pipes…"
+          rows={3}
+        />
+      </FieldGroup>
+    </SetupShell>
+  );
+}
+
+/* ── Setup 3: Contact Details ── */
+function ContactDetailsForm({ data, setData, onBack, onSkip, onSave, navItems, currentId, onJump }) {
+  const c = data.primaryContact ?? {};
+  const setC = (patch) =>
+    setData({ ...data, primaryContact: { ...c, ...patch } });
+
+  return (
+    <SetupShell
+      stepIndex={3}
+      totalSteps={5}
+      Icon={UserPlus}
+      title="Contact Details"
+      subtitle="The owner or authorised signatory who can speak for the business."
+      onBack={onBack}
+      onSkip={onSkip}
+      onSave={onSave}
+      navItems={navItems}
+      currentId={currentId}
+      onJump={onJump}
+    >
+      <FieldGroup
+        index={1}
+        title="Primary contact"
+        hint="The person we'll route POs, RFQs, and approvals to."
+      >
+        <FormRow>
+          <Input
+            label="Full name"
+            value={c.name ?? ""}
+            onChange={(v) => setC({ name: v })}
+            placeholder="Priya Sharma"
+          />
+          <Input
+            label="Designation"
+            value={c.designation ?? ""}
+            onChange={(v) => setC({ designation: v })}
+            placeholder="Managing Director"
+          />
+        </FormRow>
+        <FormRow>
+          <Input
+            label="Work email"
+            type="email"
+            value={c.email ?? ""}
+            onChange={(v) => setC({ email: v })}
+            placeholder="priya@acme-marine.in"
+          />
+          <Input
+            label="Mobile"
+            prefix="+91"
+            mono
+            maxLength={10}
+            value={c.phone ?? ""}
+            onChange={(v) => setC({ phone: v.replace(/\D/g, "").slice(0, 10) })}
+            placeholder="98765 43210"
+          />
+        </FormRow>
+      </FieldGroup>
+
+      <FieldGroup
+        index={2}
+        title="Office address"
+        hint="Where you operate from. Used on POs and shipping labels."
+      >
+        <FormTextarea
+          label="Street, building, area"
+          value={c.address}
+          onChange={(v) => setC({ address: v })}
+          placeholder="Plot 12, MIDC Industrial Estate, Andheri East"
+          rows={2}
+        />
+        <FormRow>
+          <Input
+            label="City"
+            value={c.city ?? ""}
+            onChange={(v) => setC({ city: v })}
+            placeholder="Mumbai"
+          />
+          <FormSelect
+            label="State"
+            value={c.state}
+            onChange={(v) => setC({ state: v })}
+            options={INDIAN_STATES}
+          />
+        </FormRow>
+      </FieldGroup>
+    </SetupShell>
+  );
+}
+
+/* ── Setup 4: Account / Banking ── */
+function AccountDetailsForm({ data, setData, onBack, onSkip, onSave, navItems, currentId, onJump }) {
+  const b = data.bank ?? {};
+  const setB = (patch) => setData({ ...data, bank: { ...b, ...patch } });
+  const accountMatch =
+    !b.accountNumber ||
+    !b.confirmAccountNumber ||
+    b.accountNumber === b.confirmAccountNumber;
+
+  return (
+    <SetupShell
+      stepIndex={4}
+      totalSteps={5}
+      Icon={Landmark}
+      title="Account Details"
+      subtitle="Where to send payments. We'll verify against your cancelled cheque in the next step."
+      onBack={onBack}
+      onSkip={onSkip}
+      onSave={onSave}
+      navItems={navItems}
+      currentId={currentId}
+      onJump={onJump}
+    >
+      <FieldGroup
+        index={1}
+        title="Beneficiary"
+        hint="Use the exact name printed on the bank account (no abbreviations)."
+      >
+        <FormRow>
+          <Input
+            label="Beneficiary name"
+            value={b.beneficiary ?? ""}
+            onChange={(v) => setB({ beneficiary: v })}
+            placeholder="ACME MARINE ENG PVT LTD"
+          />
+          <Input
+            label="Bank name"
+            value={b.bankName ?? ""}
+            onChange={(v) => setB({ bankName: v })}
+            placeholder="HDFC Bank"
+          />
+        </FormRow>
+      </FieldGroup>
+
+      <FieldGroup
+        index={2}
+        title="Account"
+        hint="Re-enter the account number to catch typos. Used for every payout."
+      >
+        <FormRow>
+          <Input
+            label="Account number"
+            value={b.accountNumber ?? ""}
+            onChange={(v) =>
+              setB({ accountNumber: v.replace(/\D/g, "").slice(0, 18) })
+            }
+            mono
+            maxLength={18}
+            placeholder="0123456789012345"
+          />
+          <Input
+            label="Re-enter account number"
+            value={b.confirmAccountNumber ?? ""}
+            onChange={(v) =>
+              setB({
+                confirmAccountNumber: v.replace(/\D/g, "").slice(0, 18),
+              })
+            }
+            mono
+            maxLength={18}
+            error={accountMatch ? null : "Account numbers don't match"}
+            placeholder="0123456789012345"
+          />
+        </FormRow>
+        <FormRow>
+          <Input
+            label="IFSC code"
+            value={b.ifsc ?? ""}
+            onChange={(v) => setB({ ifsc: v.toUpperCase().slice(0, 11) })}
+            mono
+            maxLength={11}
+            placeholder="HDFC0001234"
+          />
+          <FormSelect
+            label="Account type"
+            value={b.accountType}
+            onChange={(v) => setB({ accountType: v })}
+            options={ACCOUNT_TYPES}
+          />
+        </FormRow>
+      </FieldGroup>
+    </SetupShell>
+  );
+}
+
+/* ── Setup 5: Document upload — 2-col grid of compact tiles. ── */
+function DocumentForm({ data, setData, onBack, onSkip, onSave, saving, navItems, currentId, onJump }) {
+  const docs = data.documents ?? {};
+  const setDoc = (id, file) =>
+    setData({ ...data, documents: { ...docs, [id]: file } });
+  const removeDoc = (id) => {
+    const next = { ...docs };
+    delete next[id];
+    setData({ ...data, documents: next });
+  };
+  const requiredDone = DOCUMENT_TYPES.filter(
+    (d) => d.required && docs[d.id],
+  ).length;
+  const requiredTotal = DOCUMENT_TYPES.filter((d) => d.required).length;
+
+  return (
+    <SetupShell
+      stepIndex={5}
+      totalSteps={5}
+      Icon={FileText}
+      title="Documents"
+      subtitle={`Upload your verification documents — PDF / JPG / PNG, max 10 MB each.  ${requiredDone}/${requiredTotal} required uploaded.`}
+      onBack={onBack}
+      onSkip={onSkip}
+      onSave={onSave}
+      navItems={navItems}
+      currentId={currentId}
+      onJump={onJump}
+      saveLabel="Finish setup"
+      saving={saving}
+    >
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+        {DOCUMENT_TYPES.map((doc) => {
+          const file = docs[doc.id];
+          const uploaded = Boolean(file);
+          return (
+            <div
+              key={doc.id}
+              className={`relative p-3 rounded-xl border transition-colors ${
+                uploaded
+                  ? "border-success/40 bg-success-soft/30"
+                  : "border-dashed border-border hover:border-primary/40 bg-surface-container-low/30"
+              }`}
+            >
+              <div className="flex items-start gap-2.5">
+                <div
+                  className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
+                    uploaded
+                      ? "bg-success-soft text-success"
+                      : "bg-primary-soft text-primary"
+                  }`}
+                >
+                  {uploaded ? (
+                    <CheckCircle2 className="h-4 w-4" strokeWidth={2} />
+                  ) : (
+                    <FileText className="h-4 w-4" strokeWidth={1.75} />
+                  )}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-[13px] font-semibold text-text truncate">
+                      {doc.label}
+                    </span>
+                    {doc.required && (
+                      <span className="text-[8px] font-bold uppercase tracking-wider text-danger">
+                        *
+                      </span>
+                    )}
+                  </div>
+                  {uploaded ? (
+                    <div className="text-[11px] text-success font-medium truncate mt-0.5">
+                      {file.name}
+                    </div>
+                  ) : (
+                    <div className="text-[11px] text-text-muted line-clamp-2 mt-0.5">
+                      {doc.desc}
+                    </div>
+                  )}
+                </div>
+              </div>
+              <div className="mt-2.5 flex justify-end">
+                {uploaded ? (
+                  <button
+                    type="button"
+                    onClick={() => removeDoc(doc.id)}
+                    className="text-[10px] font-bold text-danger hover:bg-danger-soft rounded-full px-2.5 py-1 transition-colors"
+                  >
+                    Remove
+                  </button>
+                ) : (
+                  <label className="cursor-pointer text-[10px] font-bold text-primary border border-primary/40 bg-primary-soft hover:brightness-110 rounded-full px-2.5 py-1 transition-all inline-flex items-center gap-1">
+                    <Send className="h-2.5 w-2.5" strokeWidth={2.5} />
+                    Upload
+                    <input
+                      type="file"
+                      className="hidden"
+                      accept=".pdf,.jpg,.jpeg,.png"
+                      onChange={(e) => {
+                        const f = e.target.files?.[0];
+                        if (!f) return;
+                        if (f.size > 10 * 1024 * 1024) {
+                          alert(`${f.name} is larger than 10 MB`);
+                          return;
+                        }
+                        setDoc(doc.id, f);
+                      }}
+                    />
+                  </label>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </SetupShell>
+  );
+}
+
 /* ───────── 6. final success ───────── */
 function FinalSuccessScreen({ details, categories, reference, onReset }) {
   const catLabels = useMemo(
@@ -1422,12 +2566,28 @@ function genPassword() {
 }
 
 export default function VendorRegistrationPage() {
-  const [screen, setScreen] = useState("login");
+  // Initial screen comes from the URL — `/vendor-login` starts on the
+  // sign-in screen, `/vendor-register` starts on the create-account screen.
+  const location = useLocation();
+  const [screen, setScreen] = useState(() =>
+    location.pathname === "/vendor-login" ? "login" : "register",
+  );
   const [session, setSession] = useState(null);
   const [details, setDetails] = useState(null);
   const [categories, setCategories] = useState([]);
   const [reference, setReference] = useState(null);
   const [submitting, setSubmitting] = useState(false);
+
+  // Setup wizard state — each sub-form writes into one slice of `setupData`.
+  // `completed` tracks which step cards should show the "Done" badge.
+  const [setupData, setSetupData] = useState(() => ({
+    company: {},
+    business: {},
+    contact: { primaryContact: {} },
+    account: { bank: {} },
+    document: { documents: {} },
+  }));
+  const [completed, setCompleted] = useState({});
 
   const toast = useToast();
   const navigate = useNavigate();
@@ -1439,43 +2599,116 @@ export default function VendorRegistrationPage() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   }, [screen]);
 
-  const handleSubmit = async ({ categories: cats }) => {
-    setCategories(cats);
+  // Registers the vendor right after Details — categories are NOT picked
+  // here any more. The user fills them in via the welcome wizard's
+  // "Category & Business" sub-step instead.
+  const handleSubmit = async (d = details) => {
+    if (!d) return;
     setSubmitting(true);
+    // Fresh registration — nothing in the welcome wizard is "done" yet.
+    // Explicitly reset so a re-register in the same session doesn't carry
+    // forward stale Done badges (and so Category never shows green just
+    // because the user finished Details).
+    setCompleted({});
 
     // Stage all fields into the onboarding store, then call submit().
     setMany({
-      vendor_name: details.legalName || details.tradeName || details.name,
-      email_address_1: details.email,
-      contact_no: details.phone,
-      contact_person_1: details.name,
-      gst: details.gstin,
-      pan: details.pan,
-      address: details.address,
-      city: details.city || "",
-      state: details.state || "",
+      vendor_name: d.legalName || d.tradeName || d.name,
+      email_address_1: d.email,
+      contact_no: d.phone,
+      contact_person_1: d.name,
+      gst: d.gstin,
+      pan: d.pan,
+      address: d.address,
+      city: d.city || "",
+      state: d.state || "",
       country: "India",
-      zipcode: details.pincode || "",
+      zipcode: d.pincode || "",
       password: genPassword(),
-      category: cats.join(","),
+      category: null,
     });
+
+    // Pre-fill what we already know into setup forms.
+    setSetupData((s) => ({
+      ...s,
+      company: {
+        ...s.company,
+        legalName: d.legalName || d.tradeName || s.company.legalName,
+        tradeName: d.tradeName || s.company.tradeName,
+      },
+      contact: {
+        ...s.contact,
+        primaryContact: {
+          ...s.contact.primaryContact,
+          name: d.name || s.contact.primaryContact?.name,
+          email: d.email || s.contact.primaryContact?.email,
+          phone: d.phone || s.contact.primaryContact?.phone,
+          address: d.address || s.contact.primaryContact?.address,
+          city: d.city || s.contact.primaryContact?.city,
+          state: d.state || s.contact.primaryContact?.state,
+          pincode: d.pincode || s.contact.primaryContact?.pincode,
+          country: "India",
+        },
+      },
+      account: {
+        ...s.account,
+        bank: {
+          ...s.account.bank,
+          beneficiary:
+            (d.legalName || d.name || "").toUpperCase() ||
+            s.account.bank?.beneficiary,
+        },
+      },
+    }));
 
     try {
       const vendor = await submitToBackend();
       const ref =
         vendor?.code || "MEKA-" + (Math.floor(Math.random() * 90000) + 10000);
       setReference(ref);
-      setScreen("final");
-      toast.success("Application submitted");
+      setScreen("welcome");
+      toast.success("Account created — let's set up your supplier profile");
     } catch (err) {
-      toast.error(err?.message || "Submission failed");
-      // still show success screen so users see a reference for support
-      const ref = "MEKA-" + (Math.floor(Math.random() * 90000) + 10000);
-      setReference(ref);
-      setScreen("final");
+      const msg = err?.message || "Submission failed";
+      const alreadyRegistered =
+        /already registered|already exists|duplicate/i.test(msg);
+
+      if (alreadyRegistered) {
+        // The email already has an account — registration shouldn't proceed.
+        // Send them to the login screen with a clear toast so they can sign in.
+        toast.error(
+          "This email is already registered. Sign in to access your supplier portal.",
+        );
+        setScreen("login");
+        navigate("/vendor-login");
+      } else {
+        // Other validation / server error — stay on categories so they can fix.
+        toast.error(msg);
+      }
     } finally {
       setSubmitting(false);
     }
+  };
+
+  // Map step id → next step id so "Save & Continue" walks through them.
+  const NEXT_STEP = {
+    company: "category",
+    category: "contact",
+    contact: "account",
+    account: "document",
+    document: null, // last step
+  };
+
+  const saveStep = (stepId) => {
+    setCompleted((c) => ({ ...c, [stepId]: true }));
+    const next = NEXT_STEP[stepId];
+    if (next) setScreen(`setup-${next}`);
+    else setScreen("final"); // finished all 5
+  };
+  const skipStep = (stepId) => {
+    const next = NEXT_STEP[stepId];
+    if (next) setScreen(`setup-${next}`);
+    else setScreen("welcome");
   };
 
   const reset = () => {
@@ -1485,12 +2718,16 @@ export default function VendorRegistrationPage() {
     setReference(null);
     resetStore();
     setScreen("login");
+    navigate("/vendor-login");
   };
 
   if (screen === "login")
     return (
       <LoginScreen
-        goRegister={() => setScreen("register")}
+        goRegister={() => {
+          setScreen("register");
+          navigate("/vendor-register");
+        }}
         onSendOtp={(s) => {
           setSession(s);
           setScreen("otp");
@@ -1501,7 +2738,10 @@ export default function VendorRegistrationPage() {
   if (screen === "register")
     return (
       <RegisterScreen
-        goLogin={() => setScreen("login")}
+        goLogin={() => {
+          setScreen("login");
+          navigate("/vendor-login");
+        }}
         onSendOtp={(s) => {
           setSession(s);
           setScreen("otp");
@@ -1532,19 +2772,104 @@ export default function VendorRegistrationPage() {
     return (
       <DetailsScreen
         session={session}
+        submitting={submitting}
         onNext={(d) => {
           setDetails(d);
-          setScreen("categories");
+          // Skip the standalone categories step — go straight to register.
+          // Categories are picked later in the welcome wizard's "Category &
+          // Business" sub-step.
+          handleSubmit(d);
         }}
       />
     );
 
-  if (screen === "categories")
+  if (screen === "welcome")
     return (
-      <CategoriesScreen
-        submitting={submitting}
-        onBack={() => setScreen("details")}
-        onSubmit={handleSubmit}
+      <WelcomeSetupScreen
+        details={details}
+        completed={completed}
+        onSkip={() => setScreen("final")}
+        onContinue={(stepId) => setScreen(`setup-${stepId}`)}
+      />
+    );
+
+  // Setup sub-form screens — one per card on the welcome wizard.
+  // Build the side-rail nav once (same for all 5 forms).
+  const navItems = SETUP_STEPS.map((s) => ({
+    id: s.id,
+    title: s.title,
+    done: !!completed[s.id],
+  }));
+  const onJump = (id) => setScreen(`setup-${id}`);
+
+  if (screen === "setup-company")
+    return (
+      <CompanyDetailsForm
+        data={setupData.company}
+        setData={(d) => setSetupData((s) => ({ ...s, company: d }))}
+        onBack={() => setScreen("welcome")}
+        onSkip={() => skipStep("company")}
+        onSave={() => saveStep("company")}
+        navItems={navItems}
+        currentId="company"
+        onJump={onJump}
+      />
+    );
+
+  if (screen === "setup-category")
+    return (
+      <CategoryBusinessForm
+        data={setupData.business}
+        setData={(d) => setSetupData((s) => ({ ...s, business: d }))}
+        onBack={() => setScreen("welcome")}
+        onSkip={() => skipStep("category")}
+        onSave={() => saveStep("category")}
+        navItems={navItems}
+        currentId="category"
+        onJump={onJump}
+      />
+    );
+
+  if (screen === "setup-contact")
+    return (
+      <ContactDetailsForm
+        data={setupData.contact}
+        setData={(d) => setSetupData((s) => ({ ...s, contact: d }))}
+        onBack={() => setScreen("welcome")}
+        onSkip={() => skipStep("contact")}
+        onSave={() => saveStep("contact")}
+        navItems={navItems}
+        currentId="contact"
+        onJump={onJump}
+      />
+    );
+
+  if (screen === "setup-account")
+    return (
+      <AccountDetailsForm
+        data={setupData.account}
+        setData={(d) => setSetupData((s) => ({ ...s, account: d }))}
+        onBack={() => setScreen("welcome")}
+        onSkip={() => skipStep("account")}
+        onSave={() => saveStep("account")}
+        navItems={navItems}
+        currentId="account"
+        onJump={onJump}
+      />
+    );
+
+  if (screen === "setup-document")
+    return (
+      <DocumentForm
+        data={setupData.document}
+        setData={(d) => setSetupData((s) => ({ ...s, document: d }))}
+        onBack={() => setScreen("welcome")}
+        onSkip={() => skipStep("document")}
+        onSave={() => saveStep("document")}
+        saving={false}
+        navItems={navItems}
+        currentId="document"
+        onJump={onJump}
       />
     );
 

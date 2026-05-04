@@ -34,7 +34,7 @@ export default function GRNListPage() {
             <Link to="/app/grn/purchase-return" className="flex items-center gap-2 px-4 py-2 rounded-md border border-border text-text text-sm font-semibold hover:bg-surface-container-low">
               <Undo2 className="h-4 w-4" /> Return
             </Link>
-            <Link to="/app/grn/new" className="flex items-center gap-2 px-4 py-2 rounded-md bg-primary hover:bg-primary-hover text-primary-foreground text-sm font-bold">
+            <Link to="/app/grn/new" className="flex items-center gap-2 px-4 py-2 rounded-md bg-primary hover:brightness-110 text-primary-foreground text-sm font-bold">
               <Plus className="h-4 w-4" /> Create GRN
             </Link>
           </>

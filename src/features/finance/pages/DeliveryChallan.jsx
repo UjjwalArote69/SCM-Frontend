@@ -67,7 +67,7 @@ export default function DeliveryChallanPage() {
 
         <div className="flex justify-end gap-3">
           <button onClick={() => nav(-1)} className="px-5 py-2 text-sm font-medium text-text border border-border rounded-md hover:bg-surface-container-low">Cancel</button>
-          <button onClick={generate} className="px-6 py-2 text-sm font-bold text-primary-foreground bg-primary hover:bg-primary-hover rounded-md flex items-center gap-2">
+          <button onClick={generate} className="px-6 py-2 text-sm font-bold text-primary-foreground bg-primary hover:brightness-110 rounded-md flex items-center gap-2">
             <Send className="h-4 w-4" /> Generate Challan
           </button>
         </div>

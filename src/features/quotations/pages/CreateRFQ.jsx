@@ -129,9 +129,11 @@ function metaForCategory(cat) {
 }
 
 const inputCls = (error) =>
-  `w-full bg-surface-container-lowest border-0 border-b-2 ${
-    error ? "border-danger bg-danger-soft/30" : "border-outline-variant"
-  } px-3 py-2 text-sm text-text focus:ring-0 focus:border-primary outline-none transition-colors`;
+  `w-full rounded-xl px-4 py-3 sm:py-2.5 text-sm bg-surface-container-low/60 border outline-none transition-colors placeholder:text-text-subtle ${
+    error
+      ? "border-danger/60 text-danger focus:border-danger focus:ring-2 focus:ring-danger/20"
+      : "border-border text-text focus:border-primary/60 focus:ring-2 focus:ring-primary/15"
+  }`;
 
 function FieldError({ message }) {
   if (!message) return null;
@@ -388,17 +390,25 @@ export default function CreateRFQPage() {
   };
 
   return (
-    <div className="max-w-5xl mx-auto">
-      <h1 className="text-3xl font-bold text-text tracking-tight mb-1">
-        New Request for Quotation
-      </h1>
-      <p className="text-text-muted text-sm mb-6">
-        Ask vendors to bid. Link an approved PR to auto-fill items.
-      </p>
+    <div className="max-w-[1400px] mx-auto pb-8">
+      <div className="mb-6">
+        <div className="flex items-center gap-1.5 text-text-muted">
+          <Link2 className="h-3 w-3" strokeWidth={2} />
+          <span className="text-[10px] font-semibold tracking-[0.22em] uppercase">
+            New RFQ
+          </span>
+        </div>
+        <h1 className="text-[24px] sm:text-[28px] font-bold text-text leading-tight tracking-tight mt-1">
+          Request for Quotation
+        </h1>
+        <p className="text-text-muted text-sm mt-1.5">
+          Ask vendors to bid. Link an approved PR to auto-fill items.
+        </p>
+      </div>
 
       <div className="space-y-6">
         {/* Request Details */}
-        <section className="bg-surface-container-low p-6 rounded-lg">
+        <section className="glass-card rounded-2xl p-6">
           <h2 className="text-lg font-bold text-text mb-4">Request Details</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
@@ -467,10 +477,8 @@ export default function CreateRFQPage() {
 
         {/* Items */}
         <section
-          className={`p-6 rounded-lg ${
-            errors.items
-              ? "bg-danger-soft border-l-4 border-danger"
-              : "bg-surface-container-low"
+          className={`glass-card rounded-2xl p-6 ${
+            errors.items ? "border-danger/40" : ""
           }`}
         >
           <div className="flex justify-between items-center mb-4">
@@ -490,10 +498,10 @@ export default function CreateRFQPage() {
             </button>
           </div>
 
-          <div className="bg-surface-container-lowest rounded-md overflow-x-auto shadow-sm">
+          <div className="bg-surface-container-low/60 border border-border rounded-xl overflow-x-auto">
             <table className="w-full text-left border-collapse min-w-[800px]">
               <thead>
-                <tr className="bg-surface-container border-b border-border">
+                <tr className="border-b border-border">
                   <th className="py-3 px-3 text-xs font-bold text-text-muted uppercase tracking-wider">Item Name *</th>
                   <th className="py-3 px-3 text-xs font-bold text-text-muted uppercase tracking-wider w-32">Code</th>
                   <th className="py-3 px-3 text-xs font-bold text-text-muted uppercase tracking-wider w-28">HSN</th>
@@ -576,10 +584,8 @@ export default function CreateRFQPage() {
 
         {/* Invite Vendors */}
         <section
-          className={`p-6 rounded-lg ${
-            errors.vendors
-              ? "bg-danger-soft border-l-4 border-danger"
-              : "bg-surface-container-low"
+          className={`glass-card rounded-2xl p-6 ${
+            errors.vendors ? "border-danger/40" : ""
           }`}
         >
           <div className="flex items-center justify-between mb-4 gap-2">
@@ -597,7 +603,7 @@ export default function CreateRFQPage() {
                 value={vendorQuery}
                 onChange={(e) => setVendorQuery(e.target.value)}
                 placeholder="Search vendors…"
-                className="w-full bg-surface-container-lowest border border-border rounded-md focus:border-primary focus:ring-0 pl-9 pr-3 py-1.5 text-sm text-text outline-none"
+                className="w-full bg-surface-container-low/60 border border-border rounded-full focus:border-primary/60 focus:ring-2 focus:ring-primary/15 pl-9 pr-3 py-2 text-sm text-text placeholder:text-text-subtle outline-none transition-colors"
               />
             </div>
           </div>
@@ -626,7 +632,7 @@ export default function CreateRFQPage() {
               Loading vendors…
             </div>
           ) : approvedVendors.length === 0 ? (
-            <div className="py-8 px-4 text-center border border-dashed border-border rounded-md bg-surface-container-lowest">
+            <div className="py-8 px-4 text-center border border-dashed border-border rounded-xl bg-surface-container-low/40">
               {vendors.length === 0 ? (
                 <>
                   <UserPlus className="h-10 w-10 mx-auto mb-3 text-text-subtle" strokeWidth={1.5} />
@@ -638,7 +644,7 @@ export default function CreateRFQPage() {
                   </p>
                   <Link
                     to="/admin/vendors"
-                    className="inline-flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary-hover text-primary-foreground text-xs font-bold rounded-md"
+                    className="inline-flex items-center gap-2 px-4 py-2 bg-primary hover:brightness-110 text-primary-foreground text-xs font-bold rounded-full transition-all shadow-sm"
                   >
                     <Plus className="h-3.5 w-3.5" /> Add a vendor
                   </Link>
@@ -657,7 +663,7 @@ export default function CreateRFQPage() {
                   </p>
                   <Link
                     to="/admin/vendors"
-                    className="inline-flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary-hover text-primary-foreground text-xs font-bold rounded-md"
+                    className="inline-flex items-center gap-2 px-4 py-2 bg-primary hover:brightness-110 text-primary-foreground text-xs font-bold rounded-full transition-all shadow-sm"
                   >
                     Go to Vendors Master
                   </Link>
@@ -718,9 +724,9 @@ export default function CreateRFQPage() {
                   return (
                     <section
                       key={cat}
-                      className={`rounded-md border ${tone.border} bg-surface-container-lowest overflow-hidden`}
+                      className={`rounded-xl border ${tone.border} bg-surface-container-low/40 overflow-hidden`}
                     >
-                      <header className="px-3 sm:px-4 py-2.5 flex items-center justify-between gap-2 border-b border-border bg-surface-container-low/40">
+                      <header className="px-3 sm:px-4 py-2.5 flex items-center justify-between gap-2 border-b border-border">
                         <div className="flex items-center gap-2 min-w-0">
                           <div
                             className={`w-7 h-7 rounded-md flex items-center justify-center shrink-0 ${tone.iconBg}`}
@@ -766,7 +772,7 @@ export default function CreateRFQPage() {
                               className={`inline-flex items-center gap-2 pl-2 pr-3 py-1.5 border rounded-full cursor-pointer transition-all ${
                                 checked
                                   ? "bg-success text-white border-success shadow-sm"
-                                  : "bg-surface-container-lowest border-border text-text hover:border-success/60 hover:bg-surface-container-low"
+                                  : "bg-surface-container-low/60 border-border text-text hover:border-success/60 hover:bg-surface-container"
                               }`}
                             >
                               <input
@@ -803,7 +809,7 @@ export default function CreateRFQPage() {
             type="button"
             onClick={() => nav("/app/quotations")}
             disabled={submitting}
-            className="px-5 py-2 text-sm font-medium text-text border border-border rounded-md hover:bg-surface-container-low disabled:opacity-60"
+            className="px-5 py-2 text-[12px] font-semibold text-text-muted border border-border bg-surface-container-low/60 rounded-full hover:text-text hover:border-white/20 transition-colors disabled:opacity-60"
           >
             Cancel
           </button>
@@ -811,7 +817,7 @@ export default function CreateRFQPage() {
             type="button"
             onClick={send}
             disabled={submitting}
-            className="px-6 py-2 text-sm font-bold text-primary-foreground bg-primary hover:bg-primary-hover rounded-md disabled:opacity-60 flex items-center gap-2"
+            className="px-6 py-2 text-[12px] font-bold text-primary-foreground bg-primary hover:brightness-110 rounded-full transition-all shadow-sm disabled:opacity-60 flex items-center gap-2"
           >
             {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
             {submitting ? "Sending…" : "Send RFQ"}

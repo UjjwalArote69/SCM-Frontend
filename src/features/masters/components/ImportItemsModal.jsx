@@ -41,7 +41,7 @@ export default function ImportItemsModal({ open, onClose }) {
         </div>
         <div className="px-6 py-4 bg-surface border-t border-border flex justify-end gap-3">
           <button onClick={onClose} className="px-4 py-2 text-sm font-medium text-text border border-border rounded-md hover:bg-surface-container-low">Cancel</button>
-          <button onClick={doImport} disabled={!file} className="px-6 py-2 text-sm font-bold text-primary-foreground bg-primary hover:bg-primary-hover rounded-md disabled:bg-surface-container-high disabled:text-text-muted disabled:cursor-not-allowed">
+          <button onClick={doImport} disabled={!file} className="px-6 py-2 text-sm font-bold text-primary-foreground bg-primary hover:brightness-110 rounded-md disabled:bg-surface-container-high disabled:text-text-muted disabled:cursor-not-allowed">
             Import
           </button>
         </div>

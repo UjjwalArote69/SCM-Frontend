@@ -127,9 +127,18 @@ export default function AppRoutes() {
       <Route path="/forgot-password" element={<ForgotPassword />} />
       <Route path="/reset-password/:token?" element={<ResetPassword />} />
 
-      {/* Onboarding */}
-      <Route path="/vendor-registration" element={<VendorRegistrationPage />} />
-      <Route path="/vendor-registration/:step" element={<VendorRegistrationPage />} />
+      {/* Onboarding — vendor login + registration on separate routes */}
+      <Route path="/vendor-login" element={<VendorRegistrationPage />} />
+      <Route path="/vendor-register" element={<VendorRegistrationPage />} />
+      {/* Legacy alias — old links kept working, lands on registration */}
+      <Route
+        path="/vendor-registration"
+        element={<Navigate to="/vendor-register" replace />}
+      />
+      <Route
+        path="/vendor-registration/:step"
+        element={<Navigate to="/vendor-register" replace />}
+      />
 
       {/* USER app */}
       <Route path="/app" element={wrap(UserLayout, UserHome)} />

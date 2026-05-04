@@ -56,7 +56,7 @@ export default function StockReceivePage() {
 
         <div className="flex justify-end gap-3">
           <button onClick={() => nav(-1)} className="px-5 py-2 text-sm font-medium text-text border border-border rounded-md hover:bg-surface-container-low">Cancel</button>
-          <button onClick={() => nav("/app/inventory")} className="px-6 py-2 text-sm font-bold text-primary-foreground bg-primary hover:bg-primary-hover rounded-md">Receive Stock</button>
+          <button onClick={() => nav("/app/inventory")} className="px-6 py-2 text-sm font-bold text-primary-foreground bg-primary hover:brightness-110 rounded-md">Receive Stock</button>
         </div>
       </div>
     </div>

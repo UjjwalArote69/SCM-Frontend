@@ -233,7 +233,7 @@ export default function PaymentDetailPage() {
 
   if (loading) {
     return (
-      <div className="max-w-5xl mx-auto flex items-center justify-center py-24 text-text-muted">
+      <div className="max-w-[1400px] mx-auto flex items-center justify-center py-24 text-text-muted">
         <Loader2 className="h-6 w-6 animate-spin mr-2" /> Loading {number}…
       </div>
     );
@@ -319,7 +319,7 @@ export default function PaymentDetailPage() {
   };
 
   return (
-    <div className="max-w-5xl mx-auto pb-20 sm:pb-0">
+    <div className="max-w-[1400px] mx-auto pb-20 sm:pb-0">
       <PrintLetterhead
         docType="Payment Voucher"
         docNumber={payment.number}
@@ -419,7 +419,7 @@ export default function PaymentDetailPage() {
                 type="button"
                 onClick={() => setChainModalOpen(true)}
                 disabled={submitting}
-                className="px-5 py-2.5 sm:py-2 text-sm font-bold text-primary-foreground bg-primary hover:bg-primary-hover rounded-md disabled:opacity-60"
+                className="px-5 py-2.5 sm:py-2 text-sm font-bold text-primary-foreground bg-primary hover:brightness-110 rounded-md disabled:opacity-60"
               >
                 Update Status
               </button>
@@ -428,7 +428,7 @@ export default function PaymentDetailPage() {
               <button
                 type="button"
                 onClick={() => setConfirmOpen(true)}
-                className="w-full sm:w-auto px-5 py-2.5 sm:py-2 text-sm font-bold text-primary-foreground bg-primary hover:bg-primary-hover rounded-md"
+                className="w-full sm:w-auto px-5 py-2.5 sm:py-2 text-sm font-bold text-primary-foreground bg-primary hover:brightness-110 rounded-md"
               >
                 Mark as Paid
               </button>
@@ -505,7 +505,7 @@ export default function PaymentDetailPage() {
       {/* Two-column on lg+: history on left, notes on right */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-4">
         {Array.isArray(payment.approval_history) && payment.approval_history.length > 0 && (
-          <section className="lg:col-span-2 bg-surface-container-lowest border border-border rounded-lg overflow-hidden">
+          <section className="lg:col-span-2 glass-card rounded-2xl overflow-hidden">
             <header className="px-4 sm:px-5 py-3 flex items-center gap-2 border-b border-border bg-surface-container-low/40">
               <History className="h-4 w-4 text-text-muted" strokeWidth={2.25} />
               <h2 className="text-xs sm:text-sm font-bold uppercase tracking-wider text-text">
@@ -529,7 +529,7 @@ export default function PaymentDetailPage() {
         )}
 
         {payment.notes && (
-          <section className="bg-surface-container-lowest border border-border rounded-lg overflow-hidden">
+          <section className="glass-card rounded-2xl overflow-hidden">
             <header className="px-4 sm:px-5 py-3 border-b border-border bg-surface-container-low/40">
               <h2 className="text-xs sm:text-sm font-bold uppercase tracking-wider text-text">
                 Notes
@@ -600,7 +600,7 @@ export default function PaymentDetailPage() {
                 type="button"
                 onClick={doMarkPaid}
                 disabled={submitting}
-                className="px-4 py-2 text-sm font-bold text-primary-foreground bg-primary hover:bg-primary-hover rounded-md disabled:opacity-60 inline-flex items-center gap-2"
+                className="px-4 py-2 text-sm font-bold text-primary-foreground bg-primary hover:brightness-110 rounded-md disabled:opacity-60 inline-flex items-center gap-2"
               >
                 {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
                 {submitting ? "Marking…" : "Confirm — Mark Paid"}

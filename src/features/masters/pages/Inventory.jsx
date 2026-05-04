@@ -27,7 +27,7 @@ export default function InventoryListPage() {
             <button onClick={() => toast.success(`Exported ${filtered.length} items`)} className="flex items-center gap-2 px-4 py-2 rounded-md border border-border text-text text-sm font-semibold hover:bg-surface-container-low">
               <Download className="h-4 w-4" /> Export
             </button>
-            <Link to="/app/inventory/receive" className="flex items-center gap-2 px-4 py-2 rounded-md bg-primary hover:bg-primary-hover text-primary-foreground text-sm font-bold">
+            <Link to="/app/inventory/receive" className="flex items-center gap-2 px-4 py-2 rounded-md bg-primary hover:brightness-110 text-primary-foreground text-sm font-bold">
               <Warehouse className="h-4 w-4" /> Receive Stock
             </Link>
           </>

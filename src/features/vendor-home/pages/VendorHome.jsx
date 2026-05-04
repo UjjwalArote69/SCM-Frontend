@@ -85,7 +85,7 @@ function VendorKpiCard({ to, icon: Icon, label, value, desc, tone = "info", load
   return (
     <Link
       to={to}
-      className="bg-surface-container-lowest border border-border rounded-xl p-5 flex flex-col relative overflow-hidden hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 shadow-sm group"
+      className="glass-card rounded-2xl p-5 flex flex-col relative overflow-hidden hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 shadow-sm group"
     >
       <div className={`absolute top-0 left-0 right-0 h-1 ${TONE_BAR[tone] ?? TONE_BAR.info} rounded-t-xl`} />
       <div className="flex items-start justify-between mt-1 mb-4">
@@ -194,7 +194,7 @@ export default function VendorHome() {
   const today = new Date().toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" });
 
   return (
-    <div className="max-w-7xl mx-auto space-y-6">
+    <div className="max-w-[1400px] mx-auto space-y-6">
 
       {/* ── Hero Banner — neutral card ── */}
       <div className="bg-surface-container-lowest border border-border rounded-2xl p-5 sm:p-6 shadow-sm">
@@ -254,7 +254,7 @@ export default function VendorHome() {
 
         {/* Activity feed */}
         <div className="lg:w-2/3">
-          <div className="bg-surface-container-lowest border border-border rounded-xl shadow-sm overflow-hidden">
+          <div className="glass-card rounded-2xl shadow-sm overflow-hidden">
             <div className="px-6 py-4 border-b border-border flex items-center justify-between">
               <h2 className="text-base font-bold text-text">Recent Activity</h2>
               {activity.length > 0 && (
@@ -315,7 +315,7 @@ export default function VendorHome() {
 
         <div className="lg:w-1/3 flex flex-col gap-6">
           {/* Account card */}
-          <div className="bg-surface-container-lowest border border-border rounded-xl shadow-sm overflow-hidden">
+          <div className="glass-card rounded-2xl shadow-sm overflow-hidden">
             <div className="px-6 py-4 border-b border-border">
               <h2 className="text-sm font-bold text-text uppercase tracking-wider">Your Account</h2>
             </div>
@@ -359,7 +359,7 @@ export default function VendorHome() {
           </div>
 
           {/* Quick links */}
-          <div className="bg-surface-container-lowest border border-border rounded-xl shadow-sm overflow-hidden">
+          <div className="glass-card rounded-2xl shadow-sm overflow-hidden">
             <div className="px-6 py-4 border-b border-border">
               <h2 className="text-sm font-bold text-text uppercase tracking-wider">Quick Links</h2>
             </div>

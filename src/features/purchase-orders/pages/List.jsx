@@ -78,39 +78,38 @@ function StatusPill({ status }) {
 }
 
 function StatCard({ label, value, icon: Icon, tone = "neutral", active, onClick }) {
-  const toneStyles = {
-    neutral: "text-text bg-surface-container-low border-border",
-    info:    "text-info bg-info-soft/50 border-info/20",
-    warning: "text-warning bg-warning-soft/50 border-warning/20",
-    success: "text-success bg-success-soft/50 border-success/20",
-    danger:  "text-danger bg-danger-soft/50 border-danger/20",
-  };
   const iconBg = {
-    neutral: "bg-surface-container-high",
-    info:    "bg-info-soft",
+    neutral: "bg-surface-container",
+    info: "bg-info-soft",
     warning: "bg-warning-soft",
     success: "bg-success-soft",
-    danger:  "bg-danger-soft",
+    danger: "bg-danger-soft",
   };
-  const ringActive = active
-    ? "ring-2 ring-primary ring-offset-2 ring-offset-bg"
-    : "";
+  const iconColor = {
+    neutral: "text-text-muted",
+    info: "text-info",
+    warning: "text-warning",
+    success: "text-success",
+    danger: "text-danger",
+  };
   return (
     <button
       type="button"
       onClick={onClick}
-      className={`text-left flex items-center gap-2.5 sm:gap-3 p-3 sm:p-4 rounded-lg border transition-all duration-200 shadow-sm hover:shadow-lg hover:-translate-y-0.5 shrink-0 snap-start min-w-[140px] sm:min-w-0 ${toneStyles[tone]} ${ringActive}`}
+      className={`glass-card text-left flex items-center gap-3 p-4 rounded-2xl transition-all duration-200 shrink-0 snap-start min-w-[140px] sm:min-w-0 hover:shadow-lg hover:-translate-y-0.5 ${
+        active ? "ring-2 ring-primary/40" : ""
+      }`}
     >
       <div
-        className={`w-9 h-9 sm:w-10 sm:h-10 rounded-md flex items-center justify-center shrink-0 ${iconBg[tone]}`}
+        className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${iconBg[tone]}`}
       >
-        <Icon className="h-4 w-4 sm:h-5 sm:w-5" strokeWidth={2.25} />
+        <Icon className={`h-4 w-4 ${iconColor[tone]}`} strokeWidth={2.25} />
       </div>
       <div className="min-w-0">
-        <div className="text-[10px] uppercase tracking-widest font-bold text-text-muted">
+        <div className="text-[10px] uppercase tracking-[0.18em] font-semibold text-text-muted">
           {label}
         </div>
-        <div className="text-xl sm:text-2xl font-black tracking-tight leading-tight">
+        <div className="text-2xl font-bold tracking-tight tabular-nums leading-tight text-text">
           {value}
         </div>
       </div>
@@ -120,22 +119,22 @@ function StatCard({ label, value, icon: Icon, tone = "neutral", active, onClick 
 
 function FilterBar({ query, setQuery, dateRange, setDateRange }) {
   return (
-    <div className="bg-surface-container-lowest border border-border rounded-lg p-3 flex flex-col sm:flex-row sm:flex-wrap gap-2 sm:gap-3 sm:items-center mb-4">
-      <div className="relative w-full sm:min-w-[260px] sm:flex-1">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-text-muted" />
+    <div className="glass-card rounded-2xl p-3 flex flex-col sm:flex-row sm:flex-wrap gap-2 sm:gap-3 sm:items-center">
+      <label className="relative w-full sm:min-w-[260px] sm:flex-1 flex items-center gap-2 bg-surface-container-low/60 border border-border rounded-full pl-4 pr-3 py-2 cursor-text hover:border-primary/40 focus-within:border-primary/60 transition-colors">
+        <Search className="h-3.5 w-3.5 text-text-muted shrink-0" />
         <input
           type="text"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Search PO number, vendor, source PR…"
-          className="w-full bg-transparent border border-border rounded-md focus:border-primary focus:ring-0 pl-10 pr-3 py-2 text-sm text-text outline-none"
+          className="w-full bg-transparent text-sm text-text placeholder:text-text-subtle outline-none min-w-0"
         />
-      </div>
+      </label>
       <div className="flex gap-2">
         <select
           value={dateRange}
           onChange={(e) => setDateRange(e.target.value)}
-          className="flex-1 sm:flex-initial bg-transparent border border-border rounded-md focus:border-primary focus:ring-0 py-2 pl-3 pr-8 text-sm text-text outline-none"
+          className="flex-1 sm:flex-initial bg-surface-container-low/60 border border-border rounded-full focus:border-primary py-2 pl-4 pr-8 text-[12px] font-semibold text-text-muted hover:text-text outline-none transition-colors"
         >
           <option>Last 30 Days</option>
           <option>Last 7 Days</option>
@@ -144,9 +143,9 @@ function FilterBar({ query, setQuery, dateRange, setDateRange }) {
         </select>
         <button
           type="button"
-          className="px-3 py-2 text-sm font-medium text-text-muted rounded-md border border-border hover:bg-surface-container-low flex items-center gap-1 whitespace-nowrap"
+          className="px-4 py-2 text-[12px] font-semibold text-text-muted rounded-full border border-border bg-surface-container-low/60 hover:text-text hover:border-white/20 flex items-center gap-1.5 whitespace-nowrap transition-colors"
         >
-          <ListFilter className="h-4 w-4" />
+          <ListFilter className="h-3.5 w-3.5" />
           <span className="hidden sm:inline">More filters</span>
         </button>
       </div>
@@ -156,9 +155,9 @@ function FilterBar({ query, setQuery, dateRange, setDateRange }) {
 
 function EmptyState({ canCreate, hasFilters }) {
   return (
-    <div className="w-full bg-surface-container-low rounded-2xl p-16 flex flex-col items-center text-center border border-dashed border-border">
-      <div className="w-20 h-20 bg-surface-container-lowest rounded-full flex items-center justify-center shadow-sm border border-border mb-6">
-        <ShoppingBag className="h-9 w-9 text-text-subtle" strokeWidth={1.5} />
+    <div className="glass-card w-full rounded-2xl p-16 flex flex-col items-center text-center">
+      <div className="w-20 h-20 bg-primary-soft text-primary rounded-2xl flex items-center justify-center mb-6">
+        <ShoppingBag className="h-9 w-9" strokeWidth={1.5} />
       </div>
       <h2 className="text-xl font-bold text-text mb-2 tracking-tight">
         {hasFilters ? "No matching purchase orders" : "No purchase orders yet"}
@@ -173,7 +172,7 @@ function EmptyState({ canCreate, hasFilters }) {
       {!hasFilters && canCreate && (
         <Link
           to="/app/purchase-orders/new"
-          className="bg-primary hover:bg-primary-hover text-primary-foreground px-6 py-2.5 rounded-md font-bold text-sm flex items-center gap-2 transition-colors shadow-sm"
+          className="bg-primary hover:brightness-110 text-primary-foreground px-6 py-2.5 rounded-full font-bold text-sm flex items-center gap-2 transition-all shadow-sm"
         >
           <Plus className="h-4 w-4" />
           Create PO
@@ -222,35 +221,41 @@ export default function PurchaseOrderListPage() {
   const hasFilters = Boolean(query) || status !== "all";
 
   return (
-    <div className="max-w-7xl mx-auto pb-20 sm:pb-0">
+    <div className="max-w-[1400px] mx-auto pb-20 sm:pb-0 space-y-6">
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between mb-6 gap-4">
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-text tracking-tight">
+          <div className="flex items-center gap-1.5 text-text-muted">
+            <ShoppingBag className="h-3 w-3" strokeWidth={2} />
+            <span className="text-[10px] font-semibold tracking-[0.22em] uppercase">
+              Procurement
+            </span>
+          </div>
+          <h1 className="text-[22px] sm:text-[28px] font-bold text-text leading-tight tracking-tight mt-1">
             Purchase Orders
           </h1>
-          <p className="text-text-muted text-sm mt-1">
+          <p className="text-text-muted text-sm mt-1.5">
             Monitor and manage purchase orders across all business units
           </p>
         </div>
-        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+        <div className="flex flex-wrap items-center gap-2">
           <RefreshButton onRefresh={fetchAll} loading={loading} />
           <button
             type="button"
             onClick={() =>
               toast.success(`Exported ${filtered.length} records to CSV`)
             }
-            className="px-3 sm:px-4 py-2 text-sm font-semibold text-text rounded-md border border-border hover:bg-surface-container-low flex items-center gap-2 bg-surface-container-lowest"
+            className="px-4 py-2 text-[12px] font-semibold text-text-muted rounded-full border border-border bg-surface-container-low/60 hover:text-text hover:border-white/20 flex items-center gap-1.5 whitespace-nowrap transition-colors"
           >
-            <Download className="h-4 w-4" />
+            <Download className="h-3.5 w-3.5" />
             <span className="hidden sm:inline">Export</span>
           </button>
           {canCreate && (
             <Link
               to="/app/purchase-orders/new"
-              className="bg-primary hover:bg-primary-hover text-primary-foreground px-3 sm:px-4 py-2 rounded-md font-bold text-sm flex items-center gap-2 transition-colors shadow-sm whitespace-nowrap"
+              className="bg-primary hover:brightness-110 text-primary-foreground px-4 py-2 rounded-full font-bold text-[12px] flex items-center gap-1.5 transition-all shadow-sm whitespace-nowrap"
             >
-              <Plus className="h-4 w-4" />
+              <Plus className="h-3.5 w-3.5" />
               <span className="hidden sm:inline">Create PO</span>
               <span className="sm:hidden">New PO</span>
             </Link>
@@ -259,8 +264,8 @@ export default function PurchaseOrderListPage() {
       </div>
 
       {/* KPI stats — horizontal scroll on mobile, 5-col grid on md+ */}
-      <div className="-mx-4 sm:mx-0 mb-4">
-        <div className="flex sm:grid sm:grid-cols-5 gap-2 sm:gap-3 px-4 sm:px-0 overflow-x-auto sm:overflow-visible snap-x snap-mandatory pb-1 sm:pb-0 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+      <div className="-mx-4 sm:mx-0">
+        <div className="flex sm:grid sm:grid-cols-5 gap-3 sm:gap-4 px-4 sm:px-0 overflow-x-auto sm:overflow-visible snap-x snap-mandatory pb-1 sm:pb-0 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
           <StatCard
             label="Total"
             value={counts.total}
@@ -341,35 +346,25 @@ export default function PurchaseOrderListPage() {
       )}
 
       {loading && rows.length === 0 ? (
-        <div className="flex items-center justify-center py-16 text-text-muted">
-          <Loader2 className="h-6 w-6 animate-spin mr-2" /> Loading…
+        <div className="glass-card rounded-2xl py-16 flex items-center justify-center text-text-muted">
+          <Loader2 className="h-5 w-5 animate-spin mr-2" /> Loading…
         </div>
       ) : filtered.length === 0 ? (
         <EmptyState canCreate={canCreate} hasFilters={hasFilters} />
       ) : (
-        <div className="bg-surface-container-lowest rounded-lg overflow-hidden border border-border shadow-sm">
-          {/* Column header — desktop only; mobile uses card layout per row */}
-          <div className="hidden md:flex items-center bg-surface-container-low border-b border-border px-4 py-3 text-[10px] font-bold text-text-muted uppercase tracking-widest">
-            <div className="w-10">#</div>
-            <div className="w-28">Date</div>
-            <div className="w-40">PO Number</div>
-            <div className="flex-1 min-w-[180px]">Vendor · BU</div>
-            <div className="w-48 hidden lg:block">Amount · Source PR</div>
-            <div className="w-36">Status</div>
-            <div className="w-16 text-right">—</div>
-          </div>
-
-          {/* Rows */}
-          <div className="divide-y divide-border">
-            {filtered.map((row, idx) => {
-              const strip =
+        <div className="glass-card rounded-2xl p-2 sm:p-3">
+          <div className="flex flex-col gap-1">
+            {filtered.map((row) => {
+              const tone = STATUS_TONE[row.status] ?? STATUS_TONE.pending;
+              const StatusIcon = tone.icon;
+              const iconBg =
                 row.status === "fulfilled"
-                  ? "bg-success"
+                  ? "bg-success-soft text-success"
                   : row.status === "accepted"
-                    ? "bg-info"
+                    ? "bg-info-soft text-info"
                     : row.status === "rejected"
-                      ? "bg-danger"
-                      : "bg-warning";
+                      ? "bg-danger-soft text-danger"
+                      : "bg-warning-soft text-warning";
               const sub =
                 row.status === "fulfilled"
                   ? "Delivered"
@@ -380,98 +375,57 @@ export default function PurchaseOrderListPage() {
                       : "Awaiting vendor";
 
               return (
-                <div
+                <Link
                   key={row.id ?? row.number}
-                  className="hover:bg-surface-container-low transition-colors relative group"
+                  to={`/app/purchase-orders/${row.number}`}
+                  className="group flex items-center gap-3 sm:gap-4 px-3 sm:px-4 py-3.5 rounded-xl hover:bg-white/[0.04] transition-colors"
                 >
+                  {/* Status icon avatar */}
                   <div
-                    className={`absolute left-0 top-1.5 bottom-1.5 w-1 ${strip} rounded-r`}
-                  />
-
-                  {/* Mobile card layout — tap anywhere to open detail */}
-                  <Link
-                    to={`/app/purchase-orders/${row.number}`}
-                    className="md:hidden flex items-center gap-3 px-4 py-3.5 pl-5 active:bg-surface-container-low"
+                    className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 ${iconBg}`}
                   >
-                    <div className="min-w-0 flex-1 space-y-1.5">
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="font-bold text-primary font-mono text-[13px] truncate">
-                          {row.number}
-                        </span>
-                        <StatusPill status={row.status} />
-                      </div>
-                      <div className="text-sm font-medium text-text truncate">
-                        {safe(row.vendor)}
-                      </div>
-                      <div className="text-xs text-text-muted truncate">
-                        {row.business_unit && (
-                          <>
-                            <span>{row.business_unit}</span>
-                            <> · </>
-                          </>
-                        )}
-                        {row.pr_number && (
-                          <>
-                            <span className="font-mono">{row.pr_number}</span>
-                            <> · </>
-                          </>
-                        )}
-                        <span>{formatDate(row.po_date ?? row.created_at)}</span>
-                      </div>
-                      <div className="flex items-center justify-between gap-2 pt-0.5">
-                        <span className="text-sm font-bold text-text font-mono">
-                          {fmtINR(row.total)}
-                        </span>
-                        {sub && (
-                          <span
-                            className={`text-[10px] font-medium ${
-                              row.status === "pending"
-                                ? "text-warning"
-                                : "text-text-subtle"
-                            }`}
-                          >
-                            {sub}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                    <ChevronRight className="h-4 w-4 text-text-subtle shrink-0" />
-                  </Link>
+                    <StatusIcon className="h-[18px] w-[18px]" strokeWidth={2} />
+                  </div>
 
-                  {/* Desktop row layout */}
-                  <div className="hidden md:flex items-center px-4 py-3 text-sm">
-                    <div className="w-10 text-text-muted font-medium">
-                      {idx + 1}
-                    </div>
-                    <div className="w-28 text-text-muted">
-                      {formatDate(row.po_date ?? row.created_at)}
-                    </div>
-                    <div className="w-40">
-                      <Link
-                        to={`/app/purchase-orders/${row.number}`}
-                        className="font-bold text-primary hover:underline font-mono text-[13px]"
-                      >
+                  {/* Primary column — PO number + date + vendor + source PR */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="font-mono text-[13px] font-bold text-primary">
                         {row.number}
-                      </Link>
-                    </div>
-                    <div className="flex-1 min-w-[180px] pr-3">
-                      <div className="font-semibold text-text truncate">
-                        {safe(row.vendor)}
-                      </div>
-                      <div className="text-xs text-text-muted truncate">
-                        {safe(row.business_unit)}
-                      </div>
-                    </div>
-                    <div className="w-48 hidden lg:flex flex-col gap-0.5">
-                      <span className="text-sm font-bold text-text font-mono">
-                        {fmtINR(row.total)}
                       </span>
-                      <span className="text-[11px] text-text-subtle font-mono truncate">
-                        {row.pr_number ?? "—"}
+                      <span className="text-text-subtle">·</span>
+                      <span className="text-[11px] text-text-muted tabular-nums">
+                        {formatDate(row.po_date ?? row.created_at)}
                       </span>
+                      {row.pr_number && (
+                        <>
+                          <span className="text-text-subtle">·</span>
+                          <span className="text-[11px] font-mono text-text-muted">
+                            from {row.pr_number}
+                          </span>
+                        </>
+                      )}
                     </div>
-                    <div className="w-36 flex flex-col items-start gap-1">
-                      <StatusPill status={row.status} />
+                    <div className="text-[14px] font-semibold text-text truncate mt-0.5">
+                      {safe(row.vendor)}
+                    </div>
+                    <div className="text-[11px] text-text-muted truncate mt-0.5">
+                      {safe(row.business_unit)}
+                    </div>
+                  </div>
+
+                  {/* Amount (lg+) */}
+                  <div className="hidden lg:block text-right shrink-0 min-w-[110px]">
+                    <div className="text-[15px] font-bold text-text tabular-nums leading-tight">
+                      {fmtINR(row.total)}
+                    </div>
+                    <div className="text-[10px] text-text-subtle">amount</div>
+                  </div>
+
+                  {/* Status pill + sub-text */}
+                  <div className="flex flex-col items-end gap-1 shrink-0 text-right min-w-[120px]">
+                    <StatusPill status={row.status} />
+                    {sub && (
                       <span
                         className={`text-[10px] font-medium ${
                           row.status === "pending"
@@ -481,25 +435,26 @@ export default function PurchaseOrderListPage() {
                       >
                         {sub}
                       </span>
-                    </div>
-                    <div className="w-16 flex items-center justify-end gap-2">
-                      <Link
-                        to={`/app/purchase-orders/${row.number}`}
-                        className="text-xs font-bold text-primary hover:brightness-110 px-2 py-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                      >
-                        View
-                      </Link>
-                      <button
-                        type="button"
-                        onClick={() => toast.info("Quick actions coming soon")}
-                        className="text-text-muted hover:text-text p-1 rounded hover:bg-surface-container-high"
-                        aria-label="More actions"
-                      >
-                        <MoreVertical className="h-4 w-4" />
-                      </button>
-                    </div>
+                    )}
                   </div>
-                </div>
+
+                  {/* Actions cluster */}
+                  <div className="flex items-center gap-1 shrink-0">
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        toast.info("Quick actions coming soon");
+                      }}
+                      className="hidden sm:inline-flex text-text-muted hover:text-text p-1.5 rounded-full hover:bg-white/[0.06] opacity-0 group-hover:opacity-100 transition-all"
+                      aria-label="More actions"
+                    >
+                      <MoreVertical className="h-4 w-4" />
+                    </button>
+                    <ChevronRight className="h-4 w-4 text-text-subtle group-hover:text-primary group-hover:translate-x-0.5 transition-all" />
+                  </div>
+                </Link>
               );
             })}
           </div>
@@ -507,7 +462,7 @@ export default function PurchaseOrderListPage() {
       )}
 
       {filtered.length > 0 && (
-        <div className="flex items-center justify-between mt-4 text-xs text-text-muted">
+        <div className="flex items-center justify-between text-xs text-text-muted">
           <span>
             Showing <strong className="text-text">{filtered.length}</strong>
             {filtered.length !== counts.total && (
@@ -522,7 +477,7 @@ export default function PurchaseOrderListPage() {
       {canCreate && (
         <Link
           to="/app/purchase-orders/new"
-          className="sm:hidden fixed bottom-5 right-4 z-30 bg-primary hover:bg-primary-hover text-primary-foreground rounded-full shadow-lg w-14 h-14 flex items-center justify-center transition-transform active:scale-95"
+          className="sm:hidden fixed bottom-5 right-4 z-30 bg-primary hover:brightness-110 text-primary-foreground rounded-full shadow-2xl w-14 h-14 flex items-center justify-center transition-transform active:scale-95"
           aria-label="Create PO"
         >
           <Plus className="h-6 w-6" strokeWidth={2.5} />
