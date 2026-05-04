@@ -1,12 +1,27 @@
 import { useEffect } from "react";
 import { Link } from "react-router-dom";
-import { Edit3, Loader2, Award, Clock, XCircle, Send } from "lucide-react";
+import { Edit3, Award, Clock, XCircle, Send } from "lucide-react";
 import PageHeader from "../../../components/data/PageHeader.jsx";
 import StatusPill from "../../../components/data/StatusPill.jsx";
 import RefreshButton from "../../../components/data/RefreshButton.jsx";
 import EmptyState from "../../../components/ui/EmptyState.jsx";
+import Skeleton from "../../../components/feedback/Skeleton.jsx";
 import { useRFQStore } from "../../quotations/store.js";
 import { useVendorIdentity } from "../useVendorIdentity.js";
+
+function SkRow() {
+  return (
+    <tr>
+      <td className="px-6 py-4"><Skeleton className="h-4 w-24" /></td>
+      <td className="px-6 py-4"><Skeleton className="h-4 w-44" /></td>
+      <td className="px-6 py-4 text-right"><Skeleton className="h-4 w-20 ml-auto" /></td>
+      <td className="px-6 py-4"><Skeleton className="h-3 w-16" /></td>
+      <td className="px-6 py-4"><Skeleton className="h-3 w-16" /></td>
+      <td className="px-6 py-4"><Skeleton className="h-5 w-20 rounded-full" /></td>
+      <td className="px-6 py-4 text-right"><Skeleton className="h-3 w-12 ml-auto" /></td>
+    </tr>
+  );
+}
 
 function computeTotal(response, items) {
   if (!response || !Array.isArray(items)) return 0;
@@ -77,8 +92,25 @@ export default function VendorQuotationsPage() {
       />
 
       {isLoading && rows.length === 0 ? (
-        <div className="flex items-center justify-center py-16 text-text-muted">
-          <Loader2 className="h-6 w-6 animate-spin mr-2" /> Loading…
+        <div className="bg-surface-container-lowest rounded-lg overflow-hidden border border-border">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="bg-surface-container-low text-[10px] font-bold text-text-muted uppercase tracking-widest">
+                <th className="px-6 py-3 text-left">RFQ #</th>
+                <th className="px-6 py-3 text-left">Title</th>
+                <th className="px-6 py-3 text-right">Your Quote</th>
+                <th className="px-6 py-3 text-left">Submitted</th>
+                <th className="px-6 py-3 text-left">Due</th>
+                <th className="px-6 py-3 text-left">Status</th>
+                <th className="px-6 py-3 text-right w-28">Action</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-border">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <SkRow key={i} />
+              ))}
+            </tbody>
+          </table>
         </div>
       ) : rows.length === 0 ? (
         <EmptyState

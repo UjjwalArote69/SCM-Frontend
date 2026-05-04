@@ -8,7 +8,6 @@ import {
   ListFilter,
   FileText,
   MoreVertical,
-  Loader2,
   CheckCircle2,
   Clock,
   XCircle,
@@ -22,6 +21,7 @@ import { usePRStore, chainFromStage } from "../store.js";
 import { useToast } from "../../../hooks/useToast.jsx";
 import { useAuthStore } from "../../auth/store.js";
 import RefreshButton from "../../../components/data/RefreshButton.jsx";
+import Skeleton from "../../../components/feedback/Skeleton.jsx";
 
 const APPROVER_ROLES = new Set(["admin", "hod", "cfo", "ceo"]);
 
@@ -348,6 +348,45 @@ function FilterBar({
   );
 }
 
+/* ─── Loading skeletons — match real layout so cards don't reflow ─── */
+
+function SkStatCard() {
+  return (
+    <div className="glass-card flex items-center gap-3 p-4 rounded-2xl shrink-0 snap-start min-w-[140px] sm:min-w-0">
+      <Skeleton className="h-10 w-10 rounded-xl shrink-0" />
+      <div className="min-w-0 flex-1 space-y-2">
+        <Skeleton className="h-2.5 w-14" />
+        <Skeleton className="h-6 w-12" />
+      </div>
+    </div>
+  );
+}
+
+function SkRow() {
+  return (
+    <div className="relative flex items-center gap-3 sm:gap-4 pl-4 sm:pl-5 pr-3 sm:pr-4 py-4 rounded-xl border border-border bg-surface overflow-hidden">
+      <span
+        className="absolute left-0 top-0 bottom-0 w-1 bg-surface-container"
+        aria-hidden
+      />
+      <Skeleton className="h-11 w-11 rounded-xl shrink-0" />
+      <div className="flex-1 min-w-0 space-y-2">
+        <div className="flex items-center gap-2">
+          <Skeleton className="h-3.5 w-24" />
+          <Skeleton className="h-3 w-20" />
+        </div>
+        <Skeleton className="h-4 w-2/3" />
+        <Skeleton className="h-3 w-1/2" />
+      </div>
+      <div className="flex flex-col items-end gap-1.5 shrink-0 min-w-[120px]">
+        <Skeleton className="h-5 w-20 rounded-full" />
+        <Skeleton className="h-3 w-16" />
+      </div>
+      <Skeleton className="h-4 w-4 shrink-0" />
+    </div>
+  );
+}
+
 function EmptyState() {
   return (
     <div className="glass-card w-full rounded-2xl p-16 flex flex-col items-center text-center">
@@ -506,13 +545,17 @@ export default function PurchaseRequestListPage() {
   const [view, setView] = useState("list");
   const showDraftsView = view === "drafts";
 
+  // Initial loading: first fetch in flight AND nothing cached yet. Drives the
+  // skeleton swap on the stats strip + row list.
+  const initialLoading = loading && rows.length === 0;
+
   const toggleStatus = (s) =>
     setStatus((prev) => (prev === s ? "all" : s));
 
   return (
-    <div className="max-w-[1400px] mx-auto pb-20 sm:pb-0 space-y-6">
+    <div className="max-w-[1400px] mx-auto pb-20 sm:pb-0 space-y-4 sm:space-y-6">
       {/* Header — eyebrow + bold title (matches dashboard aesthetic) */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-3 md:gap-4">
         <div>
           <div className="flex items-center gap-1.5 text-text-muted">
             <Layers className="h-3 w-3" strokeWidth={2} />
@@ -520,32 +563,32 @@ export default function PurchaseRequestListPage() {
               Procurement
             </span>
           </div>
-          <h1 className="text-[22px] sm:text-[28px] font-bold text-text leading-tight tracking-tight mt-1">
+          <h1 className="text-[20px] sm:text-[28px] font-bold text-text leading-tight tracking-tight mt-1">
             Purchase Requests
           </h1>
-          <p className="text-text-muted text-sm mt-1.5">
+          <p className="hidden sm:block text-text-muted text-sm mt-1.5">
             Track and approve internal purchase requisitions
           </p>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex items-center gap-2">
           <RefreshButton onRefresh={fetchAll} loading={loading} />
           <button
             type="button"
             onClick={() =>
               toast.success(`Exported ${filtered.length} records to CSV`)
             }
-            className="px-4 py-2 text-[12px] font-semibold text-text-muted rounded-full border border-border bg-surface-container-low/60 hover:text-text hover:border-white/20 flex items-center gap-1.5 whitespace-nowrap transition-colors"
+            className="px-3 sm:px-4 py-2 text-[12px] font-semibold text-text-muted rounded-full border border-border bg-surface-container-low/60 hover:text-text hover:border-white/20 flex items-center gap-1.5 whitespace-nowrap transition-colors"
           >
             <Download className="h-3.5 w-3.5" />
             <span className="hidden sm:inline">Export</span>
           </button>
+          {/* Desktop "New PR" button — mobile uses the FAB at bottom-right */}
           <Link
             to="/app/purchase-requests/new"
-            className="bg-primary hover:brightness-110 text-primary-foreground px-4 py-2 rounded-full font-bold text-[12px] flex items-center gap-1.5 transition-all shadow-sm whitespace-nowrap"
+            className="hidden sm:inline-flex bg-primary hover:brightness-110 text-primary-foreground px-4 py-2 rounded-full font-bold text-[12px] items-center gap-1.5 transition-all shadow-sm whitespace-nowrap"
           >
             <Plus className="h-3.5 w-3.5" />
-            <span className="hidden sm:inline">New Purchase Request</span>
-            <span className="sm:hidden">New PR</span>
+            New Purchase Request
           </Link>
         </div>
       </div>
@@ -553,46 +596,52 @@ export default function PurchaseRequestListPage() {
       {/* KPI stats — horizontal scroll on mobile, 5-col grid on md+ */}
       <div className="-mx-4 sm:mx-0">
         <div className="flex sm:grid sm:grid-cols-5 gap-3 sm:gap-4 px-4 sm:px-0 overflow-x-auto sm:overflow-visible snap-x snap-mandatory pb-1 sm:pb-0 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-          <StatCard
-            label="Total"
-            value={counts.total}
-            icon={TrendingUp}
-            tone="neutral"
-            active={status === "all"}
-            onClick={() => setStatus("all")}
-          />
-          <StatCard
-            label="Pending"
-            value={counts.pending}
-            icon={Clock}
-            tone="warning"
-            active={status === "pending"}
-            onClick={() => toggleStatus("pending")}
-          />
-          <StatCard
-            label="Approved"
-            value={counts.approved}
-            icon={CheckCircle2}
-            tone="success"
-            active={status === "approved"}
-            onClick={() => toggleStatus("approved")}
-          />
-          <StatCard
-            label="Rejected"
-            value={counts.rejected}
-            icon={XCircle}
-            tone="danger"
-            active={status === "rejected"}
-            onClick={() => toggleStatus("rejected")}
-          />
-          <StatCard
-            label="Cancelled"
-            value={counts.cancelled}
-            icon={CircleDot}
-            tone="info"
-            active={status === "cancelled"}
-            onClick={() => toggleStatus("cancelled")}
-          />
+          {initialLoading ? (
+            Array.from({ length: 5 }).map((_, i) => <SkStatCard key={i} />)
+          ) : (
+            <>
+              <StatCard
+                label="Total"
+                value={counts.total}
+                icon={TrendingUp}
+                tone="neutral"
+                active={status === "all"}
+                onClick={() => setStatus("all")}
+              />
+              <StatCard
+                label="Pending"
+                value={counts.pending}
+                icon={Clock}
+                tone="warning"
+                active={status === "pending"}
+                onClick={() => toggleStatus("pending")}
+              />
+              <StatCard
+                label="Approved"
+                value={counts.approved}
+                icon={CheckCircle2}
+                tone="success"
+                active={status === "approved"}
+                onClick={() => toggleStatus("approved")}
+              />
+              <StatCard
+                label="Rejected"
+                value={counts.rejected}
+                icon={XCircle}
+                tone="danger"
+                active={status === "rejected"}
+                onClick={() => toggleStatus("rejected")}
+              />
+              <StatCard
+                label="Cancelled"
+                value={counts.cancelled}
+                icon={CircleDot}
+                tone="info"
+                active={status === "cancelled"}
+                onClick={() => toggleStatus("cancelled")}
+              />
+            </>
+          )}
         </div>
       </div>
 
@@ -771,27 +820,27 @@ export default function PurchaseRequestListPage() {
           <div>
             <Link
               to="/app/purchase-requests/new"
-              className="group relative flex items-center gap-3 sm:gap-4 pl-4 sm:pl-5 pr-3 sm:pr-4 py-4 rounded-xl border border-border bg-surface shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all overflow-hidden"
+              className="group relative flex items-center gap-3 sm:gap-4 pl-3 pr-3 sm:pl-5 sm:pr-4 py-3 sm:py-4 rounded-xl border border-border bg-surface shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all overflow-hidden"
             >
               <span
                 className="absolute left-0 top-0 bottom-0 w-1"
                 style={{ background: "var(--color-info)" }}
                 aria-hidden
               />
-              <div className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0 bg-info-soft text-info">
+              <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center shrink-0 bg-info-soft text-info">
                 <FileText className="h-[18px] w-[18px]" strokeWidth={2} />
               </div>
               <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className="font-mono text-[13px] font-bold text-info">
+                <div className="flex items-center gap-1.5 sm:gap-2">
+                  <span className="font-mono text-[12px] sm:text-[13px] font-bold text-info shrink-0">
                     DRAFT
                   </span>
-                  <span className="text-text-subtle">·</span>
-                  <span className="text-[11px] text-text-muted">
+                  <span className="text-text-subtle hidden sm:inline">·</span>
+                  <span className="hidden sm:inline text-[11px] text-text-muted truncate">
                     saved {fmtDraftSaved(draft.savedAt)}
                   </span>
                 </div>
-                <div className="text-[14px] font-semibold text-text truncate mt-0.5">
+                <div className="text-[13px] sm:text-[14px] font-semibold text-text truncate mt-0.5">
                   {draft.form?.items?.[0]?.name?.trim() ||
                     "Untitled draft"}
                 </div>
@@ -814,18 +863,22 @@ export default function PurchaseRequestListPage() {
                       {draft.form.items.length === 1 ? "item" : "items"}
                     </>
                   )}
+                  <span className="sm:hidden text-text-subtle">
+                    {" · "}
+                    saved {fmtDraftSaved(draft.savedAt)}
+                  </span>
                 </div>
               </div>
-              <div className="flex flex-col items-end gap-1 shrink-0 text-right min-w-[120px]">
+              <div className="flex flex-col items-end gap-1 shrink-0 text-right sm:min-w-[120px]">
                 <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold border bg-info-soft text-info border-info/30">
                   <FileText className="h-3 w-3" strokeWidth={2.5} />
                   Draft
                 </span>
-                <span className="text-[10px] font-medium text-text-subtle">
+                <span className="hidden sm:inline text-[10px] font-medium text-text-subtle">
                   Tap to resume
                 </span>
               </div>
-              <div className="flex items-center gap-1 shrink-0">
+              <div className="hidden sm:flex items-center gap-1 shrink-0">
                 <button
                   type="button"
                   onClick={(e) => {
@@ -833,7 +886,7 @@ export default function PurchaseRequestListPage() {
                     e.stopPropagation();
                     discardDraft();
                   }}
-                  className="hidden sm:inline-flex text-text-muted hover:text-danger p-1.5 rounded-full hover:bg-danger-soft opacity-0 group-hover:opacity-100 transition-all"
+                  className="text-text-muted hover:text-danger p-1.5 rounded-full hover:bg-danger-soft opacity-0 group-hover:opacity-100 transition-all"
                   aria-label="Discard draft"
                   title="Discard draft"
                 >
@@ -864,9 +917,11 @@ export default function PurchaseRequestListPage() {
             </Link>
           </div>
         )
-      ) : loading && rows.length === 0 ? (
-        <div className="glass-card rounded-2xl py-16 flex items-center justify-center text-text-muted">
-          <Loader2 className="h-5 w-5 animate-spin mr-2" /> Loading…
+      ) : initialLoading ? (
+        <div className="flex flex-col gap-2">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <SkRow key={i} />
+          ))}
         </div>
       ) : filtered.length === 0 ? (
         <EmptyState />
@@ -923,7 +978,7 @@ export default function PurchaseRequestListPage() {
                 <Link
                   key={row.id ?? row.number}
                   to={`/app/purchase-requests/${row.number}`}
-                  className="group relative flex items-center gap-3 sm:gap-4 pl-4 sm:pl-5 pr-3 sm:pr-4 py-4 rounded-xl border border-border bg-surface shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all overflow-hidden"
+                  className="group relative flex items-center gap-3 sm:gap-4 pl-3 pr-3 sm:pl-5 sm:pr-4 py-3 sm:py-4 rounded-xl border border-border bg-surface shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all overflow-hidden"
                 >
                   {/* Colored left strip — status indicator */}
                   <span
@@ -934,24 +989,24 @@ export default function PurchaseRequestListPage() {
 
                   {/* Status icon avatar */}
                   <div
-                    className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 ${iconBg}`}
+                    className={`w-10 h-10 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center shrink-0 ${iconBg}`}
                   >
                     <StatusIcon className="h-[18px] w-[18px]" strokeWidth={2} />
                   </div>
 
                   {/* Primary column — PR number + title + meta */}
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="font-mono text-[13px] font-bold text-primary">
+                    <div className="flex items-center gap-1.5 sm:gap-2">
+                      <span className="font-mono text-[12px] sm:text-[13px] font-bold text-primary truncate">
                         {row.number}
                       </span>
-                      <span className="text-text-subtle">·</span>
-                      <span className="text-[11px] text-text-muted tabular-nums">
+                      <span className="text-text-subtle hidden sm:inline">·</span>
+                      <span className="hidden sm:inline text-[11px] text-text-muted tabular-nums shrink-0">
                         {formatDate(row.created_at)}
                       </span>
                     </div>
                     {row.title && (
-                      <div className="text-[14px] font-semibold text-text truncate mt-0.5">
+                      <div className="text-[13px] sm:text-[14px] font-semibold text-text truncate mt-0.5">
                         {row.title}
                       </div>
                     )}
@@ -963,6 +1018,10 @@ export default function PurchaseRequestListPage() {
                           {department}
                         </>
                       )}
+                      <span className="sm:hidden text-text-subtle">
+                        {" · "}
+                        {formatDate(row.created_at)}
+                      </span>
                     </div>
                   </div>
 
@@ -975,12 +1034,12 @@ export default function PurchaseRequestListPage() {
                     </div>
                   )}
 
-                  {/* Status pill + sub-text */}
-                  <div className="flex flex-col items-end gap-1 shrink-0 text-right min-w-[120px]">
+                  {/* Status pill + sub-text — sub hidden on mobile (pill carries the same info) */}
+                  <div className="flex flex-col items-end gap-1 shrink-0 text-right sm:min-w-[120px]">
                     <StatusPill status={row.status} />
                     {sub && (
                       <span
-                        className={`text-[10px] font-medium ${
+                        className={`hidden sm:inline text-[10px] font-medium ${
                           row.status === "pending"
                             ? "text-warning"
                             : "text-text-subtle"
@@ -991,8 +1050,8 @@ export default function PurchaseRequestListPage() {
                     )}
                   </div>
 
-                  {/* Actions cluster — chevron always; more-actions on hover */}
-                  <div className="flex items-center gap-1 shrink-0">
+                  {/* Actions cluster — chevron always; more-actions on hover (desktop only) */}
+                  <div className="hidden sm:flex items-center gap-1 shrink-0">
                     <button
                       type="button"
                       onClick={(e) => {
@@ -1000,7 +1059,7 @@ export default function PurchaseRequestListPage() {
                         e.stopPropagation();
                         toast.info("Quick actions coming soon");
                       }}
-                      className="hidden sm:inline-flex text-text-muted hover:text-text p-1.5 rounded-full hover:bg-white/[0.06] opacity-0 group-hover:opacity-100 transition-all"
+                      className="text-text-muted hover:text-text p-1.5 rounded-full hover:bg-white/[0.06] opacity-0 group-hover:opacity-100 transition-all"
                       aria-label="More actions"
                     >
                       <MoreVertical className="h-4 w-4" />

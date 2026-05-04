@@ -1,15 +1,36 @@
 import { useEffect, useState } from "react";
-import { Plus, Upload, Edit3, Trash2, Loader2, Search } from "lucide-react";
+import { Plus, Upload, Edit3, Trash2, Search } from "lucide-react";
 import PageHeader from "../../../components/data/PageHeader.jsx";
 import EditItemDrawer from "../components/EditItemDrawer.jsx";
 import ImportItemsModal from "../components/ImportItemsModal.jsx";
 import { useItemsStore } from "../items/store.js";
 import { useToast } from "../../../hooks/useToast.jsx";
 import RefreshButton from "../../../components/data/RefreshButton.jsx";
+import Skeleton from "../../../components/feedback/Skeleton.jsx";
 
 function currency(n) {
   const v = Number(n ?? 0);
   return `₹${v.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+}
+
+function SkRow() {
+  return (
+    <tr>
+      <td className="px-6 py-4"><Skeleton className="h-4 w-24" /></td>
+      <td className="px-6 py-4"><Skeleton className="h-4 w-44" /></td>
+      <td className="px-6 py-4"><Skeleton className="h-3 w-20" /></td>
+      <td className="px-6 py-4"><Skeleton className="h-3 w-16" /></td>
+      <td className="px-6 py-4"><Skeleton className="h-3 w-12" /></td>
+      <td className="px-6 py-4 text-right"><Skeleton className="h-4 w-20 ml-auto" /></td>
+      <td className="px-6 py-4 text-center"><Skeleton className="h-5 w-16 rounded-full mx-auto" /></td>
+      <td className="px-6 py-4">
+        <div className="flex items-center justify-end gap-2">
+          <Skeleton className="h-4 w-4" />
+          <Skeleton className="h-4 w-4" />
+        </div>
+      </td>
+    </tr>
+  );
 }
 
 export default function ItemsListPage() {
@@ -97,12 +118,7 @@ export default function ItemsListPage() {
           </thead>
           <tbody className="divide-y divide-border">
             {loading && items.length === 0 ? (
-              <tr>
-                <td colSpan={8} className="px-6 py-16 text-center text-text-muted">
-                  <Loader2 className="inline-block h-5 w-5 animate-spin mr-2" />
-                  Loading items…
-                </td>
-              </tr>
+              Array.from({ length: 6 }).map((_, i) => <SkRow key={i} />)
             ) : filtered.length === 0 ? (
               <tr>
                 <td colSpan={8} className="px-6 py-16 text-center text-text-muted text-sm">

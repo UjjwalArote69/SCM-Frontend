@@ -7,7 +7,6 @@ import {
   ListFilter,
   FileSpreadsheet,
   MoreVertical,
-  Loader2,
   Award,
   Clock,
   XCircle,
@@ -19,6 +18,7 @@ import { useRFQStore } from "../store.js";
 import { useToast } from "../../../hooks/useToast.jsx";
 import { useAuthStore } from "../../auth/store.js";
 import RefreshButton from "../../../components/data/RefreshButton.jsx";
+import Skeleton from "../../../components/feedback/Skeleton.jsx";
 
 // Mirrors RfqController::canWriteRfq — admin, purchase_officer, OR HOD of
 // Procurement / Purchase. Generic HODs (IT, FIN, etc.) still can't author.
@@ -148,6 +148,45 @@ function FilterBar({ query, setQuery, dateRange, setDateRange }) {
   );
 }
 
+/* ─── Loading skeletons — match real layout so cards don't reflow ─── */
+
+function SkStatCard() {
+  return (
+    <div className="glass-card flex items-center gap-3 p-4 rounded-2xl shrink-0 snap-start min-w-[140px] sm:min-w-0">
+      <Skeleton className="h-10 w-10 rounded-xl shrink-0" />
+      <div className="min-w-0 flex-1 space-y-2">
+        <Skeleton className="h-2.5 w-14" />
+        <Skeleton className="h-6 w-12" />
+      </div>
+    </div>
+  );
+}
+
+function SkRow() {
+  return (
+    <div className="relative flex items-center gap-3 sm:gap-4 pl-4 sm:pl-5 pr-3 sm:pr-4 py-4 rounded-xl border border-border bg-surface overflow-hidden">
+      <span
+        className="absolute left-0 top-0 bottom-0 w-1 bg-surface-container"
+        aria-hidden
+      />
+      <Skeleton className="h-11 w-11 rounded-xl shrink-0" />
+      <div className="flex-1 min-w-0 space-y-2">
+        <div className="flex items-center gap-2">
+          <Skeleton className="h-3.5 w-24" />
+          <Skeleton className="h-3 w-20" />
+        </div>
+        <Skeleton className="h-4 w-2/3" />
+        <Skeleton className="h-3 w-1/2" />
+      </div>
+      <div className="flex flex-col items-end gap-1.5 shrink-0 min-w-[120px]">
+        <Skeleton className="h-5 w-20 rounded-full" />
+        <Skeleton className="h-3 w-24" />
+      </div>
+      <Skeleton className="h-4 w-4 shrink-0" />
+    </div>
+  );
+}
+
 function EmptyState({ canCreate, hasFilters }) {
   return (
     <div className="glass-card w-full rounded-2xl p-16 flex flex-col items-center text-center">
@@ -213,6 +252,10 @@ export default function QuotationListPage() {
   const toggleStatus = (s) => setStatus((prev) => (prev === s ? "all" : s));
   const hasFilters = Boolean(query) || status !== "all";
 
+  // Initial loading: first fetch in flight AND nothing cached yet. Drives the
+  // skeleton swap on the stats strip + row list.
+  const initialLoading = loading && rows.length === 0;
+
   return (
     <div className="max-w-[1400px] mx-auto pb-20 sm:pb-0 space-y-6">
       {/* Header — eyebrow + bold title */}
@@ -259,46 +302,52 @@ export default function QuotationListPage() {
       {/* KPI stats — horizontal scroll on mobile, 5-col grid on md+ */}
       <div className="-mx-4 sm:mx-0">
         <div className="flex sm:grid sm:grid-cols-5 gap-3 sm:gap-4 px-4 sm:px-0 overflow-x-auto sm:overflow-visible snap-x snap-mandatory pb-1 sm:pb-0 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-          <StatCard
-            label="Total"
-            value={counts.total}
-            icon={TrendingUp}
-            tone="neutral"
-            active={status === "all"}
-            onClick={() => setStatus("all")}
-          />
-          <StatCard
-            label="Open"
-            value={counts.open}
-            icon={Clock}
-            tone="info"
-            active={status === "open"}
-            onClick={() => toggleStatus("open")}
-          />
-          <StatCard
-            label="Comparing"
-            value={counts.compared}
-            icon={FileSpreadsheet}
-            tone="warning"
-            active={status === "compared"}
-            onClick={() => toggleStatus("compared")}
-          />
-          <StatCard
-            label="Awarded"
-            value={counts.awarded}
-            icon={Award}
-            tone="success"
-            active={status === "awarded"}
-            onClick={() => toggleStatus("awarded")}
-          />
-          <StatCard
-            label="Closed"
-            value={counts.closed}
-            icon={XCircle}
-            tone="neutral"
-            active={status === "closed"}
-            onClick={() => toggleStatus("closed")}
-          />
+          {initialLoading ? (
+            Array.from({ length: 5 }).map((_, i) => <SkStatCard key={i} />)
+          ) : (
+            <>
+              <StatCard
+                label="Total"
+                value={counts.total}
+                icon={TrendingUp}
+                tone="neutral"
+                active={status === "all"}
+                onClick={() => setStatus("all")}
+              />
+              <StatCard
+                label="Open"
+                value={counts.open}
+                icon={Clock}
+                tone="info"
+                active={status === "open"}
+                onClick={() => toggleStatus("open")}
+              />
+              <StatCard
+                label="Comparing"
+                value={counts.compared}
+                icon={FileSpreadsheet}
+                tone="warning"
+                active={status === "compared"}
+                onClick={() => toggleStatus("compared")}
+              />
+              <StatCard
+                label="Awarded"
+                value={counts.awarded}
+                icon={Award}
+                tone="success"
+                active={status === "awarded"}
+                onClick={() => toggleStatus("awarded")}
+              />
+              <StatCard
+                label="Closed"
+                value={counts.closed}
+                icon={XCircle}
+                tone="neutral"
+                active={status === "closed"}
+                onClick={() => toggleStatus("closed")}
+              />
+            </>
+          )}
         </div>
       </div>
 
@@ -326,9 +375,11 @@ export default function QuotationListPage() {
         </div>
       )}
 
-      {loading && rows.length === 0 ? (
-        <div className="glass-card rounded-2xl py-16 flex items-center justify-center text-text-muted">
-          <Loader2 className="h-5 w-5 animate-spin mr-2" /> Loading…
+      {initialLoading ? (
+        <div className="flex flex-col gap-2">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <SkRow key={i} />
+          ))}
         </div>
       ) : filtered.length === 0 ? (
         <EmptyState canCreate={canCreate} hasFilters={hasFilters} />

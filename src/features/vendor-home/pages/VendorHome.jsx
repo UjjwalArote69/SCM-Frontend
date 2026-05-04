@@ -5,7 +5,6 @@ import {
   FileText,
   ShoppingBag,
   ReceiptText,
-  Loader2,
   Clock,
   CheckCircle2,
   Award,
@@ -21,6 +20,7 @@ import { useRFQStore } from "../../quotations/store.js";
 import { usePOStore } from "../../purchase-orders/store.js";
 import { useVendorIdentity } from "../../vendor-portal/useVendorIdentity.js";
 import EmptyState from "../../../components/ui/EmptyState.jsx";
+import Skeleton from "../../../components/feedback/Skeleton.jsx";
 
 function getGreeting() {
   const h = new Date().getHours();
@@ -95,14 +95,14 @@ function VendorKpiCard({ to, icon: Icon, label, value, desc, tone = "info", load
         <ArrowRight className="h-4 w-4 text-text-muted opacity-0 group-hover:opacity-100 transition-opacity" />
       </div>
       <div className={`text-3xl font-black leading-none ${TONE_VALUE[tone] ?? "text-text"}`}>
-        {loading ? (
-          <Loader2 className="h-6 w-6 animate-spin text-text-muted" />
-        ) : (
-          value ?? 0
-        )}
+        {loading ? <Skeleton className="h-7 w-12" /> : value ?? 0}
       </div>
       <div className="text-sm font-semibold text-text mt-2">{label}</div>
-      {desc && <div className="text-xs text-text-muted mt-1">{desc}</div>}
+      {desc && (
+        <div className="text-xs text-text-muted mt-1">
+          {loading ? <Skeleton className="h-3 w-32" /> : desc}
+        </div>
+      )}
     </Link>
   );
 }
@@ -262,8 +262,24 @@ export default function VendorHome() {
               )}
             </div>
             {loading && activity.length === 0 ? (
-              <div className="flex items-center justify-center gap-2 py-12 text-text-muted text-sm">
-                <Loader2 className="h-5 w-5 animate-spin" /> Loading activity…
+              <div>
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <div
+                    key={i}
+                    className={`relative flex items-center gap-4 px-6 py-4${i === 4 ? "" : " border-b border-border"}`}
+                  >
+                    <div className="absolute left-0 top-0 bottom-0 w-1 bg-surface-container" />
+                    <Skeleton className="h-10 w-10 rounded-xl shrink-0" />
+                    <div className="flex-1 min-w-0 space-y-1.5">
+                      <div className="flex items-center gap-1.5">
+                        <Skeleton className="h-3 w-8 rounded" />
+                        <Skeleton className="h-3.5 w-2/3" />
+                      </div>
+                      <Skeleton className="h-3 w-24" />
+                    </div>
+                    <Skeleton className="h-3 w-12 shrink-0" />
+                  </div>
+                ))}
               </div>
             ) : noData ? (
               <div className="text-center py-12 text-sm text-text-muted px-6">

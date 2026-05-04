@@ -3,7 +3,6 @@ import { Link } from "react-router-dom";
 import {
   Banknote,
   Search,
-  Loader2,
   Plus,
   CheckCircle2,
   Clock,
@@ -15,6 +14,7 @@ import {
 } from "lucide-react";
 import { usePaymentStore } from "../store.js";
 import { useAuthStore } from "../../auth/store.js";
+import Skeleton from "../../../components/feedback/Skeleton.jsx";
 
 // FLOW.md item 11 — must mirror PaymentController thresholds.
 const TIER_2 = 50_000;
@@ -130,6 +130,53 @@ function KpiCard({ label, value, sub, icon: Icon, tone = "neutral", active, onCl
   );
 }
 
+/* ─── Loading skeletons — match real layout so cards don't reflow ─── */
+
+function SkKpiCard() {
+  return (
+    <div className="shrink-0 snap-start min-w-[180px] sm:min-w-0 flex flex-col gap-2 p-4 rounded-lg border border-border bg-surface-container-lowest shadow-sm">
+      <Skeleton className="h-9 w-9 rounded-md" />
+      <div className="space-y-1.5">
+        <Skeleton className="h-2.5 w-20" />
+        <Skeleton className="h-7 w-24" />
+        <Skeleton className="h-2.5 w-28" />
+      </div>
+    </div>
+  );
+}
+
+function SkRow() {
+  return (
+    <>
+      {/* Mobile card */}
+      <div className="md:hidden flex items-center gap-3 px-4 py-3.5 border-b border-border last:border-b-0">
+        <div className="min-w-0 flex-1 space-y-2">
+          <div className="flex items-center justify-between gap-2">
+            <Skeleton className="h-3.5 w-24" />
+            <Skeleton className="h-5 w-16 rounded-full" />
+          </div>
+          <Skeleton className="h-3 w-2/3" />
+          <div className="flex items-center gap-2">
+            <Skeleton className="h-4 w-20" />
+            <Skeleton className="h-4 w-8 rounded" />
+          </div>
+        </div>
+        <Skeleton className="h-4 w-4 shrink-0" />
+      </div>
+      {/* Desktop row */}
+      <div className="hidden md:flex items-center px-4 py-3 border-b border-border last:border-b-0">
+        <div className="w-32"><Skeleton className="h-3.5 w-24" /></div>
+        <div className="w-32"><Skeleton className="h-3 w-20" /></div>
+        <div className="flex-1 min-w-[140px] pr-2"><Skeleton className="h-4 w-3/4" /></div>
+        <div className="w-32 flex justify-end"><Skeleton className="h-4 w-20" /></div>
+        <div className="w-16 flex justify-center"><Skeleton className="h-4 w-8 rounded" /></div>
+        <div className="w-40"><Skeleton className="h-3 w-28" /></div>
+        <div className="w-28"><Skeleton className="h-5 w-20 rounded-full" /></div>
+      </div>
+    </>
+  );
+}
+
 export default function PaymentsListPage() {
   const rows = usePaymentStore((s) => s.items);
   const loading = usePaymentStore((s) => s.loading);
@@ -195,6 +242,10 @@ export default function PaymentsListPage() {
 
   const showCreate = canCreatePayment(user);
 
+  // Initial loading: first fetch in flight AND nothing cached yet. Drives the
+  // skeleton swap on the KPI strip + row list.
+  const initialLoading = loading && rows.length === 0;
+
   const filterChips = [
     { key: "all", label: "All", count: rows.length },
     { key: "awaiting", label: "Awaiting approval", count: stats.awaitingApproval },
@@ -236,38 +287,44 @@ export default function PaymentsListPage() {
       {/* Money-focused KPI strip — horizontal scroll on mobile */}
       <div className="-mx-4 sm:mx-0 mb-5">
         <div className="flex sm:grid sm:grid-cols-4 gap-2 sm:gap-3 px-4 sm:px-0 overflow-x-auto sm:overflow-visible snap-x snap-mandatory pb-1 sm:pb-0 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-          <KpiCard
-            label="Outstanding"
-            value={fmtCompactINR(stats.outstanding)}
-            sub={`${rows.filter((r) => r.status === "pending").length} pending`}
-            icon={Wallet}
-            tone="warning"
-          />
-          <KpiCard
-            label="Paid this month"
-            value={fmtCompactINR(stats.paidThisMonth)}
-            sub="Funds released"
-            icon={CalendarCheck}
-            tone="success"
-          />
-          <KpiCard
-            label="Awaiting approval"
-            value={stats.awaitingApproval}
-            sub="CFO / CEO sign-off"
-            icon={Hourglass}
-            tone="info"
-            onClick={() => setStatus("awaiting")}
-            active={status === "awaiting"}
-          />
-          <KpiCard
-            label="Cleared to pay"
-            value={stats.clearedReady}
-            sub="Finance HOD action"
-            icon={ShieldCheck}
-            tone="success"
-            onClick={() => setStatus("cleared")}
-            active={status === "cleared"}
-          />
+          {initialLoading ? (
+            Array.from({ length: 4 }).map((_, i) => <SkKpiCard key={i} />)
+          ) : (
+            <>
+              <KpiCard
+                label="Outstanding"
+                value={fmtCompactINR(stats.outstanding)}
+                sub={`${rows.filter((r) => r.status === "pending").length} pending`}
+                icon={Wallet}
+                tone="warning"
+              />
+              <KpiCard
+                label="Paid this month"
+                value={fmtCompactINR(stats.paidThisMonth)}
+                sub="Funds released"
+                icon={CalendarCheck}
+                tone="success"
+              />
+              <KpiCard
+                label="Awaiting approval"
+                value={stats.awaitingApproval}
+                sub="CFO / CEO sign-off"
+                icon={Hourglass}
+                tone="info"
+                onClick={() => setStatus("awaiting")}
+                active={status === "awaiting"}
+              />
+              <KpiCard
+                label="Cleared to pay"
+                value={stats.clearedReady}
+                sub="Finance HOD action"
+                icon={ShieldCheck}
+                tone="success"
+                onClick={() => setStatus("cleared")}
+                active={status === "cleared"}
+              />
+            </>
+          )}
         </div>
       </div>
 
@@ -313,9 +370,21 @@ export default function PaymentsListPage() {
         </div>
       </div>
 
-      {loading && rows.length === 0 ? (
-        <div className="flex items-center justify-center py-16 text-text-muted">
-          <Loader2 className="h-6 w-6 animate-spin mr-2" /> Loading…
+      {initialLoading ? (
+        <div className="bg-surface-container-lowest rounded-lg overflow-hidden border border-border shadow-sm">
+          {/* Desktop header — kept so column widths read true */}
+          <div className="hidden md:flex items-center bg-surface-container-low border-b border-border px-4 py-3 text-[10px] font-bold text-text-muted uppercase tracking-widest">
+            <div className="w-32">Number</div>
+            <div className="w-32">PO</div>
+            <div className="flex-1 min-w-[140px]">Vendor</div>
+            <div className="w-32 text-right">Amount</div>
+            <div className="w-16 text-center">Tier</div>
+            <div className="w-40">Stage</div>
+            <div className="w-28">Status</div>
+          </div>
+          {Array.from({ length: 6 }).map((_, i) => (
+            <SkRow key={i} />
+          ))}
         </div>
       ) : filtered.length === 0 ? (
         <div className="bg-surface-container-low rounded-2xl p-12 sm:p-16 flex flex-col items-center text-center border border-dashed border-border">

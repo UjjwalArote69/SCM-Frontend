@@ -1,10 +1,11 @@
 import { useEffect } from "react";
 import { Link } from "react-router-dom";
-import { Loader2, Inbox, Clock, CheckCircle2 } from "lucide-react";
+import { Inbox, Clock, CheckCircle2 } from "lucide-react";
 import PageHeader from "../../../components/data/PageHeader.jsx";
 import StatusPill from "../../../components/data/StatusPill.jsx";
 import RefreshButton from "../../../components/data/RefreshButton.jsx";
 import EmptyState from "../../../components/ui/EmptyState.jsx";
+import Skeleton from "../../../components/feedback/Skeleton.jsx";
 import { useRFQStore } from "../../quotations/store.js";
 import { useVendorIdentity } from "../useVendorIdentity.js";
 
@@ -14,6 +15,20 @@ const TONE = {
   closed: "neutral",
   compared: "info",
 };
+
+function SkRow() {
+  return (
+    <tr>
+      <td className="px-6 py-4"><Skeleton className="h-4 w-24" /></td>
+      <td className="px-6 py-4"><Skeleton className="h-4 w-44" /></td>
+      <td className="px-6 py-4"><Skeleton className="h-3 w-20" /></td>
+      <td className="px-6 py-4"><Skeleton className="h-3 w-16" /></td>
+      <td className="px-6 py-4"><Skeleton className="h-3 w-20" /></td>
+      <td className="px-6 py-4"><Skeleton className="h-5 w-20 rounded-full" /></td>
+      <td className="px-6 py-4 text-right"><Skeleton className="h-3 w-14 ml-auto" /></td>
+    </tr>
+  );
+}
 
 export default function VendorQuotationRequestsPage() {
   const rfqs = useRFQStore((s) => s.items);
@@ -40,8 +55,25 @@ export default function VendorQuotationRequestsPage() {
       />
 
       {isLoading && rfqs.length === 0 ? (
-        <div className="flex items-center justify-center py-16 text-text-muted">
-          <Loader2 className="h-6 w-6 animate-spin mr-2" /> Loading…
+        <div className="bg-surface-container-lowest rounded-lg overflow-hidden border border-border">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="bg-surface-container-low text-[10px] font-bold text-text-muted uppercase tracking-widest">
+                <th className="px-6 py-3 text-left">RFQ #</th>
+                <th className="px-6 py-3 text-left">Title</th>
+                <th className="px-6 py-3 text-left">Source PR</th>
+                <th className="px-6 py-3 text-left">Items</th>
+                <th className="px-6 py-3 text-left">Due</th>
+                <th className="px-6 py-3 text-left">Status</th>
+                <th className="px-6 py-3 text-right w-32">Action</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-border">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <SkRow key={i} />
+              ))}
+            </tbody>
+          </table>
         </div>
       ) : rfqs.length === 0 ? (
         <EmptyState

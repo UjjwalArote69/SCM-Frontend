@@ -1,12 +1,38 @@
 import { useEffect, useMemo } from "react";
 import { Link } from "react-router-dom";
-import { Loader2, Inbox, Clock, CheckCircle2, XCircle, Truck } from "lucide-react";
+import { Inbox, Clock, CheckCircle2, XCircle, Truck } from "lucide-react";
 import PageHeader from "../../../components/data/PageHeader.jsx";
 import StatusPill from "../../../components/data/StatusPill.jsx";
 import RefreshButton from "../../../components/data/RefreshButton.jsx";
 import EmptyState from "../../../components/ui/EmptyState.jsx";
 import KpiCard from "../../../components/ui/KpiCard.jsx";
+import Skeleton from "../../../components/feedback/Skeleton.jsx";
 import { usePOStore } from "../../purchase-orders/store.js";
+
+function SkKpiCard() {
+  return (
+    <div className="rounded-lg border border-border bg-surface-container-lowest p-4 flex flex-col gap-2 shadow-sm">
+      <Skeleton className="h-9 w-9 rounded-md" />
+      <div className="space-y-1.5">
+        <Skeleton className="h-2.5 w-24" />
+        <Skeleton className="h-7 w-12" />
+      </div>
+    </div>
+  );
+}
+
+function SkRow() {
+  return (
+    <tr>
+      <td className="px-6 py-4"><Skeleton className="h-4 w-24" /></td>
+      <td className="px-6 py-4"><Skeleton className="h-3 w-20" /></td>
+      <td className="px-6 py-4"><Skeleton className="h-3 w-20" /></td>
+      <td className="px-6 py-4"><Skeleton className="h-3 w-16" /></td>
+      <td className="px-6 py-4 text-right"><Skeleton className="h-4 w-20 ml-auto" /></td>
+      <td className="px-6 py-4"><Skeleton className="h-5 w-20 rounded-full" /></td>
+    </tr>
+  );
+}
 
 const TONE = {
   pending: "warning",
@@ -48,7 +74,13 @@ export default function VendorPOListPage() {
         actions={<RefreshButton onRefresh={fetchAll} loading={loading} />}
       />
 
-      {pos.length > 0 && (
+      {loading && pos.length === 0 ? (
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <SkKpiCard key={i} />
+          ))}
+        </div>
+      ) : pos.length > 0 ? (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
           <KpiCard
             label="Awaiting Acceptance"
@@ -75,11 +107,27 @@ export default function VendorPOListPage() {
             tone={counts.rejected > 0 ? "danger" : "neutral"}
           />
         </div>
-      )}
+      ) : null}
 
       {loading && pos.length === 0 ? (
-        <div className="flex items-center justify-center py-16 text-text-muted">
-          <Loader2 className="h-6 w-6 animate-spin mr-2" /> Loading…
+        <div className="bg-surface-container-lowest rounded-lg overflow-hidden border border-border">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="bg-surface-container-low text-[10px] font-bold text-text-muted uppercase tracking-widest">
+                <th className="px-6 py-3 text-left">PO #</th>
+                <th className="px-6 py-3 text-left">Date</th>
+                <th className="px-6 py-3 text-left">Source PR</th>
+                <th className="px-6 py-3 text-left">Expected</th>
+                <th className="px-6 py-3 text-right">Amount</th>
+                <th className="px-6 py-3 text-left">Status</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-border">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <SkRow key={i} />
+              ))}
+            </tbody>
+          </table>
         </div>
       ) : pos.length === 0 ? (
         <EmptyState

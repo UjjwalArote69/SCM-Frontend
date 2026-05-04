@@ -1,5 +1,6 @@
-import { CheckCircle2, Clock, XCircle, Loader2, Mail } from "lucide-react";
+import { CheckCircle2, Clock, XCircle, Mail } from "lucide-react";
 import PageHeader from "../../../components/data/PageHeader.jsx";
+import Skeleton from "../../../components/feedback/Skeleton.jsx";
 import { useVendorIdentity } from "../useVendorIdentity.js";
 
 const STATUS_META = {
@@ -49,8 +50,25 @@ export default function VendorApplicationStatusPage() {
     return (
       <div className="max-w-2xl mx-auto">
         <PageHeader title="Application Status" subtitle="Track your onboarding" />
-        <div className="bg-surface-container-lowest p-12 rounded-lg border border-border flex items-center justify-center text-text-muted">
-          <Loader2 className="h-5 w-5 animate-spin mr-2" /> Loading…
+        <div className="bg-surface-container-lowest p-8 rounded-lg border border-border space-y-6">
+          <div className="flex items-center gap-4">
+            <Skeleton className="h-14 w-14 rounded-2xl shrink-0" />
+            <div className="flex-1 space-y-2">
+              <Skeleton className="h-5 w-32" />
+              <Skeleton className="h-3 w-3/4" />
+              <Skeleton className="h-3 w-2/3" />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-4 pt-4 border-t border-border">
+            <div className="space-y-2">
+              <Skeleton className="h-2.5 w-16" />
+              <Skeleton className="h-4 w-24" />
+            </div>
+            <div className="space-y-2">
+              <Skeleton className="h-2.5 w-16" />
+              <Skeleton className="h-4 w-24" />
+            </div>
+          </div>
         </div>
       </div>
     );

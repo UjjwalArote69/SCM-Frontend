@@ -74,19 +74,19 @@ const PRIORITY_TONE = {
 /** Clean section header — just an icon and a title, with an optional action slot. */
 function SectionHeader({ icon: Icon, title, action, error = false }) {
   return (
-    <div className="flex items-center justify-between gap-3 mb-5">
+    <div className="flex items-center justify-between gap-2 sm:gap-3 mb-4 sm:mb-5">
       <h2
-        className={`text-sm font-semibold tracking-tight flex items-center gap-2 ${
+        className={`text-sm font-semibold tracking-tight flex items-center gap-2 min-w-0 ${
           error ? "text-danger" : "text-text"
         }`}
       >
         {Icon && (
           <Icon
-            className={`h-4 w-4 ${error ? "text-danger" : "text-text-muted"}`}
+            className={`h-4 w-4 shrink-0 ${error ? "text-danger" : "text-text-muted"}`}
             strokeWidth={2}
           />
         )}
-        {title}
+        <span className="truncate">{title}</span>
       </h2>
       {action}
     </div>
@@ -490,15 +490,15 @@ export default function PurchaseRequestCreatePage() {
 
   return (
     <div className="max-w-[1400px] mx-auto pb-24">
-      <div className="mb-6">
+      <div className="mb-4 sm:mb-6">
         <button
           type="button"
           onClick={() => navigate("/app/purchase-requests")}
-          className="inline-flex items-center gap-1 text-[12px] font-medium text-text-muted hover:text-primary mb-3 transition-colors"
+          className="inline-flex items-center gap-1 text-[12px] font-medium text-text-muted hover:text-primary mb-2 sm:mb-3 transition-colors"
         >
           <ChevronLeft className="h-3.5 w-3.5" /> Purchase Requests
         </button>
-        <div className="flex items-end justify-between gap-4 flex-wrap">
+        <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3 sm:gap-4">
           <div>
             <div className="flex items-center gap-1.5 text-text-muted">
               <FileText className="h-3 w-3" strokeWidth={2} />
@@ -506,11 +506,11 @@ export default function PurchaseRequestCreatePage() {
                 New Request
               </span>
             </div>
-            <h1 className="text-[24px] sm:text-[28px] font-bold text-text leading-tight tracking-tight mt-1">
+            <h1 className="text-[22px] sm:text-[28px] font-bold text-text leading-tight tracking-tight mt-1">
               Create Purchase Request
             </h1>
           </div>
-          <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-text-muted bg-surface-container-low/60 border border-border rounded-full px-3 py-1.5 inline-flex items-center gap-1.5">
+          <span className="self-start sm:self-auto text-[10px] font-bold uppercase tracking-[0.18em] text-text-muted bg-surface-container-low/60 border border-border rounded-full px-3 py-1.5 inline-flex items-center gap-1.5">
             <span
               className={`w-1.5 h-1.5 rounded-full ${savedAt ? "bg-success" : "bg-text-subtle"}`}
             />
@@ -533,18 +533,18 @@ export default function PurchaseRequestCreatePage() {
                 </span>
               </div>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 w-full sm:w-auto">
               <button
                 type="button"
                 onClick={() => setDraftRestored(false)}
-                className="text-[11px] font-semibold text-text-muted hover:text-text px-3 py-1.5 rounded-full border border-border bg-surface-container-low/60 transition-colors"
+                className="flex-1 sm:flex-initial text-[11px] font-semibold text-text-muted hover:text-text px-3 py-2 sm:py-1.5 rounded-full border border-border bg-surface-container-low/60 transition-colors"
               >
                 Dismiss
               </button>
               <button
                 type="button"
                 onClick={discardDraft}
-                className="text-[11px] font-bold text-danger hover:bg-danger-soft px-3 py-1.5 rounded-full border border-danger/30 bg-danger-soft/40 transition-colors"
+                className="flex-1 sm:flex-initial text-[11px] font-bold text-danger hover:bg-danger-soft px-3 py-2 sm:py-1.5 rounded-full border border-danger/30 bg-danger-soft/40 transition-colors"
               >
                 Discard draft
               </button>
@@ -553,9 +553,9 @@ export default function PurchaseRequestCreatePage() {
         )}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
         {/* MAIN COLUMN ---------------------------------------------------- */}
-        <div className="lg:col-span-2 space-y-5">
+        <div className="lg:col-span-2 space-y-4 sm:space-y-5">
           <Card>
             <SectionHeader icon={FileText} title="Request Details" />
 
@@ -675,15 +675,15 @@ export default function PurchaseRequestCreatePage() {
               error={Boolean(errors.items)}
               title="Items"
               action={
-                <div className="flex items-center gap-3">
-                  <span className="text-xs text-text-muted">
+                <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+                  <span className="hidden sm:inline text-xs text-text-muted">
                     {form.items.length} {form.items.length === 1 ? "line" : "lines"}
                     {form.items.length > 0 && ` · ${totalQty} qty`}
                   </span>
                   <button
                     type="button"
                     onClick={addItem}
-                    className="flex items-center gap-1 text-xs font-bold text-primary hover:bg-primary-soft px-2.5 py-1.5 rounded-md transition"
+                    className="flex items-center gap-1 text-xs font-bold text-primary hover:bg-primary-soft px-2.5 py-1.5 rounded-md transition whitespace-nowrap"
                   >
                     <Plus className="h-3.5 w-3.5" /> Add Item
                   </button>
@@ -718,7 +718,7 @@ export default function PurchaseRequestCreatePage() {
                   return (
                     <div
                       key={it.id}
-                      className="bg-surface-container-low/60 border border-border rounded-xl p-4 hover:border-white/15 transition-colors"
+                      className="bg-surface-container-low/60 border border-border rounded-xl p-3 sm:p-4 hover:border-white/15 transition-colors"
                     >
                       <div className="flex items-center justify-between mb-3">
                         <div className="flex items-center gap-3">

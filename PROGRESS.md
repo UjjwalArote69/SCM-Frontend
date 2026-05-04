@@ -4,6 +4,92 @@ Running changelog of what's been built, session by session, plus the current imp
 
 ---
 
+## Session — 2026-05-04
+
+Loading-state visual overhaul (spinners → skeletons across the whole app), one interactive dashboard widget, and a deep mobile-responsive pass on the three PR pages.
+
+### ✅ Skeleton loading primitive + rollout
+
+Replaced the centered `<Loader2 animate-spin>` pattern on every data-driven page with theme-aware skeleton placeholders that mirror the real layout, so the page no longer reflows when data arrives.
+
+- **`src/components/feedback/Skeleton.jsx`** (NEW) — minimal primitive: `<Skeleton className="h-4 w-32" />` with `bg-surface-container animate-pulse rounded` base styles. Composition over presets — pass any `className` for sizing/shape.
+- **Decision**: keep button-level spinners (`Loader2 animate-spin`) on submit / save / refresh actions where the user is mid-interaction. Skeletons there would feel broken. Skeleton swaps are **page/list/dashboard** loading only.
+
+**Rolled out across 16 surfaces** (each loading state matches its real geometry — card padding, table column widths, KPI tile shape — so there's zero layout shift on data arrival):
+
+| Surface | What's skeletoned |
+| --- | --- |
+| `/app` UserHome | 3-card hero (token / spend / token), pipeline strip, chart + vendors, activity + approvals — full dashboard skeleton |
+| `/admin` AdminHome | 8 KPI tiles (per-store loading), Pending PR Approvals rows, Pending Vendors rows |
+| `/vendor` VendorHome | 4 KPI tile values + descriptions, activity feed rows with colored left bar |
+| `/app/purchase-requests` | 5 stat cards + 6 row cards |
+| `/app/purchase-orders` | 5 stat cards + 6 row cards (incl. amount column on lg+) |
+| `/app/quotations` | 5 stat cards + 6 row cards |
+| `/app/payments` | 4 money KPI cards + 6 table rows (mobile card variant + desktop row variant) |
+| `/app/grn` | Real table header + 6 skeleton rows |
+| `/admin/users` | 4 stat cards + 6 table rows (6 cols) |
+| `/admin/items` | 6 table rows (8 cols) |
+| `/admin/vendors` | 6 table rows (7 cols) |
+| `/admin/departments` | 4 stat cards + 6 table rows (7 cols) |
+| `/vendor/quotation-requests` | Real table header + 6 skeleton rows (7 cols) |
+| `/vendor/quotations` | Real table header + 6 skeleton rows (7 cols) |
+| `/vendor/purchase-orders` | 4 KPI cards (now visible during initial load) + table header + 6 skeleton rows |
+| `/vendor/invoices` | "Ready to invoice" header + 5 skeleton rows |
+| `/vendor/application-status` | Single-card placeholder mirroring approved/pending shape |
+
+**Pattern locked for future pages**: derive `initialLoading = loading && items.length === 0`, render `<SkRow />` array inside the existing `<thead>` / row container. Keep filter bars, tabs, and search interactive while loading — only swap data-driven content.
+
+### ✅ Spend Snapshot dashboard widget — fully interactive
+
+Was a passive visual; now a real drill-in surface. Three interaction modes:
+
+1. **Hover any segment** → it grows + thickens (stroke + 4), other segments dim to 30% opacity, and a tooltip appears above the gauge with the slice label, formatted value (`fmtCompact` ₹ for POs, `N RFQs` for the awarded-but-unconverted slice), and percentage of total.
+2. **Click any segment or legend chip** → `useNavigate` to `/app/purchase-orders` for the PO-tier slices (pending / accepted / rejected / fulfilled), or `/app/quotations` for the awarded-RFQ "Open" slice.
+3. **Legend strip** below the gauge replaces the hardcoded "+7.52% More than last week" text with five color-coded clickable chips. Hovering a chip cross-highlights the matching gauge segment (and vice versa).
+
+**`RainbowGauge`** signature extended: now accepts `activeKey`, `onSliceEnter`, `onSliceLeave`, `onSliceClick`. Each segment path gains `cursor: pointer`, `onMouseEnter/Leave`, `onClick`, and animates `stroke-width` / `opacity` on hover. Non-interactive call sites (none currently, but the prop is optional) stay rendering the same as before.
+
+**Dropped `betterPct: 7.52`** hardcoded constant from the `balance` memo. The dashboard now has **zero** hardcoded values — every visible number comes from the four Zustand stores.
+
+### ✅ PR pages — comprehensive mobile-responsive pass
+
+User reported the three PR pages weren't properly responsive on mobile. Did a full pass across all three.
+
+**`pages/List.jsx`**:
+- Page-level `space-y-6` → `space-y-4 sm:space-y-6`
+- H1 down to `20px` on phones (was 22px → 28px); subtitle "Track and approve…" hidden on mobile
+- "New Purchase Request" button hidden on mobile — the bottom-right FAB already handles creation
+- PR rows: `pl-4 pr-3 py-4` → `pl-3 pr-3 py-3 sm:pl-5 sm:pr-4 sm:py-4`; icon avatar 40px on mobile (44px on sm+)
+- PR row PR# in `text-[12px]` on mobile (was 13); date moved into the meta line on phones (single-line PR#, multi-info on second/third row)
+- Title font `text-[13px] sm:text-[14px]`; status column drops fixed `min-w-[120px]` on mobile
+- Sub-text below status pill (Cancelled/Rejected/Awaiting…) hidden on mobile — pill is enough
+- Inline more-actions button hidden on mobile (was opacity-0 + hover-reveal anyway)
+- Same compact treatment applied to the Drafts card (saved-time text moved into meta line on mobile, "Tap to resume" hint hidden)
+
+**`pages/Create.jsx`**:
+- Header now stacks vertically on mobile: title above the "Draft saved" pill (`flex-col sm:flex-row`)
+- Title `text-[20px] sm:text-[28px]` (was 24); back-link margin tightened
+- Restore-banner buttons (Dismiss / Discard draft) stretch full-width with `py-2` for 44px touch targets on mobile
+- Main grid gap `gap-4 sm:gap-6`; inner column `space-y-4 sm:space-y-5`
+- `SectionHeader` tightened to `mb-4 sm:mb-5 gap-2 sm:gap-3`; title truncates so an action button doesn't push it
+- Items section: count text "X lines · Y qty" hidden on mobile, **Add Item** button stays `whitespace-nowrap`
+- Per-item card padding `p-4` → `p-3 sm:p-4`
+
+**`pages/Detail.jsx`**:
+- Breadcrumb shortens "Purchase Requests" → "PRs" on mobile, with `text-[11px] sm:text-[12px]`
+- Hero card: `mb-4 sm:mb-6`, `p-3 sm:p-6`, gap `gap-3 sm:gap-6`
+- PR# h1 `text-[20px] sm:text-[28px]` (was 24); title text `text-[13px] sm:text-[14px]`
+- Facts strip gaps tightened (`gap-x-3 gap-y-2.5`)
+- **`ApprovalSummary`** chain (HOD/CFO/CEO chips): now `overflow-x-auto` so it scrolls if it overflows on narrow phones; "Approvals:" label hidden on mobile (each chip already labels itself); chip gap `gap-1.5 sm:gap-2`
+- Action bar `px-3 sm:px-6`; main content grid `gap-4 sm:gap-6`; right sidebar `space-y-4 sm:space-y-6`
+- Request Details + Items sections drop to `p-3 sm:p-6`; meta-grid gap-y `gap-y-4 sm:gap-y-6`
+- **`ApprovalTree` step layout** rewritten for mobile: full role title ("Head of Department") hidden inline on mobile and rendered as a second line below "HOD" instead — keeps the "In Review" badge from getting squished. Step gap `gap-3 sm:gap-4`, between-step `pb-5 sm:pb-6`
+- `RequesterStatusPanel` padding `p-4 sm:p-6`, heading `text-base sm:text-lg`, inner card `p-4 sm:p-5 gap-3 sm:gap-4`
+
+Viewport meta tag (`width=device-width, initial-scale=1.0`) confirmed already in `index.html`.
+
+---
+
 ## Session — 2026-05-02
 
 Polish + onboarding-flow split day. Mostly small surgical changes to vendor onboarding, plus two architectural conversations (multi-tenancy, fine-grained RBAC) that were scoped but **not** implemented yet.

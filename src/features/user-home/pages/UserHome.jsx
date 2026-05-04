@@ -1,6 +1,6 @@
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import {
   AlertCircle,
   ArrowDownRight,
@@ -24,6 +24,7 @@ import { usePOStore } from "../../purchase-orders/store.js";
 import { useRFQStore } from "../../quotations/store.js";
 import { useGRNStore } from "../../grn/store.js";
 import { useAuthStore } from "../../auth/store.js";
+import Skeleton from "../../../components/feedback/Skeleton.jsx";
 
 const APPROVER_ROLES = new Set(["admin", "hod", "cfo", "ceo"]);
 
@@ -355,13 +356,14 @@ function Sparkline({ values, tone = "success", height = 80 }) {
    RainbowGauge — 180° semi-circle, multi-segment, white tick marker
    The arc opens DOWN (dome at top); segments are sized by `value`.
    ═════════════════════════════════════════════════════════════════ */
-function RainbowGauge({ slices, tickAt }) {
+function RainbowGauge({ slices, tickAt, activeKey, onSliceEnter, onSliceLeave, onSliceClick }) {
   const W = 280;
   const H = 160;
   const cx = W / 2;
   const cy = H - 18;
   const r = 96;
   const stroke = 28;
+  const interactive = Boolean(onSliceClick || onSliceEnter);
 
   const total = slices.reduce((s, sl) => s + (sl.value || 0), 0) || 1;
 
@@ -401,14 +403,24 @@ function RainbowGauge({ slices, tickAt }) {
         const [x2, y2] = polar(seg.end);
         const sweep = seg.end - seg.start;
         const large = sweep > 180 ? 1 : 0;
+        const isActive = activeKey === seg.key;
+        const dimmed = activeKey && !isActive;
         return (
           <path
             key={i}
             d={`M ${x1} ${y1} A ${r} ${r} 0 ${large} 1 ${x2} ${y2}`}
             fill="none"
             stroke={seg.color}
-            strokeWidth={stroke}
+            strokeWidth={isActive ? stroke + 4 : stroke}
             strokeLinecap="butt"
+            opacity={dimmed ? 0.3 : 1}
+            style={{
+              transition: "opacity 0.15s, stroke-width 0.15s",
+              cursor: interactive ? "pointer" : "default",
+            }}
+            onMouseEnter={interactive ? () => onSliceEnter?.(seg) : undefined}
+            onMouseLeave={interactive ? () => onSliceLeave?.() : undefined}
+            onClick={interactive ? () => onSliceClick?.(seg) : undefined}
           />
         );
       })}
@@ -604,8 +616,29 @@ function TokenStatCard({
 /* ═════════════════════════════════════════════════════════════════
    HERO CARD: Spend balance + rainbow gauge (centerpiece)
    ═════════════════════════════════════════════════════════════════ */
-function SpendBalanceCard({ total, deltaAmt, deltaPct, slices, tickAt, betterPct, delay = 0 }) {
+function SpendBalanceCard({ total, deltaAmt, deltaPct, slices, tickAt, delay = 0 }) {
   const positive = deltaAmt >= 0;
+  const navigate = useNavigate();
+  const [hovered, setHovered] = useState(null);
+
+  const sliceTotal = slices.reduce((s, sl) => s + sl.value, 0) || 1;
+
+  // Each slice routes to the most relevant list page. The "open" slice counts
+  // RFQs awarded but not yet PO'd, so it lands on /app/quotations; everything
+  // else aggregates POs by status, so it lands on /app/purchase-orders.
+  const goToSlice = (slice) => {
+    if (!slice) return;
+    if (slice.key === "open") navigate("/app/quotations");
+    else navigate("/app/purchase-orders");
+  };
+
+  // The "open" slice counts RFQs (a count, not a money value), so format it
+  // differently in the tooltip and legend.
+  const fmtSliceValue = (slice) =>
+    slice.key === "open"
+      ? `${slice.value} RFQ${slice.value === 1 ? "" : "s"}`
+      : fmtCompact(slice.value);
+
   return (
     <div
       style={{ animationDelay: `${delay}ms` }}
@@ -634,19 +667,72 @@ function SpendBalanceCard({ total, deltaAmt, deltaPct, slices, tickAt, betterPct
           {fmtINR(Math.abs(deltaAmt))}
         </span>
         <span className="text-text-muted tabular-nums">
-          ({deltaPct.toFixed(2)})
+          ({deltaPct.toFixed(2)}%)
         </span>
       </div>
 
       {/* gauge fills the rest of the card */}
       <div className="relative flex-1 flex items-end mt-2">
-        <RainbowGauge slices={slices} tickAt={tickAt} />
-        <div className="absolute inset-x-0 bottom-2 text-center text-[12px] text-text-muted leading-snug pointer-events-none">
-          {betterPct >= 0 ? "+" : ""}
-          {betterPct.toFixed(2)}% More than
-          <br />
-          last week
-        </div>
+        <RainbowGauge
+          slices={slices}
+          tickAt={tickAt}
+          activeKey={hovered?.key ?? null}
+          onSliceEnter={setHovered}
+          onSliceLeave={() => setHovered(null)}
+          onSliceClick={goToSlice}
+        />
+
+        {/* Hover tooltip — sits above the gauge dome */}
+        {hovered && (
+          <div
+            className="absolute top-0 left-1/2 -translate-x-1/2 px-3 py-2 rounded-lg border border-border bg-surface shadow-lg pointer-events-none whitespace-nowrap"
+            style={{ zIndex: 5 }}
+          >
+            <div className="flex items-center gap-2">
+              <span
+                className="w-2 h-2 rounded-full shrink-0"
+                style={{ background: hovered.color }}
+              />
+              <span className="text-[12px] font-semibold text-text">
+                {hovered.label}
+              </span>
+            </div>
+            <div className="text-[11px] text-text-muted tabular-nums mt-0.5">
+              {fmtSliceValue(hovered)}
+              <span className="text-text-subtle">
+                {" · "}
+                {((hovered.value / sliceTotal) * 100).toFixed(1)}%
+              </span>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Legend strip — color-coded chips, click to drill in */}
+      <div className="flex flex-wrap gap-1 justify-center mt-3">
+        {slices.map((s) => {
+          const isActive = hovered?.key === s.key;
+          return (
+            <button
+              key={s.key}
+              type="button"
+              onMouseEnter={() => setHovered(s)}
+              onMouseLeave={() => setHovered(null)}
+              onClick={() => goToSlice(s)}
+              className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-[11px] font-semibold transition-colors ${
+                isActive
+                  ? "bg-surface-container text-text"
+                  : "text-text-muted hover:bg-surface-container-low/60 hover:text-text"
+              }`}
+            >
+              <span
+                className="w-1.5 h-1.5 rounded-full shrink-0"
+                style={{ background: s.color }}
+              />
+              {s.label}
+            </button>
+          );
+        })}
       </div>
     </div>
   );
@@ -1035,6 +1121,158 @@ function ApprovalsCard({ approvals, role, delay = 0 }) {
 }
 
 /* ═════════════════════════════════════════════════════════════════
+   Loading skeletons — mirror real card geometry so the page doesn't
+   reflow when data arrives.
+   ═════════════════════════════════════════════════════════════════ */
+
+function SkTokenCard() {
+  return (
+    <div className="glass-card rounded-2xl p-6 flex flex-col">
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex items-center gap-3 min-w-0 flex-1">
+          <Skeleton className="h-10 w-10 rounded-full shrink-0" />
+          <div className="min-w-0 flex-1 space-y-1.5">
+            <Skeleton className="h-2.5 w-10" />
+            <Skeleton className="h-4 w-24" />
+          </div>
+        </div>
+        <Skeleton className="h-5 w-14 rounded-full" />
+      </div>
+      <div className="mt-6 space-y-2">
+        <Skeleton className="h-7 w-32" />
+        <Skeleton className="h-3.5 w-40" />
+      </div>
+      <div className="mt-5 -mx-1">
+        <div className="px-1 mb-1 flex justify-end">
+          <Skeleton className="h-3 w-16" />
+        </div>
+        <Skeleton className="h-20 w-full rounded-lg" />
+      </div>
+    </div>
+  );
+}
+
+function SkSpendCard() {
+  return (
+    <div className="glass-card rounded-2xl p-6 flex flex-col">
+      <Skeleton className="h-8 w-44" />
+      <div className="mt-2 flex items-center gap-2">
+        <Skeleton className="h-5 w-5 rounded-full" />
+        <Skeleton className="h-4 w-20" />
+        <Skeleton className="h-4 w-12" />
+      </div>
+      <div className="flex-1 flex items-end mt-2 min-h-[160px]">
+        <Skeleton className="h-32 w-full rounded-t-full" />
+      </div>
+    </div>
+  );
+}
+
+function SkPipelineStrip() {
+  return (
+    <div className="glass-card rounded-2xl p-2">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <div key={i} className="flex items-center gap-3 p-3">
+            <Skeleton className="h-10 w-10 rounded-xl shrink-0" />
+            <div className="flex-1 min-w-0 space-y-1.5">
+              <div className="flex items-baseline gap-2">
+                <Skeleton className="h-5 w-8" />
+                <Skeleton className="h-3 w-16" />
+              </div>
+              <Skeleton className="h-3 w-20" />
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function SkChartCard() {
+  return (
+    <div className="glass-card rounded-2xl p-6 flex flex-col">
+      <div className="flex items-center justify-between mb-5">
+        <Skeleton className="h-5 w-40" />
+        <Skeleton className="h-3 w-12" />
+      </div>
+      <div className="flex flex-wrap gap-1">
+        {Array.from({ length: 5 }).map((_, i) => (
+          <Skeleton key={i} className="h-7 w-16 rounded-full" />
+        ))}
+      </div>
+      <Skeleton className="h-[260px] w-full rounded-lg mt-5" />
+      <div className="mt-4 flex flex-wrap gap-2">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <Skeleton key={i} className="h-7 w-24 rounded-full" />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function SkListCard({ rows = 6, withTabs = false }) {
+  return (
+    <div className="glass-card rounded-2xl p-6 flex flex-col">
+      <div className="flex items-center justify-between mb-5">
+        <Skeleton className="h-5 w-32" />
+        <Skeleton className="h-5 w-10 rounded-full" />
+      </div>
+      {withTabs && (
+        <div className="flex flex-wrap gap-1 mb-2">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <Skeleton key={i} className="h-7 w-20 rounded-full" />
+          ))}
+        </div>
+      )}
+      <div className="flex flex-col gap-1 mt-2">
+        {Array.from({ length: rows }).map((_, i) => (
+          <div key={i} className="flex items-center gap-3 px-1 py-3">
+            <Skeleton className="h-9 w-9 rounded-xl shrink-0" />
+            <div className="flex-1 min-w-0 space-y-1.5">
+              <Skeleton className="h-3.5 w-3/4" />
+              <Skeleton className="h-3 w-1/2" />
+            </div>
+            <div className="text-right shrink-0 space-y-1.5">
+              <Skeleton className="h-3.5 w-12 ml-auto" />
+              <Skeleton className="h-3 w-10 ml-auto" />
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function DashboardSkeleton() {
+  return (
+    <>
+      {/* hero row — 1 : 2 : 1 ratio */}
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_2fr_1fr] gap-4 lg:gap-6">
+        <SkTokenCard />
+        <SkSpendCard />
+        <SkTokenCard />
+      </div>
+
+      {/* pipeline */}
+      <SkPipelineStrip />
+
+      {/* chart + vendors */}
+      <div className="grid grid-cols-1 lg:grid-cols-[2.3fr_1fr] gap-4 lg:gap-6">
+        <SkChartCard />
+        <SkListCard rows={6} withTabs />
+      </div>
+
+      {/* activity + approvals */}
+      <div className="grid grid-cols-1 lg:grid-cols-[2.3fr_1fr] gap-4 lg:gap-6">
+        <SkListCard rows={6} />
+        <SkListCard rows={4} />
+      </div>
+    </>
+  );
+}
+
+/* ═════════════════════════════════════════════════════════════════
    PAGE
    ═════════════════════════════════════════════════════════════════ */
 
@@ -1226,7 +1464,6 @@ export default function HomeView() {
       deltaPct,
       slices,
       tickAt,
-      betterPct: 7.52, // mirror reference; replace with real WoW once we track it
     };
   }, [pos, rfqs, nowMs]);
 
@@ -1479,12 +1716,6 @@ export default function HomeView() {
   /* ── render ── */
   return (
     <div className="max-w-[1400px] mx-auto space-y-6">
-      {initialLoading && (
-        <div className="glass-card rounded-2xl p-8 text-center fade-up">
-          <RefreshCw className="h-5 w-5 text-text-muted mx-auto mb-2 animate-spin" />
-          <p className="text-[12px] text-text-muted">Loading procurement data…</p>
-        </div>
-      )}
       {/* ─── Section header — single row, positioned to mirror reference ─── */}
       <div className="flex flex-col lg:flex-row lg:items-end gap-4 lg:gap-6">
         {/* Left heading + its toolbar (covers PR + center Spend cards) */}
@@ -1558,42 +1789,48 @@ export default function HomeView() {
         </div>
       </div>
 
-      {/* ─── 3-card hero row — 1 : 2 : 1 ratio ─── */}
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_2fr_1fr] gap-4 lg:gap-6">
-        <TokenStatCard {...prCard} delay={0} />
-        <SpendBalanceCard {...balance} delay={80} />
-        <TokenStatCard {...poCard} delay={160} />
-      </div>
+      {initialLoading ? (
+        <DashboardSkeleton />
+      ) : (
+        <>
+          {/* ─── 3-card hero row — 1 : 2 : 1 ratio ─── */}
+          <div className="grid grid-cols-1 lg:grid-cols-[1fr_2fr_1fr] gap-4 lg:gap-6">
+            <TokenStatCard {...prCard} delay={0} />
+            <SpendBalanceCard {...balance} delay={80} />
+            <TokenStatCard {...poCard} delay={160} />
+          </div>
 
-      {/* ─── Pipeline strip — 4 stages PR / RFQ / PO / GRN ─── */}
-      <PipelineStrip
-        prs={prs}
-        rfqs={rfqs}
-        pos={pos}
-        grns={grns}
-        delay={200}
-      />
+          {/* ─── Pipeline strip — 4 stages PR / RFQ / PO / GRN ─── */}
+          <PipelineStrip
+            prs={prs}
+            rfqs={rfqs}
+            pos={pos}
+            grns={grns}
+            delay={200}
+          />
 
-      {/* ─── 2/3 + 1/3 lower row — chart + vendors ─── */}
-      <div className="grid grid-cols-1 lg:grid-cols-[2.3fr_1fr] gap-4 lg:gap-6">
-        <TrendChartCard
-          series={trend.series}
-          xLabels={trend.xLabels}
-          totals={trend.totals}
-          delay={240}
-        />
-        <TopVendorsCard vendors={vendors} delay={320} />
-      </div>
+          {/* ─── 2/3 + 1/3 lower row — chart + vendors ─── */}
+          <div className="grid grid-cols-1 lg:grid-cols-[2.3fr_1fr] gap-4 lg:gap-6">
+            <TrendChartCard
+              series={trend.series}
+              xLabels={trend.xLabels}
+              totals={trend.totals}
+              delay={240}
+            />
+            <TopVendorsCard vendors={vendors} delay={320} />
+          </div>
 
-      {/* ─── 2/3 + 1/3 row — activity + approvals ─── */}
-      <div className="grid grid-cols-1 lg:grid-cols-[2.3fr_1fr] gap-4 lg:gap-6">
-        <ActivityCard items={activity} delay={360} />
-        <ApprovalsCard
-          approvals={approvals}
-          role={user?.role}
-          delay={400}
-        />
-      </div>
+          {/* ─── 2/3 + 1/3 row — activity + approvals ─── */}
+          <div className="grid grid-cols-1 lg:grid-cols-[2.3fr_1fr] gap-4 lg:gap-6">
+            <ActivityCard items={activity} delay={360} />
+            <ApprovalsCard
+              approvals={approvals}
+              role={user?.role}
+              delay={400}
+            />
+          </div>
+        </>
+      )}
 
       {/* ─── Quick actions footer ─── */}
       <div

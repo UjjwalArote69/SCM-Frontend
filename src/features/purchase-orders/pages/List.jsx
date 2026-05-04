@@ -7,7 +7,6 @@ import {
   ListFilter,
   ShoppingBag,
   MoreVertical,
-  Loader2,
   Clock,
   CheckCircle2,
   Truck,
@@ -19,6 +18,7 @@ import { usePOStore } from "../store.js";
 import { useToast } from "../../../hooks/useToast.jsx";
 import { useAuthStore } from "../../auth/store.js";
 import RefreshButton from "../../../components/data/RefreshButton.jsx";
+import Skeleton from "../../../components/feedback/Skeleton.jsx";
 
 // Mirrors PoController::canWritePo — only admin and purchase_officer can
 // author POs. Per FLOW.md item 6, HODs (incl. Purchase HOD) have
@@ -153,6 +153,45 @@ function FilterBar({ query, setQuery, dateRange, setDateRange }) {
   );
 }
 
+/* ─── Loading skeletons — match real layout so cards don't reflow ─── */
+
+function SkStatCard() {
+  return (
+    <div className="glass-card flex items-center gap-3 p-4 rounded-2xl shrink-0 snap-start min-w-[140px] sm:min-w-0">
+      <Skeleton className="h-10 w-10 rounded-xl shrink-0" />
+      <div className="min-w-0 flex-1 space-y-2">
+        <Skeleton className="h-2.5 w-14" />
+        <Skeleton className="h-6 w-12" />
+      </div>
+    </div>
+  );
+}
+
+function SkRow() {
+  return (
+    <div className="flex items-center gap-3 sm:gap-4 px-3 sm:px-4 py-3.5 rounded-xl">
+      <Skeleton className="h-11 w-11 rounded-xl shrink-0" />
+      <div className="flex-1 min-w-0 space-y-2">
+        <div className="flex items-center gap-2">
+          <Skeleton className="h-3.5 w-24" />
+          <Skeleton className="h-3 w-20" />
+        </div>
+        <Skeleton className="h-4 w-2/3" />
+        <Skeleton className="h-3 w-1/3" />
+      </div>
+      <div className="hidden lg:block text-right shrink-0 min-w-[110px] space-y-1.5">
+        <Skeleton className="h-4 w-20 ml-auto" />
+        <Skeleton className="h-2.5 w-12 ml-auto" />
+      </div>
+      <div className="flex flex-col items-end gap-1.5 shrink-0 min-w-[120px]">
+        <Skeleton className="h-5 w-20 rounded-full" />
+        <Skeleton className="h-3 w-16" />
+      </div>
+      <Skeleton className="h-4 w-4 shrink-0" />
+    </div>
+  );
+}
+
 function EmptyState({ canCreate, hasFilters }) {
   return (
     <div className="glass-card w-full rounded-2xl p-16 flex flex-col items-center text-center">
@@ -220,6 +259,10 @@ export default function PurchaseOrderListPage() {
   const toggleStatus = (s) => setStatus((prev) => (prev === s ? "all" : s));
   const hasFilters = Boolean(query) || status !== "all";
 
+  // Initial loading: first fetch in flight AND nothing cached yet. Drives the
+  // skeleton swap on the stats strip + row list.
+  const initialLoading = loading && rows.length === 0;
+
   return (
     <div className="max-w-[1400px] mx-auto pb-20 sm:pb-0 space-y-6">
       {/* Header */}
@@ -266,46 +309,52 @@ export default function PurchaseOrderListPage() {
       {/* KPI stats — horizontal scroll on mobile, 5-col grid on md+ */}
       <div className="-mx-4 sm:mx-0">
         <div className="flex sm:grid sm:grid-cols-5 gap-3 sm:gap-4 px-4 sm:px-0 overflow-x-auto sm:overflow-visible snap-x snap-mandatory pb-1 sm:pb-0 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-          <StatCard
-            label="Total"
-            value={counts.total}
-            icon={TrendingUp}
-            tone="neutral"
-            active={status === "all"}
-            onClick={() => setStatus("all")}
-          />
-          <StatCard
-            label="Pending"
-            value={counts.pending}
-            icon={Clock}
-            tone="warning"
-            active={status === "pending"}
-            onClick={() => toggleStatus("pending")}
-          />
-          <StatCard
-            label="Accepted"
-            value={counts.accepted}
-            icon={CheckCircle2}
-            tone="info"
-            active={status === "accepted"}
-            onClick={() => toggleStatus("accepted")}
-          />
-          <StatCard
-            label="Fulfilled"
-            value={counts.fulfilled}
-            icon={Truck}
-            tone="success"
-            active={status === "fulfilled"}
-            onClick={() => toggleStatus("fulfilled")}
-          />
-          <StatCard
-            label="Rejected"
-            value={counts.rejected}
-            icon={XCircle}
-            tone="danger"
-            active={status === "rejected"}
-            onClick={() => toggleStatus("rejected")}
-          />
+          {initialLoading ? (
+            Array.from({ length: 5 }).map((_, i) => <SkStatCard key={i} />)
+          ) : (
+            <>
+              <StatCard
+                label="Total"
+                value={counts.total}
+                icon={TrendingUp}
+                tone="neutral"
+                active={status === "all"}
+                onClick={() => setStatus("all")}
+              />
+              <StatCard
+                label="Pending"
+                value={counts.pending}
+                icon={Clock}
+                tone="warning"
+                active={status === "pending"}
+                onClick={() => toggleStatus("pending")}
+              />
+              <StatCard
+                label="Accepted"
+                value={counts.accepted}
+                icon={CheckCircle2}
+                tone="info"
+                active={status === "accepted"}
+                onClick={() => toggleStatus("accepted")}
+              />
+              <StatCard
+                label="Fulfilled"
+                value={counts.fulfilled}
+                icon={Truck}
+                tone="success"
+                active={status === "fulfilled"}
+                onClick={() => toggleStatus("fulfilled")}
+              />
+              <StatCard
+                label="Rejected"
+                value={counts.rejected}
+                icon={XCircle}
+                tone="danger"
+                active={status === "rejected"}
+                onClick={() => toggleStatus("rejected")}
+              />
+            </>
+          )}
         </div>
       </div>
 
@@ -345,9 +394,13 @@ export default function PurchaseOrderListPage() {
         </div>
       )}
 
-      {loading && rows.length === 0 ? (
-        <div className="glass-card rounded-2xl py-16 flex items-center justify-center text-text-muted">
-          <Loader2 className="h-5 w-5 animate-spin mr-2" /> Loading…
+      {initialLoading ? (
+        <div className="glass-card rounded-2xl p-2 sm:p-3">
+          <div className="flex flex-col gap-1">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <SkRow key={i} />
+            ))}
+          </div>
         </div>
       ) : filtered.length === 0 ? (
         <EmptyState canCreate={canCreate} hasFilters={hasFilters} />

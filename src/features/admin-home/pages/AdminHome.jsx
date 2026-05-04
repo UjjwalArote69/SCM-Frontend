@@ -13,10 +13,10 @@ import {
   PackageCheck,
   ArrowRight,
   AlertTriangle,
-  Loader2,
   Activity,
 } from "lucide-react";
 import { useAuthStore } from "../../auth/store.js";
+import Skeleton from "../../../components/feedback/Skeleton.jsx";
 import { usePRStore } from "../../purchase-requests/store.js";
 import { usePOStore } from "../../purchase-orders/store.js";
 import { useRFQStore } from "../../quotations/store.js";
@@ -62,14 +62,12 @@ function Tile({ to, icon: Icon, label, value, desc, tone = "info", loading }) {
         <ArrowRight className="h-4 w-4 text-text-muted opacity-0 group-hover:opacity-100 transition-opacity" />
       </div>
       <div className="text-3xl font-black text-text mb-1 leading-none">
-        {loading ? (
-          <Loader2 className="h-6 w-6 animate-spin text-text-muted" />
-        ) : (
-          value
-        )}
+        {loading ? <Skeleton className="h-7 w-12" /> : value}
       </div>
       <div className="text-sm font-semibold text-text mt-2">{label}</div>
-      <div className="text-xs text-text-muted mt-1">{desc}</div>
+      <div className="text-xs text-text-muted mt-1">
+        {loading ? <Skeleton className="h-3 w-32" /> : desc}
+      </div>
     </Link>
   );
 }
@@ -306,8 +304,16 @@ export default function AdminHome() {
           </div>
           <div className="p-6">
             {prLoading && pendingApprovals.length === 0 ? (
-              <div className="text-center py-8 text-text-muted">
-                <Loader2 className="inline-block h-5 w-5 animate-spin mr-2" /> Loading…
+              <div className="divide-y divide-border">
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <div key={i} className="flex justify-between items-center py-3">
+                    <div className="min-w-0 flex-1 space-y-1.5">
+                      <Skeleton className="h-4 w-24" />
+                      <Skeleton className="h-3 w-2/3" />
+                    </div>
+                    <Skeleton className="h-4 w-10 rounded shrink-0 ml-2" />
+                  </div>
+                ))}
               </div>
             ) : pendingApprovals.length === 0 ? (
               <p className="text-sm text-text-muted py-6 text-center">
@@ -364,7 +370,19 @@ export default function AdminHome() {
               </span>
             </div>
             <div className="p-5">
-              {pendingVendorList.length === 0 ? (
+              {vendorsLoading && vendors.length === 0 ? (
+                <div className="space-y-1">
+                  {Array.from({ length: 4 }).map((_, i) => (
+                    <div
+                      key={i}
+                      className="flex items-center justify-between py-2 px-2"
+                    >
+                      <Skeleton className="h-4 w-2/3" />
+                      <Skeleton className="h-3.5 w-3.5 shrink-0" />
+                    </div>
+                  ))}
+                </div>
+              ) : pendingVendorList.length === 0 ? (
                 <p className="text-xs text-text-muted text-center py-2">
                   No vendor applications waiting.
                 </p>

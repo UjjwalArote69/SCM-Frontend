@@ -3,7 +3,6 @@ import {
   Plus,
   Star,
   Search,
-  Loader2,
   Edit3,
   Trash2,
   CheckCircle2,
@@ -15,12 +14,38 @@ import VendorDrawer from "../components/VendorDrawer.jsx";
 import { useVendorsStore } from "../vendors/store.js";
 import { useToast } from "../../../hooks/useToast.jsx";
 import RefreshButton from "../../../components/data/RefreshButton.jsx";
+import Skeleton from "../../../components/feedback/Skeleton.jsx";
 
 const TONE = {
   approved: "success",
   pending: "warning",
   suspended: "danger",
 };
+
+function SkRow() {
+  return (
+    <tr>
+      <td className="px-6 py-4"><Skeleton className="h-4 w-20" /></td>
+      <td className="px-6 py-4"><Skeleton className="h-4 w-44" /></td>
+      <td className="px-6 py-4">
+        <div className="space-y-1.5">
+          <Skeleton className="h-3.5 w-32" />
+          <Skeleton className="h-3 w-40" />
+        </div>
+      </td>
+      <td className="px-6 py-4"><Skeleton className="h-3 w-28" /></td>
+      <td className="px-6 py-4"><Skeleton className="h-4 w-10" /></td>
+      <td className="px-6 py-4"><Skeleton className="h-5 w-20 rounded-full" /></td>
+      <td className="px-6 py-4">
+        <div className="flex items-center justify-end gap-1">
+          <Skeleton className="h-6 w-20 rounded" />
+          <Skeleton className="h-4 w-4" />
+          <Skeleton className="h-4 w-4" />
+        </div>
+      </td>
+    </tr>
+  );
+}
 
 export default function VendorsListPage() {
   const vendors = useVendorsStore((s) => s.items);
@@ -142,15 +167,7 @@ export default function VendorsListPage() {
           </thead>
           <tbody className="divide-y divide-border">
             {loading && vendors.length === 0 ? (
-              <tr>
-                <td
-                  colSpan={7}
-                  className="px-6 py-16 text-center text-text-muted"
-                >
-                  <Loader2 className="inline-block h-5 w-5 animate-spin mr-2" />
-                  Loading vendors…
-                </td>
-              </tr>
+              Array.from({ length: 6 }).map((_, i) => <SkRow key={i} />)
             ) : filtered.length === 0 ? (
               <tr>
                 <td

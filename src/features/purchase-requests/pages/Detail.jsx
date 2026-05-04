@@ -140,11 +140,11 @@ function formatDate(value) {
 function ApprovalSummary({ chain }) {
   const order = ["hod", "cfo", "ceo"];
   return (
-    <div className="flex items-center bg-surface-container-low rounded-md px-2 py-1">
-      <span className="text-xs font-medium text-text-muted mr-3 uppercase tracking-wider">
+    <div className="flex items-center bg-surface-container-low rounded-md px-2 py-1 max-w-full overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+      <span className="hidden sm:inline text-xs font-medium text-text-muted mr-3 uppercase tracking-wider shrink-0">
         Approvals:
       </span>
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-1.5 sm:gap-2">
         {order.map((role) => {
           const state = chain[role];
           const approved = state === "approved";
@@ -301,7 +301,7 @@ function ApprovalTree({ chain, pr, canSeeComment }) {
           return (
             <li
               key={step.role}
-              className="flex gap-4 print-timeline-item"
+              className="flex gap-3 sm:gap-4 print-timeline-item"
             >
               {/* Left column: node circle + connector that fills remaining height */}
               <div className="flex flex-col items-center shrink-0">
@@ -319,13 +319,13 @@ function ApprovalTree({ chain, pr, canSeeComment }) {
               </div>
 
               {/* Right column: text content */}
-              <div className={`flex-1 min-w-0 pt-1.5 ${isLast ? "" : "pb-6"}`}>
-                <div className="flex items-baseline justify-between gap-3">
-                  <div className="min-w-0">
+              <div className={`flex-1 min-w-0 pt-1.5 ${isLast ? "" : "pb-5 sm:pb-6"}`}>
+                <div className="flex items-baseline justify-between gap-2 sm:gap-3">
+                  <div className="min-w-0 flex-1">
                     <span className="text-sm font-bold text-text">
                       {step.shortLabel}
                     </span>
-                    <span className="ml-2 text-xs text-text-muted">
+                    <span className="hidden sm:inline ml-2 text-xs text-text-muted truncate">
                       {step.title}
                     </span>
                   </div>
@@ -335,7 +335,10 @@ function ApprovalTree({ chain, pr, canSeeComment }) {
                     {badge.text}
                   </span>
                 </div>
-                <p className="text-xs text-text-subtle mt-0.5">
+                <p className="text-xs text-text-subtle mt-0.5 sm:hidden">
+                  {step.title}
+                </p>
+                <p className="text-xs text-text-subtle mt-0.5 hidden sm:block">
                   {step.description}
                 </p>
                 {showComment && (
@@ -397,10 +400,10 @@ function RequesterStatusPanel({ pr }) {
   const c = config[pr.status] ?? config.pending;
   const Icon = c.Icon;
   return (
-    <section className="glass-card rounded-2xl p-6 print-reset">
-      <h2 className="text-lg font-bold text-text mb-4">Request Status</h2>
+    <section className="glass-card rounded-2xl p-4 sm:p-6 print-reset">
+      <h2 className="text-base sm:text-lg font-bold text-text mb-3 sm:mb-4">Request Status</h2>
       <div
-        className={`rounded-md border ${c.cls} p-5 flex items-start gap-4`}
+        className={`rounded-md border ${c.cls} p-4 sm:p-5 flex items-start gap-3 sm:gap-4`}
       >
         <div className="w-10 h-10 rounded-full bg-surface-container-lowest/60 flex items-center justify-center shrink-0">
           <Icon className="h-5 w-5" strokeWidth={2.25} />
@@ -626,20 +629,21 @@ export default function PurchaseRequestDetailPage() {
       </div>
 
       {/* Breadcrumb */}
-      <nav className="text-[12px] font-medium text-text-muted mb-4 flex items-center gap-1.5 print:hidden">
+      <nav className="text-[11px] sm:text-[12px] font-medium text-text-muted mb-3 sm:mb-4 flex items-center gap-1.5 print:hidden">
         <Link
           to="/app/purchase-requests"
           className="hover:text-primary transition-colors"
         >
-          Purchase Requests
+          <span className="hidden sm:inline">Purchase Requests</span>
+          <span className="sm:hidden">PRs</span>
         </Link>
         <ChevronRight className="h-3.5 w-3.5 text-text-subtle" />
-        <span className="text-text font-mono">{pr.number}</span>
+        <span className="text-text font-mono truncate">{pr.number}</span>
       </nav>
 
       {/* Hero card */}
-      <div className="mb-6 glass-card rounded-2xl overflow-hidden print:hidden">
-        <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-4 sm:gap-6 p-4 sm:p-6">
+      <div className="mb-4 sm:mb-6 glass-card rounded-2xl overflow-hidden print:hidden">
+        <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-3 sm:gap-6 p-3 sm:p-6">
           {/* Left: PR number + status + facts */}
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-3 flex-wrap">
@@ -679,14 +683,14 @@ export default function PurchaseRequestDetailPage() {
                   </span>
                 )}
             </div>
-            <h1 className="text-[24px] sm:text-[28px] font-bold tracking-tight text-text font-mono break-all leading-tight">
+            <h1 className="text-[20px] sm:text-[28px] font-bold tracking-tight text-text font-mono break-all leading-tight">
               {pr.number}
             </h1>
             {!isEmpty(pr.title) && (
-              <p className="text-text-muted text-[14px] mt-1.5">{pr.title}</p>
+              <p className="text-text-muted text-[13px] sm:text-[14px] mt-1 sm:mt-1.5">{pr.title}</p>
             )}
             {/* Quick facts strip — 2-col grid on mobile, free-flowing on sm+ */}
-            <div className="grid grid-cols-2 gap-x-4 gap-y-3 sm:flex sm:flex-wrap sm:gap-x-6 sm:gap-y-2 mt-4 text-xs">
+            <div className="grid grid-cols-2 gap-x-3 gap-y-2.5 sm:flex sm:flex-wrap sm:gap-x-6 sm:gap-y-2 mt-3 sm:mt-4 text-xs">
               <FactItem
                 label="Requester"
                 value={display(pr.requester_name)}
@@ -715,7 +719,7 @@ export default function PurchaseRequestDetailPage() {
         </div>
 
         {/* Bottom action bar */}
-        <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-center sm:justify-between gap-3 px-4 sm:px-6 py-3 border-t border-border">
+        <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-center sm:justify-between gap-3 px-3 sm:px-6 py-3 border-t border-border">
           {/* Print/PDF/Email — pill buttons */}
           <div className="flex items-center gap-2 flex-wrap">
             <button
@@ -806,14 +810,14 @@ export default function PurchaseRequestDetailPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 print:block">
-        <div className="xl:col-span-8 space-y-6">
-          <section className="glass-card rounded-2xl p-4 sm:p-6 print-reset">
-            <h2 className="text-sm font-semibold text-text mb-5 flex items-center gap-2">
+      <div className="grid grid-cols-1 xl:grid-cols-12 gap-4 sm:gap-6 print:block">
+        <div className="xl:col-span-8 space-y-4 sm:space-y-6">
+          <section className="glass-card rounded-2xl p-3 sm:p-6 print-reset">
+            <h2 className="text-sm font-semibold text-text mb-4 sm:mb-5 flex items-center gap-2">
               <Info className="h-4 w-4 text-text-muted print:hidden" strokeWidth={2} />
               Request Details
             </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 sm:gap-x-8 gap-y-5 sm:gap-y-6 print-meta-grid">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 sm:gap-x-8 gap-y-4 sm:gap-y-6 print-meta-grid">
               <MetaField label="Requester" value={pr.requester_name} />
               <MetaField label="Region" value={pr.region} />
               <MetaField label="Company" value={pr.business_unit} />
@@ -844,7 +848,7 @@ export default function PurchaseRequestDetailPage() {
           </section>
 
           <section className="glass-card rounded-2xl overflow-hidden print-reset">
-            <div className="px-4 sm:px-6 py-4 border-b border-border flex justify-between items-center print:p-0 print:border-0 print:mb-2">
+            <div className="px-3 sm:px-6 py-3 sm:py-4 border-b border-border flex justify-between items-center print:p-0 print:border-0 print:mb-2">
               <h2 className="text-sm font-semibold text-text flex items-center gap-2">
                 <ListChecks className="h-4 w-4 text-text-muted print:hidden" strokeWidth={2} />
                 Items
@@ -1008,7 +1012,7 @@ export default function PurchaseRequestDetailPage() {
           </section>
         </div>
 
-        <div className="xl:col-span-4 space-y-6 print:mt-6">
+        <div className="xl:col-span-4 space-y-4 sm:space-y-6 print:mt-6">
           {!isApproverRole ? (
             <RequesterStatusPanel pr={pr} />
           ) : (

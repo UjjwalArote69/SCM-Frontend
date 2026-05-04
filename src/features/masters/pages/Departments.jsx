@@ -5,7 +5,6 @@ import {
   Edit3,
   Trash2,
   Search,
-  Loader2,
   AlertTriangle,
 } from "lucide-react";
 import PageHeader from "../../../components/data/PageHeader.jsx";
@@ -13,8 +12,33 @@ import StatusPill from "../../../components/data/StatusPill.jsx";
 import RefreshButton from "../../../components/data/RefreshButton.jsx";
 import EmptyState from "../../../components/ui/EmptyState.jsx";
 import EditDepartmentDrawer from "../departments/EditDepartmentDrawer.jsx";
+import Skeleton from "../../../components/feedback/Skeleton.jsx";
 import { useDepartmentsStore } from "../departments/store.js";
 import { useToast } from "../../../hooks/useToast.jsx";
+
+function SkRow() {
+  return (
+    <tr>
+      <td className="px-6 py-4"><Skeleton className="h-4 w-16" /></td>
+      <td className="px-6 py-4">
+        <div className="flex items-center gap-2">
+          <Skeleton className="h-4 w-4" />
+          <Skeleton className="h-4 w-32" />
+        </div>
+      </td>
+      <td className="px-6 py-4"><Skeleton className="h-3 w-28" /></td>
+      <td className="px-6 py-4"><Skeleton className="h-3 w-44" /></td>
+      <td className="px-6 py-4 text-right"><Skeleton className="h-4 w-8 ml-auto" /></td>
+      <td className="px-6 py-4"><Skeleton className="h-5 w-16 rounded-full" /></td>
+      <td className="px-6 py-4">
+        <div className="flex items-center justify-end gap-2">
+          <Skeleton className="h-4 w-4" />
+          <Skeleton className="h-4 w-4" />
+        </div>
+      </td>
+    </tr>
+  );
+}
 
 export default function DepartmentsPage() {
   const items = useDepartmentsStore((s) => s.items);
@@ -117,8 +141,14 @@ export default function DepartmentsPage() {
             <div className="text-[10px] uppercase tracking-widest font-bold text-text-muted">
               {s.label}
             </div>
-            <div className="text-2xl font-black tracking-tight mt-1">
-              {s.value}
+            <div className="mt-1">
+              {loading && items.length === 0 ? (
+                <Skeleton className="h-7 w-12" />
+              ) : (
+                <div className="text-2xl font-black tracking-tight">
+                  {s.value}
+                </div>
+              )}
             </div>
           </div>
         ))}
@@ -162,12 +192,7 @@ export default function DepartmentsPage() {
           </thead>
           <tbody className="divide-y divide-border">
             {loading && items.length === 0 ? (
-              <tr>
-                <td colSpan={7} className="px-6 py-16 text-center text-text-muted">
-                  <Loader2 className="inline-block h-5 w-5 animate-spin mr-2" />
-                  Loading departments…
-                </td>
-              </tr>
+              Array.from({ length: 6 }).map((_, i) => <SkRow key={i} />)
             ) : filtered.length === 0 ? (
               <tr>
                 <td colSpan={7} className="px-6 py-16">
