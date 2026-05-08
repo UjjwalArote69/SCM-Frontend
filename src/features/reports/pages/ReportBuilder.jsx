@@ -1,71 +1,195 @@
-import { useState } from "react";
-import { BarChart3, Download, Play } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import {
+  BarChart3, Building2, Tag, TrendingUp, Hourglass,
+  Award, Filter, Clock, Loader2, AlertTriangle,
+} from "lucide-react";
 import PageHeader from "../../../components/data/PageHeader.jsx";
+import DateRangeFilter from "../components/DateRangeFilter.jsx";
+import {
+  SpendByVendor, SpendByDepartment, SpendByCategory, MonthlyTrend,
+  PendingApprovals, VendorPerformance, Funnel, CycleTime,
+} from "../components/Reports.jsx";
+import reportsApi from "../api.js";
+import { defaultRange } from "../utils.js";
+
+// Each entry is one report tile: kind, label, description, icon, fetch fn, renderer, supportsRange.
+const REPORTS = [
+  {
+    kind: "spend_by_vendor",
+    label: "Spend by Vendor",
+    desc: "Top vendors by order value, with PO counts and last activity.",
+    icon: Building2,
+    api: "spendByVendor",
+    Renderer: SpendByVendor,
+    range: true,
+  },
+  {
+    kind: "spend_by_department",
+    label: "Spend by Department",
+    desc: "Where the money is going — by requesting department.",
+    icon: BarChart3,
+    api: "spendByDepartment",
+    Renderer: SpendByDepartment,
+    range: true,
+  },
+  {
+    kind: "spend_by_category",
+    label: "Spend by Category",
+    desc: "What you're buying most of, expanded from PO line items.",
+    icon: Tag,
+    api: "spendByCategory",
+    Renderer: SpendByCategory,
+    range: true,
+  },
+  {
+    kind: "monthly_trend",
+    label: "Monthly Trend",
+    desc: "PR & PO volume and ₹ committed over time.",
+    icon: TrendingUp,
+    api: "monthlyTrend",
+    Renderer: MonthlyTrend,
+    range: true,
+  },
+  {
+    kind: "pending_approvals",
+    label: "Pending Approvals",
+    desc: "Live snapshot — what's stuck where, and for how long.",
+    icon: Hourglass,
+    api: "pendingApprovals",
+    Renderer: PendingApprovals,
+    range: false,
+  },
+  {
+    kind: "vendor_performance",
+    label: "Vendor Performance",
+    desc: "Acceptance / rejection / fulfilment ratios and GRN compliance.",
+    icon: Award,
+    api: "vendorPerformance",
+    Renderer: VendorPerformance,
+    range: true,
+  },
+  {
+    kind: "funnel",
+    label: "Procurement Funnel",
+    desc: "PR → RFQ → PO → GRN with conversion at each stage.",
+    icon: Filter,
+    api: "funnel",
+    Renderer: Funnel,
+    range: true,
+  },
+  {
+    kind: "cycle_time",
+    label: "Cycle Time",
+    desc: "How long it takes to get from raised to received.",
+    icon: Clock,
+    api: "cycleTime",
+    Renderer: CycleTime,
+    range: true,
+  },
+];
 
 export default function ReportBuilderPage() {
-  const [ran, setRan] = useState(false);
+  const [active, setActive] = useState(REPORTS[0].kind);
+  const [range, setRange] = useState(defaultRange);
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  const current = useMemo(() => REPORTS.find((r) => r.kind === active), [active]);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function load() {
+      setLoading(true); setError(null);
+      try {
+        const res = current.range
+          ? await reportsApi[current.api](range)
+          : await reportsApi[current.api]();
+        if (!cancelled) setData(res);
+      } catch (err) {
+        if (!cancelled) setError(err?.response?.data?.message ?? err?.message ?? "Failed to load");
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+    load();
+    return () => { cancelled = true; };
+  }, [active, range.from, range.to, current.api, current.range]);
+
+  const refresh = () => setRange((r) => ({ ...r }));
+
+  const Renderer = current.Renderer;
 
   return (
-    <div className="max-w-[1200px] mx-auto">
+    <div className="max-w-[1400px] mx-auto">
       <PageHeader
-        title="Report Builder"
-        subtitle="Build custom reports across PRs, POs, and Invoices"
-        actions={
-          ran && (
-            <button className="flex items-center gap-2 px-4 py-2 rounded-md border border-border text-text text-sm font-semibold hover:bg-surface-container-low">
-              <Download className="h-4 w-4" /> Export CSV
-            </button>
-          )
-        }
+        title="Reports"
+        subtitle="Pre-built procurement analytics — pick a report on the left."
       />
 
-      <div className="bg-surface-container-low p-6 rounded-lg mb-6">
-        <h2 className="text-lg font-bold text-text mb-4">Filters</h2>
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div><label className="block text-xs font-semibold text-text-muted mb-1 uppercase">Entity</label>
-            <select className="w-full bg-surface-container-lowest border-0 border-b-2 border-outline-variant focus:border-primary px-3 py-2 text-sm outline-none"><option>Purchase Requests</option><option>Purchase Orders</option><option>Invoices</option></select></div>
-          <div><label className="block text-xs font-semibold text-text-muted mb-1 uppercase">From</label><input type="date" className="w-full bg-surface-container-lowest border-0 border-b-2 border-outline-variant focus:border-primary px-3 py-2 text-sm outline-none" /></div>
-          <div><label className="block text-xs font-semibold text-text-muted mb-1 uppercase">To</label><input type="date" className="w-full bg-surface-container-lowest border-0 border-b-2 border-outline-variant focus:border-primary px-3 py-2 text-sm outline-none" /></div>
-          <div><label className="block text-xs font-semibold text-text-muted mb-1 uppercase">Group By</label>
-            <select className="w-full bg-surface-container-lowest border-0 border-b-2 border-outline-variant focus:border-primary px-3 py-2 text-sm outline-none"><option>Department</option><option>Vendor</option><option>Month</option></select></div>
-        </div>
-        <div className="mt-4 flex justify-end">
-          <button onClick={() => setRan(true)} className="flex items-center gap-2 px-5 py-2 bg-primary hover:brightness-110 text-primary-foreground rounded-md font-bold text-sm">
-            <Play className="h-4 w-4" /> Run Report
-          </button>
-        </div>
-      </div>
+      <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-6">
+        {/* Sidebar — report catalog */}
+        <aside className="space-y-1.5 lg:sticky lg:top-4 self-start">
+          {REPORTS.map((r) => {
+            const Icon = r.icon;
+            const isActive = active === r.kind;
+            return (
+              <button
+                key={r.kind}
+                onClick={() => setActive(r.kind)}
+                className={`w-full text-left rounded-lg border p-3 transition flex gap-3 items-start ${
+                  isActive
+                    ? "bg-primary-soft border-primary"
+                    : "bg-surface-container-lowest border-border hover:border-primary"
+                }`}
+              >
+                <div className={`w-9 h-9 rounded-md flex items-center justify-center shrink-0 ${
+                  isActive ? "bg-primary text-primary-foreground" : "bg-primary-soft text-primary"
+                }`}>
+                  <Icon className="h-4 w-4" />
+                </div>
+                <div className="min-w-0">
+                  <div className={`font-semibold text-sm ${isActive ? "text-primary" : "text-text"}`}>
+                    {r.label}
+                  </div>
+                  <div className="text-xs text-text-muted line-clamp-2">{r.desc}</div>
+                </div>
+              </button>
+            );
+          })}
+        </aside>
 
-      {!ran ? (
-        <div className="bg-surface-container-lowest rounded-lg p-16 text-center border border-border">
-          <BarChart3 className="h-16 w-16 text-text-subtle mx-auto mb-4" strokeWidth={1.25} />
-          <h3 className="text-lg font-bold text-text mb-2">No report yet</h3>
-          <p className="text-text-muted">Adjust the filters above and click <strong>Run Report</strong> to see results.</p>
-        </div>
-      ) : (
-        <section className="bg-surface-container-lowest rounded-lg p-6 border border-border">
-          <h3 className="text-lg font-bold text-text mb-4">Results — 23 records</h3>
-          <div className="h-48 bg-surface-container-low rounded flex items-end gap-2 p-4 mb-6">
-            {[60, 30, 80, 45, 70, 55, 90].map((h, i) => (
-              <div key={i} className="flex-1 bg-primary rounded-t" style={{ height: `${h}%` }} />
-            ))}
-          </div>
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="text-xs font-semibold text-text-muted uppercase border-b border-border">
-                <th className="py-2 text-left">Group</th>
-                <th className="py-2 text-right">Count</th>
-                <th className="py-2 text-right">Value</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border">
-              {[{ g: "Engineering", c: 8, v: 142500 }, { g: "Operations", c: 6, v: 89200 }, { g: "IT", c: 9, v: 65400 }].map((r) => (
-                <tr key={r.g}><td className="py-3">{r.g}</td><td className="py-3 text-right">{r.c}</td><td className="py-3 text-right font-medium">${r.v.toLocaleString()}</td></tr>
-              ))}
-            </tbody>
-          </table>
-        </section>
-      )}
+        {/* Main */}
+        <main className="space-y-4 min-w-0">
+          {current.range && (
+            <DateRangeFilter
+              from={range.from}
+              to={range.to}
+              onChange={setRange}
+              onRefresh={refresh}
+              refreshing={loading}
+            />
+          )}
+
+          {loading && !data && (
+            <div className="bg-surface-container-lowest border border-border rounded-lg p-12 text-center text-text-muted">
+              <Loader2 className="h-6 w-6 animate-spin inline mr-2" /> Loading…
+            </div>
+          )}
+
+          {error && (
+            <div className="bg-danger-soft border border-danger/30 rounded-lg p-4 flex gap-3 items-start">
+              <AlertTriangle className="h-5 w-5 text-danger shrink-0 mt-0.5" />
+              <div className="text-sm">
+                <div className="font-bold text-danger">Failed to load report</div>
+                <div className="text-text-muted">{error}</div>
+              </div>
+            </div>
+          )}
+
+          {data && !error && <Renderer data={data} />}
+        </main>
+      </div>
     </div>
   );
 }

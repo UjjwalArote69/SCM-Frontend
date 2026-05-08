@@ -1,12 +1,12 @@
 /**
  * Role identity — single source of truth.
  *
- * Backend stores a string `role` column on `users`. Current DB values seen:
- *   admin, manager, employee, hod, vendor
+ * Backend stores a string `role` column on `users`. Supported values:
+ *   admin, manager, employee, hod, cfo, ceo, director, accountant,
+ *   purchase_officer, site_person, project_manager, vendor, customer.
  *
- * Additional roles referenced in legacy code / typical enterprise flows
- * (not yet present in users table but supported by the UI enum):
- *   cfo, ceo, director, accountant, purchase_officer, customer
+ * site_person  — receives goods at the project site, creates GRNs (FLOW.md item 16).
+ * project_manager — inspects + approves GRNs before they're finalised (FLOW.md item 20).
  */
 
 export const ROLES = {
@@ -19,6 +19,8 @@ export const ROLES = {
   DIRECTOR: "director",
   ACCOUNTANT: "accountant",
   PURCHASE_OFFICER: "purchase_officer",
+  SITE_PERSON: "site_person",
+  PROJECT_MANAGER: "project_manager",
   VENDOR: "vendor",
   CUSTOMER: "customer",
 };
@@ -33,6 +35,8 @@ export const ROLE_LABELS = {
   [ROLES.DIRECTOR]: "Director",
   [ROLES.ACCOUNTANT]: "Accountant",
   [ROLES.PURCHASE_OFFICER]: "Purchase Officer",
+  [ROLES.SITE_PERSON]: "Site Person",
+  [ROLES.PROJECT_MANAGER]: "Project Manager",
   [ROLES.VENDOR]: "Vendor",
   [ROLES.CUSTOMER]: "Customer",
 };
@@ -48,6 +52,8 @@ export const ROLE_SHORT_LABELS = {
   [ROLES.DIRECTOR]: "Director",
   [ROLES.ACCOUNTANT]: "Accountant",
   [ROLES.PURCHASE_OFFICER]: "Purchase",
+  [ROLES.SITE_PERSON]: "Site",
+  [ROLES.PROJECT_MANAGER]: "PM",
   [ROLES.VENDOR]: "Vendor",
   [ROLES.CUSTOMER]: "Customer",
 };
@@ -63,6 +69,8 @@ export const ROLE_HOME = {
   [ROLES.DIRECTOR]: "/app",
   [ROLES.ACCOUNTANT]: "/app",
   [ROLES.PURCHASE_OFFICER]: "/app",
+  [ROLES.SITE_PERSON]: "/app",
+  [ROLES.PROJECT_MANAGER]: "/app",
   [ROLES.VENDOR]: "/vendor",
   [ROLES.CUSTOMER]: "/app",
 };
@@ -78,6 +86,8 @@ export const ROLE_AUDIENCE = {
   [ROLES.DIRECTOR]: "user",
   [ROLES.ACCOUNTANT]: "user",
   [ROLES.PURCHASE_OFFICER]: "user",
+  [ROLES.SITE_PERSON]: "user",
+  [ROLES.PROJECT_MANAGER]: "user",
   [ROLES.VENDOR]: "vendor",
   [ROLES.CUSTOMER]: "user",
 };
@@ -91,6 +101,8 @@ export const USER_PORTAL_ROLES = [
   ROLES.DIRECTOR,
   ROLES.ACCOUNTANT,
   ROLES.PURCHASE_OFFICER,
+  ROLES.SITE_PERSON,
+  ROLES.PROJECT_MANAGER,
   ROLES.CUSTOMER,
 ];
 

@@ -47,6 +47,12 @@ export const prDocumentsApi = {
     URL.revokeObjectURL(url);
   },
 
+  /** Auth-gated blob fetch for inline preview / thumbnails. */
+  getBlob: async (id) => {
+    const r = await client.get(`/pr-documents/${id}/download`, { responseType: "blob" });
+    return r.data;
+  },
+
   remove: (id) => client.delete(`/pr-documents/${id}`).then((r) => r.data),
 };
 

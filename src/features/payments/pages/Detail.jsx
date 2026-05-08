@@ -26,45 +26,53 @@ import PrintLetterhead from "../../../components/print/PrintLetterhead.jsx";
 import PrintFooter from "../../../components/print/PrintFooter.jsx";
 import PrintActions from "../../../components/print/PrintActions.jsx";
 
-// FLOW.md item 11 — cost-tier thresholds, must mirror PaymentController
-const TIER_2 = 50_000;
-const TIER_3 = 500_000;
+// Terminal stage shown after the rule's chain — Finance HOD releases payment here.
+const TERMINAL_STAGE = {
+  key: "cleared_to_pay",
+  label: "Cleared — ready to pay",
+  role: "hod",
+  department_code: "FIN",
+  short: "Clear",
+  blurb: "Finance HOD release",
+};
 
-function tierFor(amount) {
-  const n = Number(amount ?? 0);
-  if (n >= TIER_3) return { label: "Tier 3 — ≥ ₹5L", chain: ["pending_cfo", "pending_ceo", "cleared_to_pay"] };
-  if (n >= TIER_2) return { label: "Tier 2 — ₹50k–5L", chain: ["pending_cfo", "cleared_to_pay"] };
-  return { label: "Tier 1 — < ₹50k", chain: ["cleared_to_pay"] };
+/**
+ * Build the visualizable chain: rule-driven approval stages + terminal.
+ * For older Payments without chain_stages, fall back to amount-tier mapping.
+ */
+function chainFor(payment) {
+  const stages = Array.isArray(payment.chain_stages) ? [...payment.chain_stages] : null;
+  if (stages === null || stages.length === 0) {
+    // legacy hardcoded fallback (covers Payments created before the engine landed
+    // and the "auto-cleared" tier-1 case which has no approval stages)
+    const n = Number(payment.amount ?? 0);
+    if (n >= 500_000) {
+      return [
+        { key: "pending_cfo", label: "CFO Review", role: "cfo" },
+        { key: "pending_ceo", label: "CEO Review", role: "ceo" },
+        TERMINAL_STAGE,
+      ];
+    }
+    if (n >= 50_000) {
+      return [{ key: "pending_cfo", label: "CFO Review", role: "cfo" }, TERMINAL_STAGE];
+    }
+    return [TERMINAL_STAGE];
+  }
+  return [...stages, TERMINAL_STAGE];
+}
+
+function userActsOnPaymentStage(user, stageObj) {
+  if (!user || !stageObj) return false;
+  if (user.role === "admin") return true;
+  if (user.role !== stageObj.role) return false;
+  if (!stageObj.department_code) return true;
+  return user.department?.code === stageObj.department_code;
 }
 
 const STAGE_LABEL = {
-  pending_cfo: "Awaiting CFO approval",
-  pending_ceo: "Awaiting CEO approval",
   cleared_to_pay: "Cleared — ready to pay",
   done: "Done",
 };
-
-const STAGE_SHORT = {
-  pending_cfo: "CFO",
-  pending_ceo: "CEO",
-  cleared_to_pay: "Clear",
-  done: "Done",
-};
-
-const STAGE_BLURB = {
-  pending_cfo: "Chief Financial Officer",
-  pending_ceo: "Chief Executive Officer",
-  cleared_to_pay: "Finance HOD release",
-  done: "",
-};
-
-function userActsOnPaymentStage(user, stage) {
-  if (!user) return false;
-  if (user.role === "admin") return true;
-  if (stage === "pending_cfo") return user.role === "cfo";
-  if (stage === "pending_ceo") return user.role === "ceo";
-  return false;
-}
 
 function fmtINR(n) {
   return `₹${Number(n ?? 0).toLocaleString(undefined, {
@@ -254,14 +262,22 @@ export default function PaymentDetailPage() {
   const isCleared = chainStage === "cleared_to_pay";
   const showMarkPaid =
     canMarkPaid(user) && payment.status === "pending" && isCleared;
+
+  // Build the visualizable chain (rule stages + terminal cleared_to_pay)
+  const chain = chainFor(payment);
+  const stageIndex = chain.findIndex((s) => s.key === chainStage);
+  const currentStageObj = chain[stageIndex];
+  const tierLabel = chain.length === 1
+    ? "Auto-cleared"
+    : chain.length === 2
+      ? "Single-approver chain"
+      : `${chain.length - 1}-stage approval`;
+
   const canActOnChain =
     payment.status === "pending" &&
     !isCleared &&
     chainStage !== "done" &&
-    userActsOnPaymentStage(user, chainStage);
-
-  const tier = tierFor(payment.amount);
-  const stageIndex = tier.chain.indexOf(chainStage);
+    userActsOnPaymentStage(user, currentStageObj);
 
   const doMarkPaid = async () => {
     setSubmitting(true);
@@ -335,6 +351,9 @@ export default function PaymentDetailPage() {
           <span className="text-text">{payment.number}</span>
         </nav>
         <PrintActions
+          pdfFetcher={() => paymentApi.downloadPdf(payment.number)}
+          pdfFilename={`${payment.number}.pdf`}
+          onError={(msg) => toast.error(msg)}
           onPdfHint={(msg) => toast.info(msg)}
         />
       </div>
@@ -345,7 +364,7 @@ export default function PaymentDetailPage() {
           <div className="flex flex-wrap items-center gap-2 mb-3">
             <StatusPill status={payment.status} />
             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold border bg-info-soft text-info border-info/20">
-              <ShieldCheck className="h-3 w-3" strokeWidth={2.5} /> {tier.label}
+              <ShieldCheck className="h-3 w-3" strokeWidth={2.5} /> {tierLabel}
             </span>
             <span className="text-xs text-text-muted">
               for{" "}
@@ -402,7 +421,7 @@ export default function PaymentDetailPage() {
                 ? "This payment was rejected."
                 : isCleared
                   ? "Cleared by approvers — Finance HOD can release funds."
-                  : STAGE_LABEL[chainStage] ?? "In review."}
+                  : (currentStageObj?.label ? `Awaiting ${currentStageObj.label}` : "In review.")}
           </div>
           <div className="flex items-center gap-2 flex-wrap">
             {isAdmin && (
@@ -437,8 +456,8 @@ export default function PaymentDetailPage() {
         </div>
       </div>
 
-      {/* Cost-tiered approval banner — only when payment is in pipeline */}
-      {payment.status === "pending" && tier.chain.length > 1 && (
+      {/* Approval banner — only when payment has any chain to traverse */}
+      {payment.status === "pending" && chain.length > 1 && (
         <div className="mb-6 rounded-lg bg-surface-container-lowest border border-border overflow-hidden">
           <div className="px-4 sm:px-5 py-3 flex items-center gap-2 border-b border-border bg-surface-container-low/40">
             <GitBranch className="h-4 w-4 text-text-muted" strokeWidth={2.25} />
@@ -446,21 +465,23 @@ export default function PaymentDetailPage() {
               Approval chain
             </h2>
             <span className="ml-auto text-[10px] uppercase tracking-widest font-bold text-text-muted">
-              {tier.label}
+              {tierLabel}
             </span>
           </div>
           <ol className="flex items-center gap-1 sm:gap-3 px-4 sm:px-5 py-5 overflow-x-auto">
-            {tier.chain.map((stage, i) => {
-              const reached = i < stageIndex || isCleared && stage === "cleared_to_pay";
-              const active = i === stageIndex && !isCleared
-                || (stage === "cleared_to_pay" && isCleared);
+            {chain.map((stage, i) => {
+              const reached = i < stageIndex || (isCleared && stage.key === "cleared_to_pay");
+              const active = (i === stageIndex && !isCleared)
+                || (stage.key === "cleared_to_pay" && isCleared);
               const cls = reached
                 ? "bg-success text-white"
                 : active
                   ? "bg-warning text-white ring-4 ring-warning-soft animate-pulse"
                   : "bg-surface-container border border-border text-text-subtle";
+              const short = stage.short ?? stage.role.toUpperCase();
+              const blurb = stage.blurb ?? stage.label;
               return (
-                <li key={stage} className="flex items-center gap-2 sm:gap-3 shrink-0">
+                <li key={stage.key} className="flex items-center gap-2 sm:gap-3 shrink-0">
                   <div className="flex flex-col items-center gap-1">
                     <div
                       className={`w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center font-bold ${cls}`}
@@ -481,14 +502,14 @@ export default function PaymentDetailPage() {
                               : "text-text-subtle"
                         }`}
                       >
-                        {STAGE_SHORT[stage]}
+                        {short}
                       </div>
                       <div className="text-[9px] text-text-subtle hidden sm:block">
-                        {STAGE_BLURB[stage]}
+                        {blurb}
                       </div>
                     </div>
                   </div>
-                  {i < tier.chain.length - 1 && (
+                  {i < chain.length - 1 && (
                     <div
                       className={`w-8 sm:w-16 h-[2px] -mt-5 ${
                         reached ? "bg-success" : "bg-border"

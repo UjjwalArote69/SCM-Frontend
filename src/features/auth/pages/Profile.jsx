@@ -20,6 +20,7 @@ import { useToast } from "../../../hooks/useToast.jsx";
 import authApi from "../api.js";
 import { labelForRole } from "../../../data/roles.js";
 import client from "../../../api/client.js";
+import VendorAssetsCard from "../../masters/vendors/VendorAssetsCard.jsx";
 
 function formatDate(v) {
   if (!v) return null;
@@ -643,6 +644,7 @@ export default function ProfilePage() {
           <AccountSection user={user} />
           <PasswordSection />
           {isVendor && <VendorBusinessCard user={user} />}
+          {isVendor && <VendorAssetsCard userEmail={user.email} />}
         </div>
       </div>
     </div>

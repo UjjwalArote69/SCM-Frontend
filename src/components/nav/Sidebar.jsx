@@ -1,19 +1,25 @@
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 import { ChevronsLeft, ChevronsRight, Factory, X } from "lucide-react";
 import { NAV_CONFIG } from "./navConfig.js";
 import { useUIStore } from "../../features/ui/store.js";
+import { usePRStore } from "../../features/purchase-requests/store.js";
+import { usePOStore } from "../../features/purchase-orders/store.js";
+import { useVendorsStore } from "../../features/masters/vendors/store.js";
+import { useUsersStore } from "../../features/admin-home/users/store.js";
+import { usePaymentStore } from "../../features/payments/store.js";
 
-function NavItem({ to, icon: Icon, label, end, collapsed, onNavigate }) {
+function NavItem({ to, icon: Icon, label, end, collapsed, onNavigate, badgeCount }) {
+  const showBadge = badgeCount > 0;
   return (
     <NavLink
       to={to}
       end={end}
       onClick={onNavigate}
-      title={collapsed ? label : undefined}
+      title={collapsed ? `${label}${showBadge ? ` (${badgeCount})` : ""}` : undefined}
       className={({ isActive }) =>
         [
-          "flex items-center gap-3 text-sm rounded-xl transition-colors duration-150",
+          "relative flex items-center gap-3 text-sm rounded-xl transition-colors duration-150",
           collapsed ? "mx-auto w-10 h-10 justify-center" : "mx-3 px-3 py-2.5",
           isActive
             ? "bg-surface-container-low border border-border text-text font-semibold shadow-sm"
@@ -24,7 +30,18 @@ function NavItem({ to, icon: Icon, label, end, collapsed, onNavigate }) {
       }
     >
       <Icon className="h-[18px] w-[18px] shrink-0" strokeWidth={2} />
-      {!collapsed && <span className="truncate">{label}</span>}
+      {!collapsed && <span className="flex-1 truncate">{label}</span>}
+      {showBadge && (
+        <span
+          className={
+            collapsed
+              ? "absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-1 rounded-full bg-warning text-primary-foreground text-[9px] font-bold flex items-center justify-center"
+              : "ml-auto min-w-[20px] px-1.5 h-5 rounded-full bg-warning-soft text-warning text-[10px] font-bold flex items-center justify-center"
+          }
+        >
+          {badgeCount > 99 ? "99+" : badgeCount}
+        </span>
+      )}
     </NavLink>
   );
 }
@@ -36,6 +53,27 @@ export default function Sidebar({ audience = "user" }) {
   const closeMobileNav = useUIStore((s) => s.closeMobileNav);
   const sections       = NAV_CONFIG[audience] ?? NAV_CONFIG.user;
   const location       = useLocation();
+
+  // ── Live badge counts (admin only) — derived from already-fetched stores ──
+  const isAdmin = audience === "admin";
+  const prItems       = usePRStore((s) => s.items);
+  const poItems       = usePOStore((s) => s.items);
+  const vendorItems   = useVendorsStore((s) => s.items);
+  const userItems     = useUsersStore((s) => s.items);
+  const paymentItems  = usePaymentStore((s) => s.items);
+  const badges = useMemo(() => {
+    if (!isAdmin) return {};
+    return {
+      "prs-pending":      prItems.filter((p) => p.status === "pending").length,
+      "pos-pending":      poItems.filter((p) => p.chain_stage && p.chain_stage !== "done"
+                                                && !["accepted","rejected","fulfilled"].includes(p.status)).length,
+      "vendors-pending":  vendorItems.filter((v) => v.approval_status === "pending"
+                                                || v.status === "pending").length,
+      "users-invited":    userItems.filter((u) => !u.email_verified_at).length,
+      "payments-pending": paymentItems.filter((p) =>
+        p.chain_stage === "pending_cfo" || p.chain_stage === "pending_ceo").length,
+    };
+  }, [isAdmin, prItems, poItems, vendorItems, userItems, paymentItems]);
 
   useEffect(() => { closeMobileNav(); }, [location.pathname, closeMobileNav]);
 
@@ -71,7 +109,7 @@ export default function Sidebar({ audience = "user" }) {
           {!collapsed && (
             <>
               <span className="text-[15px] font-black text-text tracking-tight flex-1 truncate">
-                Meka SCM
+                Suppliers First
               </span>
               <button
                 type="button"
@@ -101,6 +139,7 @@ export default function Sidebar({ audience = "user" }) {
                     {...item}
                     collapsed={collapsed}
                     onNavigate={closeMobileNav}
+                    badgeCount={item.badge ? badges[item.badge] : undefined}
                   />
                 ))}
               </div>

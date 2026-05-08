@@ -5,6 +5,7 @@ import AuthLayout from "../../../layouts/AuthLayout.jsx";
 import Field from "../../../components/auth/Field.jsx";
 import Button from "../../../components/auth/Button.jsx";
 import { useToast } from "../../../hooks/useToast.jsx";
+import client from "../../../api/client.js";
 
 export default function ForgotPassword() {
   const toast = useToast();
@@ -12,6 +13,9 @@ export default function ForgotPassword() {
   const [error, setError] = useState("");
   const [sent, setSent] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  // Backend returns _reset_url in dev (no SMTP) — we surface it on the
+  // success screen so the user can complete the flow without a mailbox.
+  const [devResetUrl, setDevResetUrl] = useState(null);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -21,10 +25,18 @@ export default function ForgotPassword() {
     }
     setError("");
     setSubmitting(true);
-    await new Promise((r) => setTimeout(r, 500));
-    setSubmitting(false);
-    setSent(true);
-    toast.success(`Reset link sent to ${email}`);
+    try {
+      const res = await client.post("/forgot-password", { email });
+      setDevResetUrl(res.data?._reset_url ?? null);
+      setSent(true);
+      toast.success(`Reset link sent to ${email}`);
+    } catch (err) {
+      const msg = err?.response?.data?.message ?? "Could not send reset link.";
+      setError(msg);
+      toast.error(msg);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -98,11 +110,27 @@ export default function ForgotPassword() {
           <div className="bg-success-soft border border-success/30 rounded-lg p-5 flex items-start gap-4">
             <CheckCircle2 className="h-5 w-5 mt-0.5 flex-shrink-0 text-success" />
             <p className="text-sm font-medium text-success leading-relaxed">
-              We&apos;ve sent a reset link to{" "}
-              <span className="font-bold">{email}</span>. Please check your
-              email to continue.
+              If <span className="font-bold">{email}</span> is registered, a
+              reset link is on its way. Please check your inbox to continue.
             </p>
           </div>
+
+          {devResetUrl && (
+            <div className="mt-4 bg-info-soft/40 border border-info/30 rounded-lg p-4 text-xs">
+              <div className="font-bold text-info mb-1 uppercase tracking-wider">
+                Dev mode — no SMTP configured
+              </div>
+              <p className="text-text-muted mb-2">
+                Use this link to reset your password directly:
+              </p>
+              <Link
+                to={devResetUrl.replace(/^.*?(\/reset-password\/.*)$/, "$1")}
+                className="block break-all text-info font-mono hover:underline"
+              >
+                {devResetUrl}
+              </Link>
+            </div>
+          )}
 
           <div className="pt-6 mt-6 border-t border-border">
             <p className="text-sm text-text-muted mb-6">

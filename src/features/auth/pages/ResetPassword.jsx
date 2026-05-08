@@ -1,10 +1,11 @@
 import { useMemo, useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { ArrowLeft, CheckCircle2, Loader2 } from "lucide-react";
+import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { ArrowLeft, CheckCircle2, Loader2, Mail } from "lucide-react";
 import AuthLayout from "../../../layouts/AuthLayout.jsx";
 import Field from "../../../components/auth/Field.jsx";
 import Button from "../../../components/auth/Button.jsx";
 import { useToast } from "../../../hooks/useToast.jsx";
+import client from "../../../api/client.js";
 
 function scorePassword(pw) {
   if (!pw) return 0;
@@ -28,6 +29,12 @@ const STRENGTH_COLORS = [
 export default function ResetPassword() {
   const navigate = useNavigate();
   const toast = useToast();
+  const { token: tokenFromPath } = useParams();
+  const [searchParams] = useSearchParams();
+  // Token comes from /reset-password/:token. Email comes from ?email=… in the
+  // backend-generated reset URL. If either is missing, we show a fallback
+  // email field so the user can still complete the flow manually.
+  const [email, setEmail] = useState(searchParams.get("email") ?? "");
   const [pw, setPw] = useState("");
   const [confirm, setConfirm] = useState("");
   const [errors, setErrors] = useState({});
@@ -45,16 +52,34 @@ export default function ResetPassword() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     const next = {};
+    if (!tokenFromPath) {
+      next.token = "This reset link is missing its token. Please request a new one.";
+    }
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      next.email = "Enter the email address linked to this reset request.";
+    }
     if (pw.length < 8) next.pw = "Must be at least 8 characters.";
     if (pw !== confirm) next.confirm = "Passwords do not match.";
     setErrors(next);
     if (Object.keys(next).length) return;
 
     setSubmitting(true);
-    await new Promise((r) => setTimeout(r, 500));
-    setSubmitting(false);
-    setDone(true);
-    toast.success("Password updated successfully");
+    try {
+      await client.post("/reset-password", {
+        email,
+        token: tokenFromPath,
+        password: pw,
+        password_confirmation: confirm,
+      });
+      setDone(true);
+      toast.success("Password updated successfully");
+    } catch (err) {
+      const msg = err?.response?.data?.message ?? "Could not reset password.";
+      setErrors({ pw: msg });
+      toast.error(msg);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   if (done) {
@@ -123,6 +148,19 @@ export default function ResetPassword() {
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6" noValidate>
+        {!searchParams.get("email") && (
+          <Field
+            id="email"
+            type="email"
+            label="Email address"
+            placeholder="user@company.com"
+            icon={Mail}
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            error={errors.email}
+            autoComplete="email"
+          />
+        )}
         <div>
           <Field
             id="new_password"

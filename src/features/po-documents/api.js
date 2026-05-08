@@ -50,6 +50,12 @@ export const poDocumentsApi = {
     URL.revokeObjectURL(url);
   },
 
+  /** Fetch the file as a Blob without triggering a download — for preview. */
+  getBlob: async (id) => {
+    const r = await client.get(`/po-documents/${id}/download`, { responseType: "blob" });
+    return r.data;
+  },
+
   remove: (id) =>
     client.delete(`/po-documents/${id}`).then((r) => r.data),
 };

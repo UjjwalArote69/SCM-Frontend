@@ -742,7 +742,12 @@ export default function QuotationComparisonPage() {
           </p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
-          <PrintActions onPdfHint={(msg) => toast.info(msg)} />
+          <PrintActions
+            pdfFetcher={() => rfqApi.downloadPdf(rfq.number)}
+            pdfFilename={`${rfq.number}.pdf`}
+            onError={(msg) => toast.error(msg)}
+            onPdfHint={(msg) => toast.info(msg)}
+          />
         {isBackoffice && !isTerminal && hasResponses && (
           <button
             type="button"

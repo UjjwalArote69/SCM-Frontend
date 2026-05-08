@@ -15,6 +15,12 @@ export const paymentApi = {
       .post(`/payments/${number}/mark-paid`, payload)
       .then((r) => r.data.data),
   remove: (number) => client.delete(`/payments/${number}`).then((r) => r.data),
+
+  /** Stream payment voucher as PDF; returns a Blob. */
+  downloadPdf: (number) =>
+    client
+      .get(`/payments/${number}/pdf`, { responseType: "blob", params: { download: 1 } })
+      .then((r) => r.data),
 };
 
 export default paymentApi;

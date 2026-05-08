@@ -5,6 +5,7 @@ import {
   Image as ImageIcon,
   Loader2,
   Download,
+  Eye,
   Trash2,
   CheckCircle2,
   AlertCircle,
@@ -13,8 +14,10 @@ import {
   ScrollText,
 } from "lucide-react";
 import { usePoDocumentsStore } from "../store.js";
+import poDocumentsApi from "../api.js";
 import { useToast } from "../../../hooks/useToast.jsx";
 import { useAuthStore } from "../../auth/store.js";
+import { DocumentPreviewModal } from "../../../components/misc/DocumentPreview.jsx";
 
 /**
  * Reusable Documents card for a single PO.
@@ -96,6 +99,28 @@ export default function PoDocumentsCard({
   const [progress, setProgress] = useState(0);
   const [dragOver, setDragOver] = useState(false);
   const [error, setError] = useState(null);
+
+  // Preview modal — open immediately with loading state, swap in blob URL.
+  const [previewing, setPreviewing] = useState(null); // { url, name, kind } | null
+  const handlePreview = async (doc) => {
+    const guessKind = doc.mime_type === "application/pdf" ? "pdf"
+      : doc.mime_type?.startsWith("image/") ? "image" : "other";
+    setPreviewing({ url: null, name: doc.original_name, kind: guessKind });
+    try {
+      const blob = await poDocumentsApi.getBlob(doc.id);
+      const url = URL.createObjectURL(blob);
+      const kind = blob.type === "application/pdf" ? "pdf"
+        : blob.type?.startsWith("image/") ? "image" : "other";
+      setPreviewing({ url, name: doc.original_name, kind });
+    } catch (err) {
+      toast.error(err?.response?.data?.message ?? "Couldn't load preview");
+      setPreviewing(null);
+    }
+  };
+  const closePreview = () => {
+    if (previewing?.url) URL.revokeObjectURL(previewing.url);
+    setPreviewing(null);
+  };
   const inputRef = useRef(null);
 
   useEffect(() => {
@@ -374,6 +399,15 @@ export default function PoDocumentsCard({
                   <div className="flex items-center gap-1 shrink-0">
                     <button
                       type="button"
+                      onClick={() => handlePreview(d)}
+                      className="p-2 rounded-md text-text-muted hover:text-primary hover:bg-surface-container-low"
+                      title="Preview"
+                      aria-label="Preview"
+                    >
+                      <Eye className="h-4 w-4" />
+                    </button>
+                    <button
+                      type="button"
                       onClick={() => handleDownload(d)}
                       className="p-2 rounded-md text-text-muted hover:text-text hover:bg-surface-container-low"
                       title="Download"
@@ -399,6 +433,15 @@ export default function PoDocumentsCard({
           </ul>
         )}
       </div>
+
+      {previewing && (
+        <DocumentPreviewModal
+          url={previewing.url}
+          name={previewing.name}
+          kind={previewing.kind}
+          onClose={closePreview}
+        />
+      )}
     </section>
   );
 }

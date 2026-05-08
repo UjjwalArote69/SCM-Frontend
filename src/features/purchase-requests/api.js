@@ -11,6 +11,12 @@ export const prApi = {
       .post(`/prs/${number}/assign-rfq-author`, { user_id: userId })
       .then((r) => r.data.data),
   remove: (number) => client.delete(`/prs/${number}`).then((r) => r.data),
+
+  /** Stream PR as PDF; returns a Blob the caller can pipe to a download. */
+  downloadPdf: (number) =>
+    client
+      .get(`/prs/${number}/pdf`, { responseType: "blob", params: { download: 1 } })
+      .then((r) => r.data),
 };
 
 export const userApi = {

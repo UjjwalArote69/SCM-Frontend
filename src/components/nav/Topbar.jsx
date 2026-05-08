@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useLocation } from "react-router-dom";
-import { Bell, Menu, Search } from "lucide-react";
+import { Bell, Menu } from "lucide-react";
+import GlobalSearch from "./GlobalSearch.jsx";
 import ThemeToggle from "../ui/ThemeToggle.jsx";
 import NotificationsDropdown from "../../features/notifications/components/NotificationsDropdown.jsx";
 import ProfileMenu from "../../features/notifications/components/ProfileMenu.jsx";
@@ -76,16 +77,7 @@ export default function Topbar() {
       </div>
 
       {/* ── Search (pill, left-of-center) ── */}
-      <div className="flex-1 flex justify-start md:justify-start">
-        <label className="flex items-center gap-2.5 bg-surface-container-low border border-border rounded-full pl-4 pr-3 py-2 w-full max-w-sm cursor-text hover:border-primary/40 focus-within:border-primary/60 transition-colors">
-          <Search className="h-3.5 w-3.5 text-text-muted shrink-0" />
-          <input
-            type="search"
-            placeholder="Search…"
-            className="bg-transparent outline-none text-sm text-text placeholder:text-text-subtle w-full min-w-0"
-          />
-        </label>
-      </div>
+      <GlobalSearch />
 
       {/* ── Right ── */}
       <div className="flex items-center gap-1 shrink-0">

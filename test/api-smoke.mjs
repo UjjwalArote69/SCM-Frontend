@@ -59,13 +59,16 @@ function section(t) { console.log(`\n=== ${t} ===`); }
 (async () => {
   section("AUTH (logins)");
 
-  // Get all 9 tokens. Throttle is 5/min so we batch with sleeps.
+  // Get all 11 tokens. Throttle is 5/min so we batch with sleeps.
+  // RFQ consensus chain needs Purchase HOD + Finance HOD (in addition to
+  // CFO/CEO) so we add hod.purch@scm.com and hod.fin@scm.com.
   const emails = [
-    "admin@scm.com", "manager.eng@scm.com", "hod.it@scm.com", "cfo.fin@scm.com", // batch 1
+    "admin@scm.com", "manager.eng@scm.com", "hod.it@scm.com", "cfo.fin@scm.com", "hod.purch@scm.com", // batch 1
     "ceo@scm.com", "employee.it@scm.com", "vendor@acme.com", "vendor@scm.com", "purchase.purch@scm.com", // batch 2
+    "hod.fin@scm.com", // batch 3
   ];
   for (let i = 0; i < emails.length; i++) {
-    if (i === 4) { console.log("  ...sleeping 65s to clear login throttle..."); await sleep(65_000); }
+    if (i === 5 || i === 10) { console.log("  ...sleeping 65s to clear login throttle..."); await sleep(65_000); }
     await login(emails[i]);
   }
 
@@ -284,12 +287,75 @@ function section(t) { console.log(`\n=== ${t} ===`); }
     record("vendor cannot create RFQ → 403", r.status === 403, `status=${r.status}`);
   }
 
-  // Award to Acme
+  // ── Award chain: consensus → CFO → CEO → award ──────────────────────────
+  // The award flow is no longer admin-shortcut. After both vendors submit,
+  // the RFQ enters `consensus`. Purchase HOD + Finance HOD must vote for
+  // the same vendor (and respective dept HOD if PR has one — the test PR
+  // has no department, so respective slot is skipped). Then CFO approves,
+  // then CEO approves; only then can admin (or Purchase HOD) fire the award.
+
+  // Sanity: pre-award attempt should be blocked at consensus stage
   if (rfqNumber && adminTok && acme) {
     const r = await api("POST", `/rfqs/${rfqNumber}/award`, {
       token: adminTok, body: { vendor: acme },
     });
-    record("admin awards RFQ to Acme", r.status === 200, `status=${r.status} rfqStatus=${r.data?.data?.status}`);
+    record("award before consensus → 409", r.status === 409, `status=${r.status}`);
+  }
+
+  // Purchase HOD votes for Acme — fills the "purchase" slot
+  if (rfqNumber && tokens["hod.purch@scm.com"] && acme) {
+    const r = await api("POST", `/rfqs/${rfqNumber}/agree`, {
+      token: tokens["hod.purch@scm.com"], body: { vendor: acme },
+    });
+    record("Purchase HOD agrees on Acme", r.status === 200, `status=${r.status} stage=${r.data?.data?.chain_stage}`);
+  }
+
+  // Finance HOD votes for Acme — fills the "finance" slot, completing consensus
+  if (rfqNumber && tokens["hod.fin@scm.com"] && acme) {
+    const r = await api("POST", `/rfqs/${rfqNumber}/agree`, {
+      token: tokens["hod.fin@scm.com"], body: { vendor: acme },
+    });
+    record(
+      "Finance HOD agrees on Acme → consensus reached",
+      r.status === 200 && r.data?.data?.chain_stage === "cfo",
+      `status=${r.status} stage=${r.data?.data?.chain_stage}`,
+    );
+  }
+
+  // CFO approves financial — chain advances to ceo
+  if (rfqNumber && tokens["cfo.fin@scm.com"]) {
+    const r = await api("POST", `/rfqs/${rfqNumber}/status`, {
+      token: tokens["cfo.fin@scm.com"], body: { action: "approve" },
+    });
+    record(
+      "CFO approves RFQ → chain at ceo",
+      r.status === 200 && r.data?.data?.chain_stage === "ceo",
+      `status=${r.status} stage=${r.data?.data?.chain_stage}`,
+    );
+  }
+
+  // CEO approves financial — chain advances to done
+  if (rfqNumber && tokens["ceo@scm.com"]) {
+    const r = await api("POST", `/rfqs/${rfqNumber}/status`, {
+      token: tokens["ceo@scm.com"], body: { action: "approve" },
+    });
+    record(
+      "CEO approves RFQ → chain at done",
+      r.status === 200 && r.data?.data?.chain_stage === "done",
+      `status=${r.status} stage=${r.data?.data?.chain_stage}`,
+    );
+  }
+
+  // NOW admin can fire the award
+  if (rfqNumber && adminTok && acme) {
+    const r = await api("POST", `/rfqs/${rfqNumber}/award`, {
+      token: adminTok, body: { vendor: acme },
+    });
+    record(
+      "admin awards RFQ to Acme",
+      r.status === 200 && r.data?.data?.status === "awarded",
+      `status=${r.status} rfqStatus=${r.data?.data?.status}`,
+    );
   }
 
   // Re-award → terminal-state guard
@@ -328,6 +394,30 @@ function section(t) { console.log(`\n=== ${t} ===`); }
     record("employee cannot create PO → 403", r.status === 403, `status=${r.status}`);
   }
 
+  // Drive PO through its internal approval chain (rule-driven). If a PO
+  // approval rule is configured, chain_stage starts on the first stage and
+  // vendor accept is blocked until chain_stage='done'. Admin overrides
+  // every stage so we just loop /status approve until done.
+  if (poNumber && adminTok) {
+    const det = await api("GET", `/pos/${poNumber}`, { token: adminTok });
+    let stage = det.data?.data?.chain_stage ?? "done";
+    let advanced = 0;
+    while (stage && stage !== "done" && advanced < 8) {
+      const r = await api("POST", `/pos/${poNumber}/status`, {
+        token: adminTok, body: { action: "approve" },
+      });
+      if (r.status !== 200) {
+        record(`admin advance PO chain (was ${stage})`, false, `status=${r.status} body=${JSON.stringify(r.data).slice(0,150)}`);
+        break;
+      }
+      stage = r.data?.data?.chain_stage ?? "done";
+      advanced++;
+    }
+    if (advanced > 0) {
+      record(`admin advanced PO chain to done (${advanced} stages)`, stage === "done", `final stage=${stage}`);
+    }
+  }
+
   // Wrong vendor accepts → 403
   if (poNumber && tokens["vendor@scm.com"]) {
     const r = await api("POST", `/pos/${poNumber}/accept`, { token: tokens["vendor@scm.com"] });
@@ -348,6 +438,22 @@ function section(t) { console.log(`\n=== ${t} ===`); }
 
   section("GRN");
 
+  // GRNs need PM approval (FLOW.md item 20) — admin acts as override here.
+  // Without approval the GRN sits at chain_stage=pending_pm and the PO
+  // auto-fulfilment check skips it.
+  const approveGrn = async (grnNum) => {
+    if (!grnNum) return null;
+    return api("POST", `/grns/${grnNum}/status`, {
+      token: adminTok, body: { action: "approve" },
+    });
+  };
+
+  // Track GRNs so cleanup can delete them — without this, each run leaves
+  // orphan GRNs pointing at the soon-to-be-deleted PO. Because PO numbers
+  // are sequenced from max(id), the next run creates a PO with the SAME
+  // number and inherits the orphans, inflating auto-fulfilment counts.
+  const createdGrns = [];
+
   if (poNumber && adminTok && acme) {
     // Partial 5/10
     const r1 = await api("POST", "/grns", {
@@ -358,7 +464,13 @@ function section(t) { console.log(`\n=== ${t} ===`); }
         items: [{ name: "Test Widget", code: "W-001", ordered: 10, received: 5 }],
       },
     });
-    record("admin creates partial GRN (5/10)", r1.status === 201 || r1.status === 200, `status=${r1.status} grn=${pickNumber(r1.data)} body=${JSON.stringify(r1.data).slice(0,150)}`);
+    const grn1 = pickNumber(r1.data);
+    if (grn1) createdGrns.push(grn1);
+    record("admin creates partial GRN (5/10)", r1.status === 201 || r1.status === 200, `status=${r1.status} grn=${grn1} body=${JSON.stringify(r1.data).slice(0,150)}`);
+
+    // PM-approve so the units count toward fulfilment
+    const a1 = await approveGrn(grn1);
+    record("admin approves partial GRN (PM stand-in)", a1?.status === 200, `status=${a1?.status} stage=${a1?.data?.data?.chain_stage}`);
 
     const poAfter1 = await api("GET", `/pos/${poNumber}`, { token: adminTok });
     record("PO still 'accepted' after partial", poAfter1.data?.data?.status === "accepted",
@@ -373,7 +485,13 @@ function section(t) { console.log(`\n=== ${t} ===`); }
         items: [{ name: "Test Widget", code: "W-001", ordered: 10, received: 5 }],
       },
     });
+    const grn2 = pickNumber(r2.data);
+    if (grn2) createdGrns.push(grn2);
     record("admin creates final GRN (5 more)", r2.status === 201 || r2.status === 200, `status=${r2.status}`);
+
+    // PM-approve final GRN — this is the call that triggers auto-fulfil
+    const a2 = await approveGrn(grn2);
+    record("admin approves final GRN (PM stand-in)", a2?.status === 200, `status=${a2?.status} stage=${a2?.data?.data?.chain_stage}`);
 
     const poAfter2 = await api("GET", `/pos/${poNumber}`, { token: adminTok });
     record("PO auto-fulfilled after full receive", poAfter2.data?.data?.status === "fulfilled",
@@ -393,6 +511,12 @@ function section(t) { console.log(`\n=== ${t} ===`); }
 
   section("CLEANUP");
   if (adminTok) {
+    // Delete GRNs FIRST so they don't become orphans when the PO is deleted.
+    // (PO numbers are sequenced from max(id), so the next run reuses the
+    // same number and would inherit any leftover GRNs.)
+    for (const g of createdGrns) {
+      await api("DELETE", `/grns/${g}`, { token: adminTok });
+    }
     if (lonelyRfq) await api("DELETE", `/rfqs/${lonelyRfq}`, { token: adminTok });
     if (rfqNumber) await api("DELETE", `/rfqs/${rfqNumber}`, { token: adminTok });
     if (poNumber)  await api("DELETE", `/pos/${poNumber}`, { token: adminTok });

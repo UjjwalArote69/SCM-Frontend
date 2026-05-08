@@ -19,6 +19,7 @@ import { useToast } from "../../../hooks/useToast.jsx";
 import { useAuthStore } from "../../auth/store.js";
 import RefreshButton from "../../../components/data/RefreshButton.jsx";
 import Skeleton from "../../../components/feedback/Skeleton.jsx";
+import KpiStatCard from "../../../components/data/KpiStatCard.jsx";
 
 // Mirrors RfqController::canWriteRfq — admin, purchase_officer, OR HOD of
 // Procurement / Purchase. Generic HODs (IT, FIN, etc.) still can't author.
@@ -72,45 +73,8 @@ function StatusPill({ status }) {
   );
 }
 
-function StatCard({ label, value, icon: Icon, tone = "neutral", active, onClick }) {
-  const iconBg = {
-    neutral: "bg-surface-container",
-    info: "bg-info-soft",
-    warning: "bg-warning-soft",
-    success: "bg-success-soft",
-    danger: "bg-danger-soft",
-  };
-  const iconColor = {
-    neutral: "text-text-muted",
-    info: "text-info",
-    warning: "text-warning",
-    success: "text-success",
-    danger: "text-danger",
-  };
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`glass-card text-left flex items-center gap-3 p-4 rounded-2xl transition-all duration-200 shrink-0 snap-start min-w-[140px] sm:min-w-0 hover:shadow-lg hover:-translate-y-0.5 ${
-        active ? "ring-2 ring-primary/40" : ""
-      }`}
-    >
-      <div
-        className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${iconBg[tone]}`}
-      >
-        <Icon className={`h-4 w-4 ${iconColor[tone]}`} strokeWidth={2.25} />
-      </div>
-      <div className="min-w-0">
-        <div className="text-[10px] uppercase tracking-[0.18em] font-semibold text-text-muted">
-          {label}
-        </div>
-        <div className="text-2xl font-bold tracking-tight tabular-nums leading-tight text-text">
-          {value}
-        </div>
-      </div>
-    </button>
-  );
-}
+// StatCard moved to shared component — see components/data/KpiStatCard.jsx
+const StatCard = KpiStatCard;
 
 function FilterBar({ query, setQuery, dateRange, setDateRange }) {
   return (

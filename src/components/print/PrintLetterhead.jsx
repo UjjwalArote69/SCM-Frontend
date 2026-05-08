@@ -9,11 +9,11 @@ export default function PrintLetterhead({ docType, docNumber, subtitle }) {
     <div className="print-only mb-6">
       <div className="flex items-start justify-between pb-4 border-b-2 border-black">
         <div>
-          <div className="text-[10pt] font-bold tracking-[0.2em] uppercase">
-            SCM · Meka Group
+          <div className="text-[10pt] font-bold tracking-tight">
+            Suppliers First · Meka Group
           </div>
           <div className="text-[8pt] text-gray-600 mt-0.5">
-            Supply Chain Management
+            Procurement
           </div>
         </div>
         <div className="text-right">

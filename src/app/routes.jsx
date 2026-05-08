@@ -1,89 +1,76 @@
 import { Routes, Route, Navigate } from "react-router-dom";
+import { lazy, Suspense } from "react";
+import { Loader2 } from "lucide-react";
 
 import UserLayout from "../layouts/UserLayout.jsx";
 import VendorLayout from "../layouts/VendorLayout.jsx";
 import AdminLayout from "../layouts/AdminLayout.jsx";
 
-// Auth
+// Eager — entry points + small shells. Lazy-loading the login page would
+// add a flash on the most common entry point, so it stays in the main bundle.
 import Login from "../features/auth/pages/Login.jsx";
-import ForgotPassword from "../features/auth/pages/ForgotPassword.jsx";
-import ResetPassword from "../features/auth/pages/ResetPassword.jsx";
-
-// Onboarding
-import VendorRegistrationPage from "../features/onboarding/pages/VendorRegistrationPage.jsx";
-
-// Homes
-import UserHome from "../features/user-home/pages/UserHome.jsx";
-import VendorHome from "../features/vendor-home/pages/VendorHome.jsx";
-import AdminHome from "../features/admin-home/pages/AdminHome.jsx";
-
-// Purchase Requests
-import PRList from "../features/purchase-requests/pages/List.jsx";
-import PRCreate from "../features/purchase-requests/pages/Create.jsx";
-import PRDetail from "../features/purchase-requests/pages/Detail.jsx";
-
-// Purchase Orders
-import POList from "../features/purchase-orders/pages/List.jsx";
-import POCreate from "../features/purchase-orders/pages/Create.jsx";
-import PODetail from "../features/purchase-orders/pages/Detail.jsx";
-
-// Quotations
-import QList from "../features/quotations/pages/List.jsx";
-import QCreate from "../features/quotations/pages/CreateRFQ.jsx";
-import QCompare from "../features/quotations/pages/Comparison.jsx";
-import QSubmit from "../features/quotations/pages/SubmitQuote.jsx";
-
-// GRN
-import GRNList from "../features/grn/pages/List.jsx";
-import GRNCreate from "../features/grn/pages/Create.jsx";
-import GRNDetail from "../features/grn/pages/Detail.jsx";
-import StockReceive from "../features/grn/pages/StockReceive.jsx";
-
-// Finance
-import InvoicesList from "../features/finance/pages/InvoicesList.jsx";
-import InvoiceApproval from "../features/finance/pages/InvoiceApproval.jsx";
-import PaymentsList from "../features/payments/pages/List.jsx";
-import PaymentCreate from "../features/payments/pages/Create.jsx";
-import PaymentDetail from "../features/payments/pages/Detail.jsx";
-import VendorInvoiceUpload from "../features/finance/pages/VendorInvoiceUpload.jsx";
-import ProformaInvoice from "../features/finance/pages/ProformaInvoice.jsx";
-import DeliveryChallan from "../features/finance/pages/DeliveryChallan.jsx";
-import PurchaseReturn from "../features/finance/pages/PurchaseReturn.jsx";
-
-// Masters
-import InventoryList from "../features/masters/pages/Inventory.jsx";
-import ItemsList from "../features/masters/pages/ItemsList.jsx";
-import VendorsList from "../features/masters/pages/VendorsList.jsx";
-import Categories from "../features/masters/pages/Categories.jsx";
-import Companies from "../features/masters/pages/Companies.jsx";
-import Projects from "../features/masters/pages/Projects.jsx";
-import Departments from "../features/masters/pages/Departments.jsx";
-
-// Admin
-import UsersList from "../features/admin-home/pages/UsersList.jsx";
-import RolesPermissions from "../features/admin-home/pages/RolesPermissions.jsx";
-import ApprovalRules from "../features/admin-home/pages/ApprovalRules.jsx";
-import Settings from "../features/admin-home/pages/Settings.jsx";
-
-// Reports
-import ReportBuilder from "../features/reports/pages/ReportBuilder.jsx";
-
-// Notifications
-import NotificationsInbox from "../features/notifications/pages/Inbox.jsx";
-
-// Vendor portal
-import VQuotationRequests from "../features/vendor-portal/pages/VendorQuotationRequests.jsx";
-import VQuotations from "../features/vendor-portal/pages/VendorQuotations.jsx";
-import VPOList from "../features/vendor-portal/pages/VendorPOList.jsx";
-import VInvoices from "../features/vendor-portal/pages/VendorInvoices.jsx";
-import VApplicationStatus from "../features/vendor-portal/pages/VendorApplicationStatus.jsx";
-
-// Shared profile page (user + vendor)
-import ProfilePage from "../features/auth/pages/Profile.jsx";
-
-// Misc
+import Landing from "../pages/Landing.jsx";
 import Forbidden from "../pages/Forbidden.jsx";
 import RoleGate from "./guards/RoleGate.jsx";
+
+// Lazy — every page-level component, split into route-bound chunks. The
+// initial bundle drops from ~1MB → ~200-300 KB; each route fetches its
+// own chunk on first nav. Vite produces hashed chunk filenames automatically.
+const ForgotPassword          = lazy(() => import("../features/auth/pages/ForgotPassword.jsx"));
+const ResetPassword           = lazy(() => import("../features/auth/pages/ResetPassword.jsx"));
+const VendorRegistrationPage  = lazy(() => import("../features/onboarding/pages/VendorRegistrationPage.jsx"));
+
+const UserHome   = lazy(() => import("../features/user-home/pages/UserHome.jsx"));
+const VendorHome = lazy(() => import("../features/vendor-home/pages/VendorHome.jsx"));
+const AdminHome  = lazy(() => import("../features/admin-home/pages/AdminHome.jsx"));
+
+const PRList   = lazy(() => import("../features/purchase-requests/pages/List.jsx"));
+const PRCreate = lazy(() => import("../features/purchase-requests/pages/Create.jsx"));
+const PRDetail = lazy(() => import("../features/purchase-requests/pages/Detail.jsx"));
+
+const POList   = lazy(() => import("../features/purchase-orders/pages/List.jsx"));
+const POCreate = lazy(() => import("../features/purchase-orders/pages/Create.jsx"));
+const PODetail = lazy(() => import("../features/purchase-orders/pages/Detail.jsx"));
+
+const QList    = lazy(() => import("../features/quotations/pages/List.jsx"));
+const QCreate  = lazy(() => import("../features/quotations/pages/CreateRFQ.jsx"));
+const QCompare = lazy(() => import("../features/quotations/pages/Comparison.jsx"));
+const QSubmit  = lazy(() => import("../features/quotations/pages/SubmitQuote.jsx"));
+
+const GRNList     = lazy(() => import("../features/grn/pages/List.jsx"));
+const GRNCreate   = lazy(() => import("../features/grn/pages/Create.jsx"));
+const GRNDetail   = lazy(() => import("../features/grn/pages/Detail.jsx"));
+
+const InvoicesList         = lazy(() => import("../features/finance/pages/InvoicesList.jsx"));
+const InvoiceApproval      = lazy(() => import("../features/finance/pages/InvoiceApproval.jsx"));
+const PaymentsList         = lazy(() => import("../features/payments/pages/List.jsx"));
+const PaymentCreate        = lazy(() => import("../features/payments/pages/Create.jsx"));
+const PaymentDetail        = lazy(() => import("../features/payments/pages/Detail.jsx"));
+const VendorInvoiceUpload  = lazy(() => import("../features/finance/pages/VendorInvoiceUpload.jsx"));
+
+const InventoryList = lazy(() => import("../features/masters/pages/Inventory.jsx"));
+const ItemsList     = lazy(() => import("../features/masters/pages/ItemsList.jsx"));
+const VendorsList   = lazy(() => import("../features/masters/pages/VendorsList.jsx"));
+const Categories    = lazy(() => import("../features/masters/pages/Categories.jsx"));
+const Companies     = lazy(() => import("../features/masters/pages/Companies.jsx"));
+const Projects      = lazy(() => import("../features/masters/pages/Projects.jsx"));
+const Departments   = lazy(() => import("../features/masters/pages/Departments.jsx"));
+
+const UsersList         = lazy(() => import("../features/admin-home/pages/UsersList.jsx"));
+const RolesPermissions  = lazy(() => import("../features/admin-home/pages/RolesPermissions.jsx"));
+const ApprovalRules     = lazy(() => import("../features/admin-home/pages/ApprovalRules.jsx"));
+const Settings          = lazy(() => import("../features/admin-home/pages/Settings.jsx"));
+
+const ReportBuilder      = lazy(() => import("../features/reports/pages/ReportBuilder.jsx"));
+const NotificationsInbox = lazy(() => import("../features/notifications/pages/Inbox.jsx"));
+
+const VQuotationRequests = lazy(() => import("../features/vendor-portal/pages/VendorQuotationRequests.jsx"));
+const VQuotations        = lazy(() => import("../features/vendor-portal/pages/VendorQuotations.jsx"));
+const VPOList            = lazy(() => import("../features/vendor-portal/pages/VendorPOList.jsx"));
+const VInvoices          = lazy(() => import("../features/vendor-portal/pages/VendorInvoices.jsx"));
+const VApplicationStatus = lazy(() => import("../features/vendor-portal/pages/VendorApplicationStatus.jsx"));
+
+const ProfilePage = lazy(() => import("../features/auth/pages/Profile.jsx"));
 
 // Role allowlists per layout
 const USER_ROLES = [
@@ -117,10 +104,19 @@ const wrap = (Layout, Page, props = {}) => {
   return allow ? <RoleGate allow={allow}>{node}</RoleGate> : node;
 };
 
+function RouteFallback() {
+  return (
+    <div className="flex h-[60vh] items-center justify-center text-text-muted">
+      <Loader2 className="size-6 animate-spin" />
+    </div>
+  );
+}
+
 export default function AppRoutes() {
   return (
+    <Suspense fallback={<RouteFallback />}>
     <Routes>
-      <Route path="/" element={<Navigate to="/login" replace />} />
+      <Route path="/" element={<Landing />} />
 
       {/* Auth */}
       <Route path="/login" element={<Login />} />
@@ -158,16 +154,15 @@ export default function AppRoutes() {
       <Route path="/app/grn" element={wrap(UserLayout, GRNList)} />
       <Route path="/app/grn/new" element={wrap(UserLayout, GRNCreate)} />
       <Route path="/app/grn/:id" element={wrap(UserLayout, GRNDetail)} />
-      <Route path="/app/grn/stock-receive" element={wrap(UserLayout, StockReceive)} />
-      <Route path="/app/grn/delivery-challan" element={wrap(UserLayout, DeliveryChallan)} />
-      <Route path="/app/grn/purchase-return" element={wrap(UserLayout, PurchaseReturn)} />
+      {/* /app/grn/stock-receive, /delivery-challan, /purchase-return — removed
+         (alternate stub forms; the real flow is /app/grn/new) */}
 
       <Route path="/app/inventory" element={wrap(UserLayout, InventoryList)} />
-      <Route path="/app/inventory/receive" element={wrap(UserLayout, StockReceive)} />
+      {/* /app/inventory/receive — removed; use /app/grn/new */}
 
       <Route path="/app/invoices" element={wrap(UserLayout, InvoicesList)} />
       <Route path="/app/invoices/:id/approve" element={wrap(UserLayout, InvoiceApproval)} />
-      <Route path="/app/invoices/proforma" element={wrap(UserLayout, ProformaInvoice)} />
+      {/* /app/invoices/proforma — removed (stub form); raise via /vendor/invoices/upload */}
 
       <Route path="/app/payments" element={wrap(UserLayout, PaymentsList)} />
       <Route path="/app/payments/new" element={wrap(UserLayout, PaymentCreate)} />
@@ -224,5 +219,6 @@ export default function AppRoutes() {
 
       <Route path="*" element={<Navigate to="/login" replace />} />
     </Routes>
+    </Suspense>
   );
 }

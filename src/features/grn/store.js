@@ -28,4 +28,24 @@ export const useGRNStore = create((set, get) => ({
     await grnApi.remove(number);
     set((s) => ({ items: s.items.filter((g) => g.number !== number) }));
   },
+
+  updateStatus: async (number, payload) => {
+    const updated = await grnApi.updateStatus(number, payload);
+    set((s) => ({
+      items: s.items.some((g) => g.number === number)
+        ? s.items.map((g) => (g.number === number ? updated : g))
+        : [updated, ...s.items],
+    }));
+    return updated;
+  },
+
+  acceptReplacement: async (number, payload) => {
+    const updated = await grnApi.acceptReplacement(number, payload);
+    set((s) => ({
+      items: s.items.some((g) => g.number === number)
+        ? s.items.map((g) => (g.number === number ? updated : g))
+        : [updated, ...s.items],
+    }));
+    return updated;
+  },
 }));

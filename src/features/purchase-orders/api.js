@@ -9,6 +9,12 @@ export const poApi = {
   accept: (number) => client.post(`/pos/${number}/accept`).then((r) => r.data.data),
   reject: (number) => client.post(`/pos/${number}/reject`).then((r) => r.data.data),
   remove: (number) => client.delete(`/pos/${number}`).then((r) => r.data),
+
+  /** Stream PO as PDF; returns a Blob the caller can pipe to a download. */
+  downloadPdf: (number) =>
+    client
+      .get(`/pos/${number}/pdf`, { responseType: "blob", params: { download: 1 } })
+      .then((r) => r.data),
 };
 
 export default poApi;

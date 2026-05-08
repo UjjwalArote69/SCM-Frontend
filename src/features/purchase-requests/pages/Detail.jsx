@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useState } from "react";
+import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import {
   ChevronRight,
@@ -23,64 +23,76 @@ import {
 } from "lucide-react";
 import UpdateStatusModal from "../components/UpdateStatusModal.jsx";
 import AssignAuthorModal from "../../../components/feedback/AssignAuthorModal.jsx";
-import { usePRStore, chainFromStage } from "../store.js";
+import { usePRStore } from "../store.js";
 import prApi from "../api.js";
+import prDocumentsApi from "../documents/api.js";
 import { useToast } from "../../../hooks/useToast.jsx";
 import { useAuthStore } from "../../auth/store.js";
+import { DocumentPreviewModal } from "../../../components/misc/DocumentPreview.jsx";
+import {
+  Paperclip, Image as ImageIcon, Eye, FileWarning,
+} from "lucide-react";
 
 /**
- * Role-based gate for acting on a PR.
- * - Admin can always act.
- * - Matching stage role (hod/cfo/ceo) can approve/reject/hold.
- * - The creator can always cancel their own pending PR.
+ * Role-based gate for acting on a PR — now rule-driven.
+ *
+ * The backend appends pr.chain_stages — the resolved chain for THIS PR
+ * (e.g. [{ key: "hod_purch", role: "hod", department_code: "PURCH", label: "Purchase HOD" }, ...]).
+ *
+ * The user can act if:
+ *   - they're admin, OR
+ *   - their role matches the current stage's role AND
+ *   - the stage's department_code is empty OR equals their department.code.
+ *
+ * Creator can always cancel their own pending PR.
  */
 function canActOnPr(user, pr) {
   if (!user || !pr) return { canAct: false, canCancel: false };
   if (pr.status !== "pending" || pr.chain_stage === "done") {
     return { canAct: false, canCancel: false };
   }
-  const role = user.role;
-  const stage = pr.chain_stage;
-  const isApprover = role === "admin" || role === stage;
+
   const isCreator = pr.created_by && pr.created_by === user.id;
-  return { canAct: isApprover, canCancel: isApprover || isCreator };
+  if (user.role === "admin") return { canAct: true, canCancel: true };
+
+  const stages = Array.isArray(pr.chain_stages) ? pr.chain_stages : null;
+  const current = stages?.find((s) => s.key === pr.chain_stage);
+
+  // Fallback for older records without chain_stages (legacy hod/cfo/ceo)
+  if (!current) {
+    const isApprover = user.role === pr.chain_stage;
+    return { canAct: isApprover, canCancel: isApprover || isCreator };
+  }
+
+  const roleMatch = user.role === current.role;
+  const deptMatch = !current.department_code
+    || user.department?.code === current.department_code;
+
+  const canAct = roleMatch && deptMatch;
+  return { canAct, canCancel: canAct || isCreator };
 }
 
-const STAGE_LABEL = {
-  hod: "HOD REVIEW",
-  cfo: "CFO REVIEW",
-  ceo: "CEO REVIEW",
-  done: "COMPLETED",
+/** Map a stage's role to an icon for the timeline. */
+const ROLE_ICON = {
+  hod: Users,
+  cfo: Banknote,
+  ceo: Crown,
+  director: Crown,
+  manager: Users,
+  purchase_officer: Users,
+  accountant: Banknote,
 };
 
-/** Each approval step's metadata. Order = chronological flow. */
-const APPROVAL_STEPS = [
-  {
-    role: "hod",
-    shortLabel: "HOD",
-    title: "Head of Department",
-    description: "Validates team need and scope",
-    Icon: Users,
-  },
-  {
-    role: "cfo",
-    shortLabel: "CFO",
-    title: "Chief Financial Officer",
-    description: "Confirms budget and financial fit",
-    Icon: Banknote,
-  },
-  {
-    role: "ceo",
-    shortLabel: "CEO",
-    title: "Chief Executive Officer",
-    description: "Final executive sign-off",
-    Icon: Crown,
-  },
-];
+/** Roles that get to see private comments / per-stage attribution.
+ *  Anyone whose role appears in the resolved chain is an approver. */
+function isApproverFor(user, pr) {
+  if (!user) return false;
+  if (user.role === "admin") return true;
+  const stages = Array.isArray(pr?.chain_stages) ? pr.chain_stages : [];
+  return stages.some((s) => s.role === user.role);
+}
 
-/** Non-approvers (employees, customers, vendors, etc) see a neutral
- *  status without the last_comment or actor attribution. */
-const APPROVER_ROLES = new Set(["admin", "hod", "cfo", "ceo"]);
+const APPROVER_ROLES = new Set(["admin", "hod", "cfo", "ceo", "director", "manager", "purchase_officer", "accountant"]);
 
 const STATUS_TONE = {
   pending: {
@@ -126,6 +138,20 @@ function display(v) {
   return isEmpty(v) ? "—" : v;
 }
 
+/** Plain-language description of a resolved stage. */
+function describeStageRole(stage) {
+  if (!stage) return "";
+  if (stage.role === "hod") {
+    if (!stage.department_code) return "Any HOD can approve";
+    if (stage.department_code === ":requester_dept") return "HOD of the requesting department";
+    return `HOD of the ${stage.department_code} department`;
+  }
+  if (stage.role === "cfo") return "Confirms budget and financial fit";
+  if (stage.role === "ceo") return "Final executive sign-off";
+  if (stage.role === "director") return "Board-level director sign-off";
+  return stage.role.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
 function formatDate(value) {
   if (isEmpty(value)) return "—";
   const d = new Date(value);
@@ -137,33 +163,55 @@ function formatDate(value) {
   });
 }
 
-function ApprovalSummary({ chain }) {
-  const order = ["hod", "cfo", "ceo"];
+function ApprovalSummary({ pr }) {
+  const stages = Array.isArray(pr.chain_stages) ? pr.chain_stages : [];
+  if (stages.length === 0) return null;
+
+  // Find current stage index; everything before it is approved (assuming no hold/reject)
+  const currentIdx = stages.findIndex((s) => s.key === pr.chain_stage);
+  const isDone = pr.chain_stage === "done" || pr.status === "approved";
+  const isRejected = pr.status === "rejected";
+
+  // Read approval_history to compute per-stage state precisely
+  const history = Array.isArray(pr.approval_history) ? pr.approval_history : [];
+  const stageState = (stage, idx) => {
+    const last = [...history].reverse().find((h) => h?.stage === stage.key);
+    if (last?.action === "reject") return "rejected";
+    if (last?.action === "approve") return "approved";
+    if (isDone && idx <= (currentIdx === -1 ? stages.length : currentIdx)) return "approved";
+    if (isRejected) return "rejected";
+    if (idx === currentIdx) return "pending";
+    if (currentIdx === -1) return "waiting";
+    return idx < currentIdx ? "approved" : "waiting";
+  };
+
   return (
     <div className="flex items-center bg-surface-container-low rounded-md px-2 py-1 max-w-full overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
       <span className="hidden sm:inline text-xs font-medium text-text-muted mr-3 uppercase tracking-wider shrink-0">
         Approvals:
       </span>
       <div className="flex items-center gap-1.5 sm:gap-2">
-        {order.map((role) => {
-          const state = chain[role];
-          const approved = state === "approved";
-          const rejected = state === "rejected";
-          const cls = approved
+        {stages.map((s, idx) => {
+          const state = stageState(s, idx);
+          const cls = state === "approved"
             ? "text-success bg-success-soft border-success/30"
-            : rejected
+            : state === "rejected"
               ? "text-danger bg-danger-soft border-danger/30"
               : state === "pending"
                 ? "text-warning bg-warning-soft border-warning/30"
                 : "text-text-subtle bg-surface-container border-border";
-          const Icon = approved ? CheckCircle2 : rejected ? XCircle : Clock;
+          const Icon = state === "approved" ? CheckCircle2 : state === "rejected" ? XCircle : Clock;
+          // Compact label: prefer role short, fall back to first 4 chars
+          const short = s.role === "hod" && s.department_code
+            ? s.department_code
+            : s.role.toUpperCase().slice(0, 4);
           return (
             <span
-              key={role}
-              title={`${role.toUpperCase()}: ${state}`}
+              key={s.key}
+              title={`${s.label}: ${state}`}
               className={`flex items-center gap-1 text-xs font-bold px-2 py-1 rounded border uppercase ${cls}`}
             >
-              {role}
+              {short}
               <Icon className="h-3.5 w-3.5" />
             </span>
           );
@@ -188,36 +236,57 @@ function MetaField({ label, value }) {
    Approval timeline — vertical stepper with per-step connector
    that auto-aligns to the node above (no absolute positioning).
    ============================================================ */
-function ApprovalTree({ chain, pr, canSeeComment }) {
-  const approvedCount = APPROVAL_STEPS.filter(
-    (s) => chain[s.role] === "approved",
-  ).length;
-  const rejected = APPROVAL_STEPS.some((s) => chain[s.role] === "rejected");
+function ApprovalTree({ pr, canSeeComment }) {
+  // chain_stages comes from the backend (resolved from the matching rule).
+  // For old records that predate this field, fall back to the legacy 3-step
+  // hod/cfo/ceo chain so the page still renders.
+  const stages = useMemo(() => {
+    if (Array.isArray(pr.chain_stages) && pr.chain_stages.length > 0) {
+      return pr.chain_stages;
+    }
+    return [
+      { key: "hod", role: "hod", label: "Department HOD" },
+      { key: "cfo", role: "cfo", label: "CFO Review" },
+      { key: "ceo", role: "ceo", label: "CEO Review" },
+    ];
+  }, [pr.chain_stages]);
+
   const isComplete = pr.status === "approved";
   const isCancelled = pr.status === "cancelled";
-  const totalSteps = APPROVAL_STEPS.length;
+  const isRejected = pr.status === "rejected";
+  const currentIdx = stages.findIndex((s) => s.key === pr.chain_stage);
 
-  // Source of truth for per-stage comments + actions. Each entry:
-  //   { stage, action, by_user_id, by_user_name, by_role, comment, at }
-  // Earlier this data was a single pr.last_comment field which leaked the
-  // HOD's hold-comment forward to the CFO step (Bug 2026-04-29).
+  // History per stage key
   const history = Array.isArray(pr.approval_history) ? pr.approval_history : [];
-  /** Latest history entry whose stage === role, or null. */
-  const lastEntryAtStage = (role) => {
+  const lastEntryAtKey = (key) => {
     for (let i = history.length - 1; i >= 0; i--) {
-      if (history[i]?.stage === role) return history[i];
+      if (history[i]?.stage === key) return history[i];
     }
     return null;
   };
 
+  // Compute per-stage state
+  const stageState = (stage, idx) => {
+    const last = lastEntryAtKey(stage.key);
+    if (last?.action === "reject") return "rejected";
+    if (last?.action === "approve") return "approved";
+    if (isComplete) return "approved";
+    if (isRejected) return idx === currentIdx ? "rejected" : "waiting";
+    if (idx === currentIdx) return last?.action === "hold" ? "hold" : "pending";
+    if (currentIdx === -1) return "waiting";
+    return idx < currentIdx ? "approved" : "waiting";
+  };
+
+  const approvedCount = stages.filter((s, i) => stageState(s, i) === "approved").length;
+
   const summary = isComplete
     ? { text: "Fully approved", cls: "bg-success-soft text-success" }
-    : rejected
+    : isRejected
       ? { text: "Rejected", cls: "bg-danger-soft text-danger" }
       : isCancelled
         ? { text: "Cancelled", cls: "bg-surface-container-high text-text-muted" }
         : {
-            text: `${approvedCount} of ${totalSteps} approved`,
+            text: `${approvedCount} of ${stages.length} approved`,
             cls: "bg-warning-soft text-warning",
           };
 
@@ -236,13 +305,20 @@ function ApprovalTree({ chain, pr, canSeeComment }) {
       </header>
 
       <ol className="p-4 sm:p-5 pt-2">
-        {APPROVAL_STEPS.map((step, idx) => {
-          const state = chain[step.role];
+        {stages.map((stage, idx) => {
+          const state = stageState(stage, idx);
           const approved = state === "approved";
           const stepRejected = state === "rejected";
-          const active = state === "pending";
-          const isLast = idx === APPROVAL_STEPS.length - 1;
-          const RoleIcon = step.Icon;
+          const active = state === "pending" || state === "hold";
+          const isLast = idx === stages.length - 1;
+          const RoleIcon = ROLE_ICON[stage.role] ?? Users;
+          // Construct title + description from the stage object
+          const step = {
+            shortLabel: stage.label?.replace(/ Review$/, "") ?? stage.role.toUpperCase(),
+            title: stage.label ?? stage.role,
+            description: describeStageRole(stage),
+            Icon: RoleIcon,
+          };
 
           // Node colour
           const nodeCls = approved
@@ -281,7 +357,7 @@ function ApprovalTree({ chain, pr, canSeeComment }) {
           // stage. For very old PRs predating approval_history, fall back to
           // pr.last_comment but ONLY on the currently-active step (so we don't
           // synthesize a comment against the wrong stage).
-          const lastAtThis = lastEntryAtStage(step.role);
+          const lastAtThis = lastEntryAtKey(stage.key);
           let stageComment = lastAtThis?.comment ?? null;
           let stageAction = lastAtThis?.action ?? null;
           if (!stageComment && active && history.length === 0) {
@@ -300,7 +376,7 @@ function ApprovalTree({ chain, pr, canSeeComment }) {
 
           return (
             <li
-              key={step.role}
+              key={stage.key}
               className="flex gap-3 sm:gap-4 print-timeline-item"
             >
               {/* Left column: node circle + connector that fills remaining height */}
@@ -452,11 +528,14 @@ export default function PurchaseRequestDetailPage() {
   const [submitting, setSubmitting] = useState(false);
   const toast = useToast();
 
-  const pr = inStore ?? fetched;
+  // Prefer the freshly-fetched record over the store copy: the list endpoint
+  // doesn't bundle `documents` / `approval_history`, so a store-only PR would
+  // hide attachments and the timeline. Always fetch by number to pick up the
+  // bundled relations; fall back to store only for the first paint.
+  const pr = fetched ?? inStore;
   const loading = !pr && !fetchFailed;
 
   useEffect(() => {
-    if (inStore) return;
     let cancelled = false;
     prApi
       .get(number)
@@ -469,7 +548,7 @@ export default function PurchaseRequestDetailPage() {
     return () => {
       cancelled = true;
     };
-  }, [number, inStore]);
+  }, [number]);
 
   if (loading) {
     return (
@@ -495,8 +574,11 @@ export default function PurchaseRequestDetailPage() {
     );
   }
 
-  const chain = chainFromStage(pr.chain_stage, pr.status);
-  const stageLabel = STAGE_LABEL[pr.chain_stage] ?? "REVIEW";
+  const currentStage = (Array.isArray(pr.chain_stages) ? pr.chain_stages : []).find(
+    (s) => s.key === pr.chain_stage,
+  );
+  const stageLabel = currentStage?.label?.toUpperCase()
+    ?? (pr.chain_stage === "done" ? "COMPLETED" : "REVIEW");
   const statusTone = STATUS_TONE[pr.status] ?? STATUS_TONE.pending;
   const items = Array.isArray(pr.items) ? pr.items : [];
   const ageInDays = daysSince(pr.created_at);
@@ -532,7 +614,7 @@ export default function PurchaseRequestDetailPage() {
 
   const { canAct, canCancel } = canActOnPr(user, pr);
   const userRole = user?.role;
-  const stageRole = STAGE_LABEL[pr.chain_stage]?.replace(" REVIEW", "") ?? "approver";
+  const stageRole = currentStage?.label ?? "approver";
   const isApproverRole = APPROVER_ROLES.has(userRole);
 
   // Assignment surface — only Purchase HOD (PURCH dept) and admin can assign
@@ -573,14 +655,49 @@ export default function PurchaseRequestDetailPage() {
     }
   };
 
-  const handlePrint = () => {
-    window.print();
+  // Print uses a hidden iframe so we don't trip popup blockers and don't
+  // open a separate tab. The iframe loads the same DomPDF, then we trigger
+  // the browser's print dialog on its content window.
+  const handlePrint = async () => {
+    try {
+      const blob = await prApi.downloadPdf(pr.number);
+      const url = URL.createObjectURL(blob);
+      const iframe = document.createElement("iframe");
+      iframe.style.cssText =
+        "position:fixed;right:0;bottom:0;width:0;height:0;border:0;visibility:hidden;";
+      iframe.src = url;
+      iframe.onload = () => {
+        try {
+          iframe.contentWindow.focus();
+          iframe.contentWindow.print();
+        } catch {
+          toast.info("Press Ctrl+P to print the PDF preview.");
+        }
+      };
+      document.body.appendChild(iframe);
+      setTimeout(() => {
+        URL.revokeObjectURL(url);
+        iframe.remove();
+      }, 60_000);
+    } catch {
+      toast.error("Could not open print preview");
+    }
   };
 
-  const handlePdf = () => {
-    toast.info("In the print dialog, pick 'Save as PDF' as the destination.");
-    // Give the toast a tick to render, then open the dialog
-    setTimeout(() => window.print(), 150);
+  const handlePdf = async () => {
+    try {
+      const blob = await prApi.downloadPdf(pr.number);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${pr.number}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    } catch (err) {
+      toast.error(err?.response?.data?.message ?? "Could not download PDF");
+    }
   };
 
   const handleEmail = () => {
@@ -595,7 +712,7 @@ export default function PurchaseRequestDetailPage() {
       `Status: ${pr.status}`,
       `Stage: ${stageRole}`,
       "",
-      `Open in SCM: ${url}`,
+      `Open in Suppliers First: ${url}`,
     ].filter(Boolean);
     const body = encodeURIComponent(lines.join("\n"));
     window.location.href = `mailto:?subject=${encodeURIComponent(subject)}&body=${body}`;
@@ -608,7 +725,7 @@ export default function PurchaseRequestDetailPage() {
         <div className="flex items-start justify-between pb-4 border-b-2 border-black">
           <div>
             <div className="text-[10pt] font-bold tracking-[0.2em] uppercase">
-              SCM · Meka Group
+              Suppliers First · Meka Group
             </div>
             <div className="text-[8pt] text-gray-600 mt-0.5">
               Supply Chain Management
@@ -713,7 +830,7 @@ export default function PurchaseRequestDetailPage() {
           {/* Right: approval chain summary — approvers/admin only */}
           {isApproverRole && (
             <div className="shrink-0">
-              <ApprovalSummary chain={chain} />
+              <ApprovalSummary pr={pr} />
             </div>
           )}
         </div>
@@ -1010,6 +1127,10 @@ export default function PurchaseRequestDetailPage() {
               </>
             )}
           </section>
+
+          {/* PR attachments — embedded in the show response now (no extra
+              round-trip on page load). New uploads still hit the API. */}
+          <PrAttachmentsSection prNumber={pr.number} initialDocs={pr.documents ?? []} />
         </div>
 
         <div className="xl:col-span-4 space-y-4 sm:space-y-6 print:mt-6">
@@ -1017,7 +1138,6 @@ export default function PurchaseRequestDetailPage() {
             <RequesterStatusPanel pr={pr} />
           ) : (
           <ApprovalTree
-            chain={chain}
             pr={pr}
             canSeeComment={APPROVER_ROLES.has(user?.role)}
           />
@@ -1053,7 +1173,7 @@ export default function PurchaseRequestDetailPage() {
           </div>
         </div>
         <div className="flex items-center justify-between text-[7pt] text-gray-500 uppercase tracking-[0.1em]">
-          <span>Generated by SCM · Meka Group</span>
+          <span>Generated by Suppliers First · Meka Group</span>
           <span>Document: {pr.number}</span>
         </div>
       </div>
@@ -1076,6 +1196,205 @@ export default function PurchaseRequestDetailPage() {
         onClose={() => setAssignOpen(false)}
         onSubmit={onAssignSubmit}
       />
+    </div>
+  );
+}
+
+// Quick kind hint from name + mime type — used to show the right icon
+// while the blob is still loading.
+function detectKindByName(doc) {
+  const m = doc.mime_type ?? "";
+  const n = (doc.original_name ?? "").toLowerCase();
+  if (m.startsWith("image/") || /\.(png|jpe?g|webp|gif|svg|bmp)$/.test(n)) return "image";
+  if (m === "application/pdf" || /\.pdf$/.test(n)) return "pdf";
+  return "other";
+}
+
+// ── PR attachments — inline thumbnails + click-to-preview + upload ──────────
+// `initialDocs` comes from the bundled /api/prs/{n} response, so the section
+// renders with zero extra round-trips on page load. We refetch only after
+// uploads (when the doc list legitimately changed).
+function PrAttachmentsSection({ prNumber, initialDocs }) {
+  const toast = useToast();
+  const [docs, setDocs] = useState(() => Array.isArray(initialDocs) ? initialDocs : []);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [uploading, setUploading] = useState(false);
+  const [previewing, setPreviewing] = useState(null);
+  const fileInputRef = useRef(null);
+
+  const reload = async () => {
+    setLoading(true);
+    try {
+      const d = await prDocumentsApi.list(prNumber);
+      setDocs(Array.isArray(d) ? d : []);
+      setError(null);
+    } catch (err) {
+      setError(err?.response?.data?.message ?? "Couldn't load attachments");
+    } finally { setLoading(false); }
+  };
+
+  // Sync when the parent's pr.documents changes (e.g. on refetch). Skip the
+  // separate /api/pr-documents fetch — the bundled response already has them.
+  useEffect(() => {
+    if (Array.isArray(initialDocs)) setDocs(initialDocs);
+  }, [initialDocs]);
+
+  const openPreview = async (doc) => {
+    // Open modal immediately with a loading state so the user gets feedback,
+    // then swap in the blob URL when the fetch completes.
+    setPreviewing({ url: null, name: doc.original_name, kind: detectKindByName(doc) });
+    try {
+      const blob = await prDocumentsApi.getBlob(doc.id);
+      const url = URL.createObjectURL(blob);
+      const kind = blob.type === "application/pdf" ? "pdf"
+        : blob.type?.startsWith("image/") ? "image" : "other";
+      setPreviewing({ url, name: doc.original_name, kind });
+    } catch (err) {
+      toast.error(err?.response?.data?.message ?? "Couldn't open preview");
+      setPreviewing(null);
+    }
+  };
+  const closePreview = () => {
+    if (previewing?.url) URL.revokeObjectURL(previewing.url);
+    setPreviewing(null);
+  };
+  const downloadDoc = (doc) => prDocumentsApi.download(doc.id, doc.original_name);
+
+  const onPick = async (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    if (file.size > 10 * 1024 * 1024) { toast.error("File must be ≤ 10 MB"); return; }
+    setUploading(true);
+    try {
+      await prDocumentsApi.upload({ pr_number: prNumber, file });
+      toast.success(`${file.name} uploaded`);
+      await reload();
+    } catch (err) {
+      const msg = err?.response?.data?.message
+        ?? Object.values(err?.response?.data?.errors ?? {}).flat().join(", ")
+        ?? "Upload failed";
+      toast.error(msg);
+    } finally { setUploading(false); }
+  };
+
+  return (
+    <section className="glass-card rounded-2xl overflow-hidden">
+      <header className="px-4 sm:px-5 py-3 sm:py-4 border-b border-border flex items-center justify-between gap-2">
+        <h2 className="text-sm font-bold uppercase tracking-wider text-text flex items-center gap-2">
+          <Paperclip className="h-4 w-4 text-text-muted" />
+          Attachments
+          <span className="text-xs font-normal text-text-muted">
+            {loading ? "…" : `(${docs.length})`}
+          </span>
+        </h2>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx,.csv"
+          onChange={onPick}
+          className="hidden"
+        />
+        <button
+          type="button"
+          onClick={() => fileInputRef.current?.click()}
+          disabled={uploading}
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold border border-border rounded-md hover:border-primary hover:text-primary disabled:opacity-50"
+        >
+          {uploading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Paperclip className="h-3.5 w-3.5" />}
+          {uploading ? "Uploading…" : "Add file"}
+        </button>
+      </header>
+
+      {loading ? (
+        <div className="p-8 text-center text-text-muted text-sm flex items-center justify-center gap-2">
+          <Loader2 className="h-4 w-4 animate-spin" /> Loading attachments…
+        </div>
+      ) : error ? (
+        <div className="p-6 text-sm text-danger bg-danger-soft/40 border-t border-danger/30">
+          {error}
+        </div>
+      ) : docs.length === 0 ? (
+        <div className="p-8 text-center text-sm text-text-muted">
+          No files attached yet. Use <span className="font-semibold text-text">Add file</span> above to attach an image, PDF, or spreadsheet.
+        </div>
+      ) : (
+        <div className="p-4 sm:p-5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          {docs.map((d) => (
+            <PrAttachmentCard
+              key={d.id}
+              doc={d}
+              onPreview={() => openPreview(d)}
+              onDownload={() => downloadDoc(d)}
+            />
+          ))}
+        </div>
+      )}
+
+      {previewing && (
+        <DocumentPreviewModal
+          url={previewing.url}
+          name={previewing.name}
+          kind={previewing.kind}
+          onClose={closePreview}
+        />
+      )}
+    </section>
+  );
+}
+
+function PrAttachmentCard({ doc, onPreview, onDownload }) {
+  const isImage = doc.mime_type?.startsWith("image/")
+    || /\.(png|jpe?g|webp|gif|svg)$/i.test(doc.original_name ?? "");
+  const isPdf   = doc.mime_type === "application/pdf"
+    || /\.pdf$/i.test(doc.original_name ?? "");
+
+  // Thumbnails are LAZY now — we don't pre-fetch the blob just to show a
+  // small preview tile (one round-trip per attachment was the source of
+  // the "page feels slow" complaint). Render a typed placeholder; the full
+  // file is only fetched when the user actually opens the Preview modal.
+  return (
+    <div className="rounded-lg border border-border bg-surface-container-low/40 overflow-hidden flex flex-col">
+      <button
+        type="button"
+        onClick={onPreview}
+        className="group relative h-36 bg-surface-container-low overflow-hidden flex flex-col items-center justify-center cursor-pointer gap-2"
+      >
+        {isImage ? (
+          <ImageIcon className="h-10 w-10 text-text-subtle" />
+        ) : isPdf ? (
+          <FileText className="h-10 w-10 text-danger/70" />
+        ) : (
+          <FileWarning className="h-10 w-10 text-text-subtle" />
+        )}
+        <span className="text-[10px] font-bold uppercase tracking-widest text-text-subtle">
+          {isImage ? "Image" : isPdf ? "PDF" : "File"}
+        </span>
+        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors flex items-center justify-center">
+          <div className="opacity-0 group-hover:opacity-100 transition-opacity bg-bg/95 backdrop-blur-sm px-3 py-1.5 rounded-full text-xs font-bold inline-flex items-center gap-1.5 shadow-lg">
+            <Eye className="h-3.5 w-3.5" /> Preview
+          </div>
+        </div>
+      </button>
+      <div className="p-3 border-t border-border flex items-start gap-2">
+        <div className="flex-1 min-w-0">
+          <div className="text-xs font-semibold text-text truncate">{doc.original_name}</div>
+          <div className="text-[10px] text-text-muted">
+            {(Number(doc.size_bytes) / 1024).toFixed(1)} KB
+            {doc.uploaded_at && <> · {new Date(doc.uploaded_at).toLocaleDateString()}</>}
+          </div>
+        </div>
+        <button
+          type="button"
+          onClick={onDownload}
+          className="p-1.5 rounded-md text-text-muted hover:text-primary hover:bg-surface-container-low"
+          title="Download"
+          aria-label="Download"
+        >
+          <Download className="h-3.5 w-3.5" />
+        </button>
+      </div>
     </div>
   );
 }

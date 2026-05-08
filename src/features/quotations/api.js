@@ -24,6 +24,12 @@ export const rfqApi = {
       .post(`/rfqs/${number}/assign-po-author`, { user_id: userId })
       .then((r) => r.data.data),
   remove: (number) => client.delete(`/rfqs/${number}`).then((r) => r.data),
+
+  /** Stream RFQ as PDF; returns a Blob the caller can pipe to a download. */
+  downloadPdf: (number) =>
+    client
+      .get(`/rfqs/${number}/pdf`, { responseType: "blob", params: { download: 1 } })
+      .then((r) => r.data),
 };
 
 export default rfqApi;

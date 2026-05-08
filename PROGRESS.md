@@ -4,7 +4,346 @@ Running changelog of what's been built, session by session, plus the current imp
 
 ---
 
-## Session — 2026-05-04
+## Session — 2026-05-08
+
+FLOW.md items **14–20** shipped end-to-end: GRN inspection workflow, PM approval, damage tracking + vendor replacement, PO documents tightening, RFQ vendor auto-selection. Plus two new roles to support the new flows.
+
+### ✅ New roles — site_person + project_manager
+
+Two new role values added to support FLOW items 16 + 20:
+
+- **site_person** — receives goods at the project site, creates GRNs.
+- **project_manager** — inspects and approves GRNs before they're finalised.
+
+Plumbed through `src/data/roles.js` (ROLES, ROLE_LABELS, ROLE_SHORT_LABELS, ROLE_HOME, ROLE_AUDIENCE, USER_PORTAL_ROLES). Two demo accounts seeded via `DemoUsersSeeder`:
+
+- `site.ops@scm.com` (role=site_person, dept=OPS)
+- `pm.eng@scm.com` (role=project_manager, dept=ENG)
+
+Both authenticate with password `password` and load through to `/app`.
+
+### ✅ FLOW.md item 14 — RFQ vendors auto-selected by item category
+
+Goal: remove RFQ-creator bias by auto-picking vendors instead of letting humans choose, and hide the invite list from the UI entirely.
+
+**Backend** (`RfqController::store`):
+- `vendors` validation rule changed from `required|array|min:1` → `nullable|array`.
+- New private `autoSelectVendors($items)` method:
+  - Pulls `app_items.category` for every item code in the RFQ.
+  - Filters approved vendors whose `app_vendors.category` matches (case-insensitive substring) any of those categories.
+  - Falls back to all approved vendors if no category overlap, so an RFQ never goes out to nobody.
+- Auto-fill happens unless caller is admin AND explicitly supplied a list — admin override stays available for support cases.
+- Returns 422 *"No approved vendors are available to invite"* if the pool is genuinely empty.
+
+**Frontend** (`features/quotations/pages/CreateRFQ.jsx`):
+- The 220-line "Invite Vendors" section (search box, category-grouped checklist, auto-select banner) is gone.
+- Replaced with a small info banner: *"Vendors are auto-selected based on the categories of the items above. The system invites every approved vendor whose category matches. You won't see who was invited."*
+- `selected.length === 0` validation removed; payload no longer sends `vendors[]`.
+- Toast on creation reads count from the server response: *"QT-… created — sent to N matching vendors"*.
+
+**Smoke verified live**: Purchase Officer POSTs an RFQ with one IT-Equipment item and no `vendors[]` → backend invites 6 IT-category vendors (TechBridge, Nexus IT Solutions, Veridian, Quantum Hardware Hub, Pioneer Computer, BlueWave Tech).
+
+### ✅ FLOW.md item 15 — PO docs vendor upload UI + in-org viewer (employees blocked)
+
+The backend (`app_po_documents` + `PoDocumentController`) already existed from 2026-04-30 — and a `PoDocumentsCard` frontend component was already wired into the PO Detail page. Two things were missing:
+
+1. **Block employees + customers** from viewing dispatch docs (sensitive vendor invoices / E-way bills). `PoDocumentController::canView` now returns `false` for those roles. PO Detail also hides the card from those roles client-side.
+2. **Defer vendor upload until PO is accepted**. `PoDocumentController::canUpload` for vendors now requires `po.status` ∈ `[accepted, fulfilled]` — matching the FLOW description ("After PO is accepted by vendor then vendor has to upload…").
+
+(Discovered an existing `PoDocumentsCard` mid-session, so I rolled back a duplicate panel I'd started building and used the existing one.)
+
+### ✅ FLOW.md items 17 + 18 — GRN form fields + line columns
+
+**Schema additions** — `2026_05_08_100000_add_inspection_to_app_grns.php`:
+- `chain_stage` (default `pending_pm`) — new approval state machine for GRN.
+- `invoice_type` (`invoice` / `proforma` / `tax_invoice` / `none`).
+- `damage_remark` / `damage_by` / `damage_comment` — site-person free-text fields.
+- `replacement_status` (`pending` / `accepted` / `replaced`).
+- `approval_history` (json) — audit trail mirroring PR/PO.
+- `inspection_notes`, `pm_approved_at`, `pm_approved_by` (FK to users, nullOnDelete).
+- Existing rows backfilled to `chain_stage='done'` so legacy GRNs don't suddenly require PM approval.
+
+**Per-line additions** — `items[].damaged` (numeric, ≤ received) and `items[].remark` (per-line note). Items shape is now `{ name, code, ordered, received, damaged, remark }`.
+
+**New table** — `2026_05_08_100100_create_app_grn_documents_table.php`:
+- `app_grn_documents` mirrors the `app_po_documents` pattern (private disk, hashed filename, hidden `file_path`, `download_url` accessor).
+- `doc_type` enum: `invoice` / `proforma` / `tax_invoice` / `damage_photo` / `other`.
+- `item_index` nullable — for damage photos, links the photo to a specific line in `items[]`.
+- `caption` for free-text annotations.
+
+**Backend** — `GrnController::store()` now validates and persists all the new fields; `GrnDocumentController` handles 4 endpoints (index / store / download / destroy) with the same auth + scoping semantics as PO docs.
+
+**Frontend `Create.jsx`** — major rewrite:
+- New "Source PO" + "Receipt meta" + **"Invoice with shipment"** sections (invoice-type pill picker + optional invoice file upload).
+- Items table now has the **5 columns the user asked for**: `Order | Received | Damaged | Accepted | Balance` plus a per-line Remark input. `Accepted` and `Balance` are computed live from the inputs (accepted = received − damaged, balance = ordered − already_received − accepted).
+- Damage section auto-appears when any line has damaged > 0: "By whom" + "Short remark" + "Detailed comment" + photo uploader.
+- **Damage photo uploader** lets the site_person attach multiple photos, link each to a specific damaged line via dropdown, and add an optional caption.
+- On submit: GRN is created first, then files are uploaded with the returned GRN number. Toast reflects partial success ("GRN-… logged with N attachments — awaiting PM approval").
+
+**Frontend `Detail.jsx`** — full rewrite:
+- New chain-stage banner (pending_pm / done / rejected) at the top.
+- Items table mirrors the new 5-column layout.
+- Damage Report card surfaces who/remark/comment + a photo grid (clicking a photo downloads it; each photo shows which item line it's linked to).
+- Documents card lists invoice/proforma/tax_invoice with download buttons.
+- Activity timeline reads `approval_history` for a per-action audit.
+
+### ✅ FLOW.md item 16 — GRN create gated to site_person
+
+`WAREHOUSE_ROLES` reduced to `admin + site_person`. Frontend Create page redirects everyone else; List page hides the "Create GRN" button.
+
+`ORG_WIDE_VIEW_ROLES` now includes `site_person` + `project_manager` and **excludes** `employee`. Employees can't see GRNs at all — they have no business knowing the goods-receipt status of other teams' POs.
+
+### ✅ FLOW.md item 19 — Damage visibility, vendor must accept replacement
+
+Per the user's call ("just show it; currently no need for a notification system"), damage status surfaces purely through page visibility — no notifications, no email.
+
+**Backend**:
+- `GrnController::store` flips `replacement_status='pending'` automatically when any line has `damaged > 0`.
+- New endpoint `POST /grns/{number}/accept-replacement` — vendor (matched by `vendor_name`) acknowledges and commits to replacement; `replacement_status` flips to `accepted` and the action goes into `approval_history`.
+
+**Frontend**:
+- GRN Detail shows a prominent banner whenever `replacement_status` is `pending` or `accepted`. For the assigned vendor, it includes an "Accept & arrange replacement" button that prompts for an optional ETA note. Once acknowledged, the banner switches to "Vendor committed to replacement".
+- All in-org back-office roles see the same Damage Report card with photos. Employees and customers don't see GRNs at all (already excluded above).
+
+### ✅ FLOW.md item 20 — PM approval workflow on GRN
+
+POs no longer auto-fulfil the moment a GRN is logged. Every GRN now goes through a PM inspection:
+
+1. Site person creates GRN → `chain_stage='pending_pm'`.
+2. PM (or admin override) inspects via the **"Inspect & act"** button on GRN Detail. Modal lets them approve or reject with inspection notes.
+3. On approve: `chain_stage='done'`, `pm_approved_at` + `pm_approved_by` set, `maybeFulfilPo()` recalculates PO fulfilment.
+4. On reject: `status='rejected'`, GRN locked.
+
+**`maybeFulfilPo()` semantics changed**: now only counts GRNs at `chain_stage='done'` AND not rejected, AND **damaged units don't count toward fulfilment** — accepted = received − damaged. So a PO doesn't auto-fulfil on damaged stock; the vendor genuinely has to make good on the order.
+
+Per-project PM scoping (only this project's PM can approve this project's GRNs) is a future enhancement — for now any project_manager can approve any GRN.
+
+**Smoke verified live** (full chain): Site Person creates GRN with damage → `chain_stage=pending_pm`, `replacement_status=pending`, PO stays `accepted` (no auto-fulfilment). Non-PM HOD tries to approve → 403. PM approves with inspection note → `chain_stage=done`, `pm_approved_by` + `pm_approved_at` set, vendor sees "Accept & arrange replacement" banner.
+
+### 🐞 Mid-session: rolled back a duplicate PoDocumentsPanel
+
+After building a fresh `PoDocumentsPanel` for item 15, discovered a working `PoDocumentsCard` (404 lines) and `features/po-documents/{api,store}.js` already existed. Deleted the duplicate panel, reverted the duplicate documents-API additions to `purchase-orders/api.js`, and reused the existing card. Lesson logged: scan for existing components before building new ones in this codebase.
+
+### ✅ Performance pack (Bluehost-deploy prep)
+
+Four-pronged optimisation before shared-hosting deploy:
+
+- **A — Lazy attachment thumbnails**: `PrAttachmentCard` (PR Detail) and `DamagePhotoTile` (GRN Detail) no longer auto-fetch blobs for the preview tile. They render typed placeholder icons; the file is only fetched when the user opens the Preview modal. Removed N round-trips on every detail page load.
+- **B — Bundled detail responses**: `PrController::show()` now eager-loads `documents` (with `uploadedBy:id,name`) and `assignedRfqAuthor`. `PrAttachmentsSection` accepts an `initialDocs` prop and skips the `/api/pr-documents?pr_number=…` round-trip on first paint. GRN was already bundled.
+- **D — Route-level code splitting**: `routes.jsx` converted ~30 page imports to `React.lazy()` wrapped in a single `<Suspense>` boundary with a centered loader. Login / Landing / Forbidden / RoleGate stay eager so first paint isn't gated on a chunk fetch. Main bundle dropped from ~1 MB to **319 kB / 96 kB gzipped**; 50+ per-route chunks ship on demand. Largest non-main chunk is `VendorRegistrationPage` at 61 kB.
+- **E — DB indexes**: migration `2026_05_08_300000_add_perf_indexes.php` adds indexes on `app_prs`, `app_pos`, `app_rfqs`, `app_grns`, `app_items` for hot columns: status, chain_stage, vendor, pr_number/po_number, department, created_by, etc. Ran in 316 ms.
+
+### ✅ PR PDF (real) — v3 corporate-document design
+
+PR's "Download PDF" was previously a `window.print()` shim that just opened the browser print dialog. Three iterations later, the design landed on a corporate-document direction that mirrors the working PO PDF — same font system (DejaVu Sans), same border conventions, same address-block treatment, same signature row, same footer. PR-specific additions: status pill in the doc-number block, Requester/Delivery split address block (with key/value rows for Department, Customer, Project, Region, Site Name), simplified items table (no rate/GST since PRs have no prices), Justification callout, and an **Approval Trail** table showing per-stage who/when/action/comment from `approval_history`.
+
+- Backend: `PrController::downloadPdf()` + `GET /api/prs/{n}/pdf` route. Same vendor-scoping/RBAC pattern as `show()`. Default streams inline; pass `?download=1` for attachment.
+- Frontend: `prApi.downloadPdf()` returns a Blob. Detail page's PDF button uses normal blob-download; Print button uses a hidden iframe (no popup-blocker, no extra tab) and triggers `iframe.contentWindow.print()` once loaded.
+
+### ✅ RFQ / GRN / Payment PDFs — matching format
+
+Same template language extended to the three remaining procurement docs. Each gets its own blade + `downloadPdf` controller method + route, all using the PO/PR letterhead/items/sigs/footer convention so the document set looks coherent.
+
+- **RFQ** (`pdf/rfq.blade.php`) — status pill (draft/open/responded/awarded/closed), Source PR + Quote Due + Stage in the meta strip, **Invited Vendors table** with award/responded/pending flags + per-vendor quoted total, Award Decision callout when applicable.
+- **GRN** (`pdf/grn.blade.php`) — Receipt Lines table with `Ordered / Received / Damaged` columns (received column color-coded ok/warn/bad based on whether it meets ordered), Damage callout (red, with `damage_remark` / `damage_by` / `replacement_status`), PM Approval callout (green) when `pm_approved_at` is set.
+- **Payment** (`pdf/payment.blade.php`) — voucher-style: full-width black amount block with **₹ value + amount in words** (Indian Lakh/Crore: "Rupees One Lakh Twenty-Five Thousand Only"), payment method + reference no on the right, vendor bank A/C + IFSC in the address block, **Approval Trail** table.
+
+`PrintActions` shared component generalised: when a `pdfFetcher` prop is supplied, Print uses the iframe pattern + PDF downloads the blob; without it, falls back to `window.print()`. PR/PO/RFQ/GRN/Payment Detail pages all wired.
+
+### ✅ Rebrand SCM → Suppliers First
+
+User-facing strings only — internal folder names (`scm-frontend/`), localStorage keys (`scm-auth`, `scm-theme`), DB name (`meka_scm`), and `App\Models` namespaces left untouched.
+
+Touched: browser title, sidebar wordmark, Landing page brand + footer, login CTA copy, PrintLetterhead/Footer, PR/PO email body strings, all 5 PDF blade defaults (`'Meka SCM'` → `'Suppliers First'`), legacy admin dashboard footer. The "Meka Group" parent line stays everywhere — it's the legal entity, not the app brand.
+
+### ✅ KPI active-state treatment + shared component
+
+The KPI tiles at the top of every list page were using `ring-2 ring-primary/40` to indicate the active filter — too subtle. Rebuilt as a shared `components/data/KpiStatCard.jsx` with a strong tone-matched active state: tinted card surface + solid colored border + ring + filled icon tile + tone-colored label + a top-right "FILTER" chip with a tone-colored dot. Per-tone colors (yellow-pending, green-approved, red-rejected, etc.) so multi-page consistency reads at a glance.
+
+Wired into PR / PO / RFQ / Inventory / Invoices list pages. **Added KPI strip to GRN list** (was a plain table) with `Total / Full Receipt / Partial / Rejected`. **Added KPI strip to Inventory** with `SKUs Tracked / In Stock / Low or Out`.
+
+### ✅ Admin portal — fixed last 3 mock pages
+
+Audit found the admin portal was 18/21 working; the last 3 (Inventory, Invoices list, Invoice approval) used hardcoded ROWS arrays and toast-only buttons.
+
+- **`/admin/inventory`** — derived from approved GRNs server-side (no inventory table). New `InventoryController::index` aggregates `received - damaged` across non-rejected GRNs and joins with active items master. Returns one row per active SKU (84 in current DB) plus orphan codes that appeared in receipts but aren't in the master. Frontend: live fetch, search, KPI strip, refresh button. Heuristic min-stock = 10 for the "Low" badge.
+- **`/admin/invoices`** — full real module: migration `create_app_invoices_table` (number/po_number/vendor/totals/items/status/approval_history/file_path), `AppInvoice` model, `InvoiceController` with index/show/store/updateStatus/destroy and proper RBAC (vendors see own only, internal back-office sees all, only CFO/accountant/admin can approve). Routes at `/api/invoices`. Frontend: `invoiceApi`, `useInvoiceStore` (mirrors PR/PO store shape), KPI strip, ₹ INR formatting (was `$`). Seeded 3 demo invoices for first-load UX.
+- **`/admin/invoices/:id/approve`** — real fetch by invoice number, real Approve/Reject buttons hit `POST /api/invoices/{n}/status`, real `approval_history` written with user_id/name/role/comment/timestamp. Terminal-state guard hides action buttons for already-approved/rejected/paid invoices. Approval trail rendered as vertical timeline.
+
+### ✅ Vendor portal — real invoice loop
+
+- **`/vendor/invoices`** — switched from PO-derived list to `useInvoiceStore`. KPI strip (`Total / Pending / Approved / Paid / Rejected`) with the active filter treatment. "Invoices Raised" table at top + "Ready to invoice" strip below showing only POs that don't already have an invoice (self-filters as the vendor invoices each one). Each row links to `/vendor/invoices/upload?po=…` to prefill.
+- **`/vendor/invoices/upload`** — added a real **Invoice Details form** above the dispatch-doc upload section. Fields: vendor invoice ref, invoice date, due date (defaults today + 15 days), subtotal/tax/total auto-prefilled from PO (1.18 GST split fallback), notes. Submit hits `invoiceApi.create()` writing a real `app_invoices` row with `status=pending`, sequenced number `INV-YYYY-NNNN`, items snapshot from the PO. Already-invoiced state: form hidden, green callout shows existing invoice number + status pill. Backend overrides the `vendor` field from auth token for vendor-role users (anti-impersonation).
+
+End-to-end loop: vendor uploads → admin sees on `/admin/invoices` as **pending** with "Approve" link → CFO approves → vendor sees status flip to **approved** on their list.
+
+### ✅ Auth — real forgot/reset password
+
+Was `setTimeout(500ms)` mock on both pages. Now real:
+
+- `POST /api/forgot-password` — accepts email, generates 64-char token, stores `Hash::make($token)` in Laravel's default `password_reset_tokens` table, returns generic 200 to prevent enumeration. Dev-mode (`APP_ENV=local`) also returns `_reset_url` in the JSON response so the flow is testable without SMTP.
+- `POST /api/reset-password` — verifies email + token + 60-min freshness, `Hash::make` the new password, **invalidates `api_token`** so all sessions are dropped, deletes the token row.
+- Both endpoints throttled `5,1` (matches `/login`).
+- Frontend: ForgotPassword.jsx surfaces the dev `_reset_url` on the success panel as a clickable link. ResetPassword.jsx reads `:token` from path + `?email=` from URL, sends `password_confirmation` for Laravel's `confirmed` rule.
+- **Verified end-to-end via curl**: forgot returned token + URL → reset accepted token + new password → returned "Password updated. You can now sign in."
+
+### 🗑️ Deleted 4 dead form pages
+
+Audit flagged four pages as alternate-entry stubs whose flows already existed on real pages: `StockReceive.jsx`, `DeliveryChallan.jsx`, `PurchaseReturn.jsx`, `ProformaInvoice.jsx`. All four had hardcoded data + toast-only submits. Deleted, removed 5 routes from `routes.jsx`, removed buttons from GRN List ("Stock Receive", "Delivery Challan", "Return") and Invoices List ("New Proforma"). Real flows still live: `/app/grn/new` for receipts, `/vendor/invoices/upload` for invoices.
+
+### 🐞 Smoke test resurrection — caught two real bugs
+
+`api-smoke.mjs` was at **37/44** when reopened — 7 cascading failures from the old admin-shortcut RFQ award. Updated the test to drive the full procurement chain (Purchase HOD agree → Finance HOD agree → CFO approve → CEO approve → admin award; admin advances PO chain to `done`; PM approval on each GRN). Added 2 logins (`hod.purch@scm.com`, `hod.fin@scm.com`).
+
+The rewrite caught **two real production bugs**:
+
+1. **`GrnController::updateStatus` saved AFTER auto-fulfil**: `maybeFulfilPo()` was called *before* `$grn->save()`, so the just-approved GRN wasn't visible to the auto-fulfil query and got missed. Single-shipment POs would have stayed at `accepted` forever. Fixed by moving the save before the fulfilment check.
+2. **Orphan GRNs polluting test runs**: cleanup deleted PO/PR/RFQ but not GRNs. Because PO numbers re-sequence from `max(id)`, the next run created a PO with the same number and inherited the orphan GRNs, inflating fulfilment counts. Fixed by tracking created GRN numbers and deleting them in cleanup; purged 6 existing orphans.
+
+Final state: **54/54 passing**, no flaky cleanup.
+
+### Important caveats / what's not done
+
+- Per-project PM scoping for GRN approval — currently any project_manager can approve any GRN. Future enhancement.
+- Notifications for damage events — explicitly skipped per user preference. Damage visibility is page-driven only (vendor portal banner, in-org GRN Detail).
+- The `app_vendors.category` field is a single string — multi-category vendors aren't supported yet. Auto-select uses substring match in either direction so partial overlaps still hit.
+- **Invoice PDF endpoint** — `pdf.invoice.blade.php` not yet built. The Approval page's "Download PDF" button still toasts "coming soon". Mirror the PR/PO/Payment template pattern when needed.
+- **Roles & Permissions matrix UI persists, controllers don't read it yet** — admins can edit at `/admin/roles` and the role→permission rows save, but `Controller::canX()` checks still hardcode role lists. Wiring `$user->can('pr.approve')` is a separate phase.
+- **List-row "Quick actions" dropdowns** on PR / PO / Quotation lists are decorative — the chevron-menu just toasts "coming soon". Real bulk actions deferred.
+- **GSTIN registry lookup** in vendor registration falls back to a mock company table when the network call fails — intentional demo offline mode, would remove for prod.
+- **Inventory min-stock heuristic** — currently hardcoded to 10 in `InventoryController` for the "Low" badge. Add `app_items.min_stock` if you want per-SKU thresholds.
+- **Notifications system** is still seed-data Zustand mock. User explicitly chose "just show it" — not a regression, just deferred.
+
+---
+
+## Session — 2026-05-07
+
+Marathon day. Shipped four mock pages as real features, built a brand-new Reports module, and replaced every hardcoded approval chain (PR/PO/Payment) with an admin-editable rule engine. Closed out by reframing the admin sidebar + dashboard around control rather than information.
+
+### ✅ Phase 1 — Categories, Companies, Projects masters
+
+All three were mock arrays + a no-op drawer. Now full CRUD end-to-end, mirrors the Departments pattern.
+
+- **Backend**: 3 migrations (`app_categories`, `app_companies`, `app_projects`), 3 models, 3 controllers (`CategoryController`, `CompanyController`, `ProjectController`), routes wired. Admin-only writes, all-org reads.
+- **Frontend**: `features/masters/{categories,companies,projects}/{api.js, store.js}`, page rewrites with search, EmptyState, real save/edit/delete.
+- **`GenericMasterDrawer.jsx` rewritten** — was toast-only; now accepts `onSave(payload)` async, `onDelete(record)`, has built-in field validation, error surfacing, lockable fields (`lockOnEdit`), and a Delete button when editing.
+- Schema: Categories use auto-id (`name` is unique, `parent` is a free string), Companies + Projects routed by `code`.
+- **Smoke verified end-to-end** — admin CRUD works, non-admin gets 403 on writes but can read.
+
+### ✅ Phase 2 — Settings page wired (was 4 mock tabs)
+
+Singleton-table approach: one row in `app_company_settings` holds Company / Branding / Integrations.
+
+- **Backend**: migration `2026_05_05_110000_create_app_company_settings_table.php` (legal_name, address, gstin, pan, currency, fiscal_year_start, logo_path, primary_color, email_footer, integrations json), `AppCompanySettings` model with `singleton()` accessor, `SettingsController` with `show / update / uploadLogo / deleteLogo`. Reads open to in-org; writes admin-only.
+- **Frontend**: `features/admin-home/settings/{api.js, store.js}`. Each tab fetches once on mount, controlled inputs, real save through `PUT /api/settings`. Profile tab reuses the existing `authApi.updateMe` flow rather than duplicating it.
+- **Logo upload**: multipart `POST /api/settings/logo` (PNG/JPG/SVG/WebP, ≤512 KB), serves from `storage/app/public/logos/*` via the existing storage symlink. Replace + delete buttons.
+- Branding picker: 6 preset color swatches plus a hex text input.
+
+### ✅ Reports — brand-new pre-built analytics module
+
+Replaced the placeholder `ReportBuilder` with a catalog of eight production-quality reports. Each one is KPI strip + chart + table + CSV export.
+
+**Backend** — `app/Http/Controllers/Api/ReportController.php`, eight methods:
+- `spendByVendor` — top vendors by ₹, PO count, avg order, last order date
+- `spendByDepartment` — joins PO → PR.department through `pr_number`
+- `spendByCategory` — expands PO line items, looks up `app_items.category` for each line code
+- `monthlyTrend` — fills empty months with zeros, returns PR count + PO count + ₹ committed per month
+- `pendingApprovals` — live snapshot of PRs/POs/RFQs/payments stuck in chains, with age in days
+- `vendorPerformance` — accept/reject/fulfilled ratios + GRN compliance % per vendor
+- `funnel` — PR → PR-approved → RFQ → RFQ-awarded → PO → PO-fulfilled → GRN with conversion percentages
+- `cycleTime` — avg/median/min/max days for `PR raised → approved`, `PR approved → PO issued`, `PO issued → first GRN`, computed by walking `approval_history` JSON
+
+Default range = last 12 calendar months when no `?from=&to=` supplied. Vendors get 403; every other in-org role can read.
+
+**Frontend** — `features/reports/`:
+- `api.js` + `utils.js` (formatters + `downloadCSV(filename, columns, rows)` utility)
+- `components/Charts.jsx` — custom SVG `BarChart`, `MultiLineChart`, `FunnelChart`, `StackedBar`. Theme-aware (read CSS vars), hover tooltips, no chart library dependency.
+- `components/DateRangeFilter.jsx` — date inputs + 5 presets (30d / 90d / 6mo / 12mo / YTD)
+- `components/Reports.jsx` — one renderer per report (`SpendByVendor`, `SpendByDepartment`, etc.)
+- `pages/ReportBuilder.jsx` rewritten — sidebar catalog of 8 reports + main panel that fetches + renders the selected one. Funnel auto-flags the biggest dropoff stage; Pending Approvals colour-codes age (>14d red, >7d amber).
+
+### ✅ Approval Rules — full engine + admin-editable UI (was previously hardcoded)
+
+Big architectural change. Previously PR/PO/Payment approval chains were hardcoded constants in their controllers. Now they're driven by an admin-editable rule table.
+
+**Schema** — `app_approval_rules`:
+- `entity` (pr | po | payment), `name`, `priority` (lower wins), `active`
+- `conditions` JSON — `min_amount`, `max_amount`, `department_code`, `project_code`, `vendor` (all optional, AND-ed)
+- `stages` JSON — array of `{ key, label, role, department_code?, skip_if_dept_null? }`. Stages with `department_code = ":requester_dept"` resolve at runtime to the record's department.
+
+**Service** — `app/Services/ChainEngine.php`. Single source of truth. Methods:
+- `resolve($entity, $context)` — first matching rule by priority
+- `stagesFor($entity, $context)` — resolved stages with `:requester_dept` substituted (and skipped when null + `skip_if_dept_null`)
+- `initialStage`, `nextStage($current, $entity, $context)`
+- `canActOnStage($user, $stageKey, $entity, $context)` — admin always; else role match + department match if stage is dept-locked
+
+**Default rules** — `ApprovalRulesDefaultSeeder` mirrors the previously-hardcoded chains exactly, so behavior was preserved during the migration:
+- PR: `hod → cfo → ceo`
+- PO: `purchase_hod → finance_hod → respective_hod (skip if no req dept) → cfo → ceo`
+- Payment: 3 amount-tiered rules — Tier 1 (<₹50k, no chain), Tier 2 (₹50k–5L, CFO), Tier 3 (≥₹5L, CFO + CEO)
+
+**Controllers migrated** — `PrController`, `PoController`, `PaymentController` now call `ChainEngine` for both initial-stage assignment and approve-advancement, plus `canActOnStage` for the role gate. The hardcoded constants and switch statements are gone.
+
+**API** — `/api/approval-rules` full CRUD + `/api/approval-rules/preview` (live test: enter `entity + amount + department_code + project_code + vendor`, see which rule fires and the resolved chain).
+
+**UI** — `/admin/approvals` rebuilt twice in one day. Final version is sentence-style:
+- Tabs at top — PR / PO / Payments — each with a count badge.
+- One rule per row: numbered position, ↑/↓ reorder arrows on left rail (swaps internal priority), Power button for active toggle, Settings to edit, **Trash to delete** (added later in the day).
+- Each card shows: rule name, conditions in plain English (*"Applies when amount ≥ ₹50,000"*), and the chain as connected pills (`Department HOD @PURCH → Finance HOD @FIN → Requester's HOD @req → CFO → CEO`).
+
+**Drawer redesign** — first version was form-heavy with technical labels (`stage_key`, `:requester_dept`, "skip_if_dept_null"). User pushed back ("very complicated"); rewrote around a clearer mental model:
+- **Live preview banner** at top — sentence: *"When a purchase request matches `amount ≥ ₹50k`, it will need approval from: [HOD] → [CFO] → [CEO]"*. Updates as you edit.
+- **Conditions** — checkbox toggles, each one expands to its inputs inline. "All requests" is the default ✓ when none of the others are checked.
+- **Approval chain** — vertical column of approver cards. Click "Add approver" → modal picker with 9 templated options (Department HOD any / Specific Department HOD / Requesting Department's HOD / CFO / CEO / Director / Manager / Purchase Officer / Accountant). System auto-generates stage keys (`hod`, `hod_purch`, `respective_hod`, …) — user never sees those strings.
+- Stage cards expand for inline rename + dept change; ↑/↓ arrows to reorder.
+- **Advanced** disclosure (collapsed) houses Description, numeric Priority, Active toggle.
+
+### 🐞 Approval-rules bug bash — six issues found while smoke-testing
+
+After the engine + UI shipped, the user reported "rule isn't being followed." Investigation surfaced six discrete bugs:
+
+1. **Validator rejected empty conditions/stages.** `'conditions' => 'required|array'` failed on `{}` — empty arrays don't satisfy `required`. Fixed by switching to `present|array`.
+2. **JSON column NOT NULL violation.** When `conditions` was stripped to empty after sanitisation, Laravel dropped the column from the INSERT entirely, hitting MySQL's JSON NOT NULL constraint. Defensive `?? []` defaults added in `store()` + `update()`.
+3. **Entity could be silently switched in the drawer.** First-version drawer had a 3-button entity picker for new rules; user created a rule from the PO tab but ended up with `entity=pr`. Removed the picker entirely — entity is now locked to whichever tab the drawer was opened from. Drawer title also updated to *"New Purchase Order Rule"* / *"Edit Purchase Order Rule"* etc. so it's always obvious which workflow you're touching.
+4. **Detail pages were still hardcoded for `hod/cfo/ceo`.** `canActOnPr` did `user.role === pr.chain_stage` — when `chain_stage='hod_purch'` no role string matches, every HOD got blocked. ApprovalTree iterated a hardcoded `APPROVAL_STEPS = [hod, cfo, ceo]` array. Fixed by appending `chain_stages` (resolved chain for THIS record) to PR/PO/Payment models via `$appends + accessor`, then rewriting the gate + tree to read it.
+5. **Leftover test rule overriding the user's intended rule.** A debugging rule (priority 50) without CFO/CEO stages took precedence over the user's real rule (priority 101) for the same conditions. PR was reaching `done` after 3 HODs, never advancing to CFO/CEO. Cleaned up.
+6. **PR list still rendered fake HOD/CFO/CEO badges** under the legacy `chainFromStage()` helper — even for a rule with zero stages it would show 3 chips claiming "approved by HOD, CFO". Replaced with dynamic iteration of `row.chain_stages`; for empty chains the chip strip disappears entirely; sub-text now says *"Auto-approved"* / *"Awaiting Purchase HOD"* etc. based on the current stage's label.
+
+### ✅ Detail pages made fully rule-aware (PR + PO + Payment)
+
+Backend: each model now appends `chain_stages` — the resolved chain for THIS record, computed via `ChainEngine::stagesFor(...)`. Frontend reads it instead of looking up hardcoded constants.
+
+- **PR Detail (`features/purchase-requests/pages/Detail.jsx`)** — `canActOnPr` now reads `pr.chain_stages`, looks up the current stage object, matches both **role AND department**. `ApprovalSummary` chip strip and `ApprovalTree` timeline iterate the resolved chain — works for 3-stage / 5-stage / 7-stage / instant-approve rules. New `describeStageRole(stage)` produces plain-language descriptions ("HOD of the requesting department" / "HOD of the PURCH department"). `stageLabel` and `stageRole` now derive from the current stage's label, so the "Awaiting *X*" message says the actual stage name.
+- **PO Detail (`features/purchase-orders/pages/Detail.jsx`)** — `userActsOnStage(user, stageObj)` replaces hardcoded if/else. `visibleChainSteps` reads `po.chain_stages` first, falls back to legacy 5-step chain only for older POs.
+- **Payment Detail (`features/payments/pages/Detail.jsx`)** — new `chainFor(payment)` builds the chain from `payment.chain_stages` + a synthetic `cleared_to_pay` terminal. Renderer keys by `stage.key`, displays `stage.label`, shows `stage.short` / `stage.blurb` when defined.
+- **PR List (`features/purchase-requests/pages/List.jsx`)** — chip strip now iterates `row.chain_stages`, label is dept code for HOD stages (PURCH, FIN, REQ) or role uppercase. State per stage computed from `approval_history` (approve / reject / hold / pending / waiting). Sub-text reads from current stage label instead of hardcoded "Awaiting HOD/CFO/CEO".
+
+### ✅ Admin sidebar + dashboard reframed around control
+
+User pushed back: *"the main reason for having admin panel is to control things not just having access to information"*. Reframed both surfaces.
+
+**Sidebar** — was operations-led (Procurement → Goods → Finance → Masters → Insights → System). Now control-led:
+1. **Main** — Control Center (renamed from Dashboard)
+2. **Control** (NEW, top section): Users, Roles & Permissions, Approval Rules, Departments, Settings
+3. **Catalog** (renamed from Masters): Items, Vendors, Categories, Companies, Projects
+4. **Operations**: PRs, POs, Quotations, GRN, Inventory
+5. **Finance**: Invoices, Payments
+6. **Insights**: Reports
+
+**Live badges on items needing action** — small numeric chips on the sidebar item itself, derived from already-fetched stores (zero extra API calls). Vendors shows pending applications, Purchase Requests shows pending PRs, Payments shows CFO/CEO-pending, Users shows invitees who haven't logged in. In collapsed-sidebar mode the badges become a small dot in the corner of the icon.
+
+**AdminHome** — was 8 KPI tiles + a pending-PRs queue + pending-vendors list + 4 system links. Mostly read-only. Rebuilt as four sections in priority order:
+
+1. **Hero strip** — short, status-focused. *"Control Center · X users · Y departments · Z active rules"*.
+2. **Needs your attention** — six action cards with prominent CTAs (Vendor Applications / Pending PRs / POs Awaiting Internal Approval / Payments Pending CFO-CEO / Users Never Logged In / **Workflows Without Rules**). Each card has a coloured tone (`danger`/`warning`/`info`) when count > 0, softens to muted/check style when count = 0 so the layout is stable. The "Workflows Without Rules" card surfaces a real risk: an entity with zero active rules would auto-approve every record.
+3. **Quick configure** — 10 one-click actions covering common admin moves (Add user, Approval rules, Roles, Departments, Items, Vendors, Companies, Projects, Settings, Reports).
+4. **System health + Operations today** — two compact panels side-by-side. System health includes **rule coverage per workflow** (flags `missing!` if zero). Operations today shows PRs/POs raised today, this-month spend, active POs, pending payment ₹.
+
+Nothing on the dashboard is purely decorative — every card and line links somewhere actionable.
+
+---
+
+
 
 Loading-state visual overhaul (spinners → skeletons across the whole app), one interactive dashboard widget, and a deep mobile-responsive pass on the three PR pages.
 
@@ -852,7 +1191,7 @@ Earlier the item-code field was locked after create. Admin can now rename codes 
 
 ---
 
-## Current implementation snapshot — 2026-04-30
+## Current implementation snapshot — 2026-05-08
 
 ### ✅ API-wired, RBAC-enforced, production-ready
 
@@ -861,38 +1200,45 @@ Earlier the item-code field was locked after create. Admin can now rename codes 
 - **Quotations / RFQs** — Create/delete now narrowed to **`admin` + `purchase_officer` only** (item 6). `BACKOFFICE_ROLES` retained for award/close + consensus voting. Three-party consensus + CFO/CEO chain + Purchase-HOD-only award all wired (FLOW.md §3 fully implemented). **Vendor rate lock during consensus** (item 7) + **vendor-portal scrub** of approval internals.
 - **Purchase Orders** — Create narrowed to **`admin` + `purchase_officer` only**. **5-stage internal approval chain** (`purchase_hod → finance_hod → respective_hod → cfo → ceo → done` — item 8) before vendor can act. PO Detail shows step rail; vendor Accept/Reject locked until `chain_stage='done'`. **Assignment system**: Purchase HOD can assign a `purchase_officer` as the PO author once RFQ is awarded.
 - **Payments** (NEW today — items 10 & 11) — Finance dept module. **Cost-tiered approval chain** by amount: `<₹50k` clears immediately; `₹50k–<₹5L` needs CFO; `≥₹5L` needs CFO + CEO. Visible to every in-org role (transparency); vendors scoped to own. Mark-paid gated to `cleared_to_pay`. Full audit trail in `approval_history`. UI: money-focused KPIs (Outstanding / Paid this month), filter chips, tier badges, Activity timeline.
-- **PO documents** (NEW today — item 13, **backend only**) — `app_po_documents` table + 5 endpoints under `/api/po-documents`. Files land on the private `local` disk (`storage/app/private/po-documents/{po_number}/{hashedName}`) — never web-accessible. Auth-gated streaming download. Designed for stack-portability (frontend never sees `file_path`; only opaque IDs and a server-generated `download_url`). Vendor scoped to own POs; admin override on uploads. **Frontend integration pending.**
-- **GRN** — RBAC (warehouse roles create; admin deletes). PO must be `accepted/fulfilled`. Auto-fulfill on aggregate received = ordered.
-- **Items / Vendors / Departments / Users masters** — full CRUD as before.
-- **Profile** — shared user/vendor component.
+- **PO documents** — `app_po_documents` + 5 endpoints + `PoDocumentsCard` integrated into PO Detail and `/vendor/invoices/upload`. Vendor uploads dispatch docs (E-Way Bill / delivery note / invoice scan) post-accept; in-org viewers download streamed bytes; employees/customers blocked.
+- **GRN** — RBAC (`site_person` + admin create; admin deletes). PO must be `accepted/fulfilled`. Per-line `ordered/received/damaged` columns. PM approval gate (`chain_stage='pending_pm' → done`). `maybeFulfilPo()` only counts approved GRNs; damaged units don't count toward fulfilment. Auto-fulfil now correctly persists the just-approved GRN before recomputing (bug fix today).
+- **Invoices** — `app_invoices` table + `InvoiceController` + RBAC (vendor own-only / internal back-office read / CFO+accountant+admin approve). Vendor `/vendor/invoices/upload` creates a real invoice row with PO link + totals + items snapshot. CFO/admin approves at `/admin/invoices/:id/approve`; status flips pending → approved; vendor sees flip on their list.
+- **Inventory** — derived server-side from approved GRNs (no inventory table). `InventoryController::index` aggregates `received - damaged` across non-rejected GRNs and joins active items master. Frontend at `/admin/inventory` + `/app/inventory` with KPI strip + search + low-stock badge.
+- **Items / Vendors / Departments / Users / Categories / Companies / Projects masters** — full CRUD, all admin-editable.
+- **Profile** — shared user/vendor component. Vendor profile asset uploads (logo, GST PDF, PAN PDF, brochure) wired.
 - **Dashboards** — UserHome + VendorHome + AdminHome fully dynamic.
-- **Vendor portal** — RFQ list, quote submission, PO list/detail with internal-state scrub. Defense-in-depth: API responses for vendor callers strip `consents`, `chain_stage`, `approval_history`, `respective_dept_code` etc. Only `rates_locked` / `released` booleans surface.
+- **Vendor portal** — RFQ list, quote submission, PO list/detail with internal-state scrub, real invoice list + upload. Defense-in-depth: API responses for vendor callers strip `consents`, `chain_stage`, `approval_history`, `respective_dept_code` etc. Only `rates_locked` / `released` booleans surface.
+- **Reports** — 8 pre-built procurement analytics (spend by vendor/dept/category, monthly trend, pending approvals, vendor performance, funnel, cycle time) with custom SVG charts + CSV export.
+- **Approval Rules engine** — `app_approval_rules` table + `ChainEngine` service drives PR/PO/Payment chains. Admin-editable at `/admin/approvals`.
+- **Roles & Permissions matrix** — `app_permissions` + `app_role_permissions` tables + UI persistence. Controllers still gate on hardcoded role lists; `$user->can()` wiring deferred.
+- **Auth password reset** — real `/api/forgot-password` + `/api/reset-password` with hashed tokens, 60-min expiry, throttled. SMTP-less dev mode returns the URL inline.
+- **Settings** — singleton company settings + logo upload, used as PDF letterhead defaults.
+- **PR / PO / RFQ / GRN / Payment PDFs** — DomPDF endpoints + matching letterhead/items/sigs/footer pattern. Print uses hidden iframe (no popup blocker).
+- **KPI tile active state** — shared `KpiStatCard` with tone-matched active filter treatment (tinted card + colored border + ring + filled icon + "FILTER" chip). Used on PR/PO/RFQ/GRN/Inventory/Invoices list pages.
 - **Sidebar + Topbar** — role-driven labels; mobile off-canvas drawer with backdrop, auto-close on route change, body scroll lock. Hamburger on mobile, condensed layout.
+- **Performance** — route-level code splitting (main bundle 319 kB / 96 kB gzipped), bundled detail responses, lazy attachment thumbnails, DB indexes on hot columns.
+- **Brand** — "Suppliers First" across all user-facing surfaces (browser title, sidebar, PDFs, emails, footers). Internal folder/DB names retained.
 
 ### ✅ Security posture
 
 Defense-in-depth: route guards (`<RoleGate>`) → axios interceptor bearer → Laravel `ApiToken` middleware → controller RBAC → terminal-state guards → chain-stage guards → vendor-response scrub → login throttle. Reusable `ChainStatusModal` + `AssignAuthorModal` components.
 
-### 🟡 UI exists, backend not wired yet
+### 🟡 Partial / known stubs
 
-- **Finance — Invoices** (vendor invoice upload, proforma, delivery challan, purchase return) — UI scaffolds only; no controllers / no real upload yet (item 13 still open).
-- **Inventory / StockReceive** — mock.
-- **Roles & Permissions / Approval Rules / Settings** — UI-only.
-- **Reports** — empty state / mock chart.
-- **Notifications** — client-side seed (Zustand persist), no server events.
-- **Masters: Categories / Companies / Projects** — mock pages.
-
-### 🟡 Partial — backend done, frontend pending
-
-- **Vendor portal upload of E-Way Bill / invoice / delivery note** (FLOW.md items 12 & 13) — full backend shipped today (`app_po_documents` + 5 endpoints, private disk, portable contract). Frontend `/vendor/invoices/upload` is still the old mock — needs a real upload widget + integration with the new `/api/po-documents` endpoints.
+- **Notifications** — client-side seed (Zustand persist), no server events. User explicitly chose "just show it" for now.
+- **List-row "Quick actions" dropdowns** on PR / PO / Quotation lists are decorative — chevron-menu just toasts "coming soon".
+- **GSTIN registry lookup** in vendor registration falls back to a mock company table when the network call fails — intentional demo offline mode.
+- **Roles & Permissions matrix UI persists, controllers don't read it yet** — admins edit at `/admin/roles` and rows save, but `Controller::canX()` still hardcodes role lists. Wiring `$user->can('pr.approve')` is a separate phase.
+- **Invoice PDF endpoint** — `pdf.invoice.blade.php` not yet built. Approval page's "Download PDF" toasts "coming soon" until the blade lands.
+- **Help Center** link in profile menu → toast.
 
 ### 🔴 Not started
 
-- **PO PDF download** (FLOW.md item 9) — currently only browser print. Real PDF generation TBD.
-- File upload wiring for **vendor profile assets** (logo, GST/PAN PDFs) — separate from item 13. Legacy strings on `app_vendors` still point at `public/vendor_logo` etc.
 - 2FA / MFA for privileged roles.
-- Audit log UI (data is being captured in `approval_history` JSON columns; no aggregate viewer yet).
-- Notifications (server-side events for assignments, approvals, rejections).
+- Audit log UI (data is in `approval_history` JSON columns; no aggregate viewer yet).
+- Server-side notifications (events for assignments, approvals, rejections).
+- Per-project PM scoping for GRN approval (any PM can approve any GRN today).
+- SMTP for password-reset emails (endpoint works; dev returns the URL inline).
 
 ### ⚠️ Aspirational (documented in FLOW.md) — current state
 
@@ -909,8 +1255,9 @@ Defense-in-depth: route guards (`<RoleGate>`) → axios interceptor bearer → L
 | ~~Payments (Finance dept)~~ | ✅ **Done (item 10)** — `app_payments` table, full CRUD, mark-paid. |
 | ~~Cost-tiered payment approval~~ | ✅ **Done (item 11)** — <₹50k direct; ₹50k–5L CFO; ≥₹5L CFO+CEO. |
 | Internal communication on RFQs | 🟡 Comments captured per-action via `approval_history`; no standalone messaging thread. |
-| PO downloadable as PDF (item 9) | ❌ Browser print only. |
-| Vendor uploads E-Way Bill / invoice / delivery note (items 12–13) | 🟡 **Backend done (2026-04-30)** — `app_po_documents` + 5 endpoints, private disk, portable contract. Frontend integration pending. |
+| ~~PO downloadable as PDF (item 9)~~ | ✅ **Done** — DomPDF endpoint + blade template. PR / RFQ / GRN / Payment also have matching PDFs. |
+| ~~Vendor uploads E-Way Bill / invoice / delivery note (items 12–13)~~ | ✅ **Done** — `PoDocumentsCard` integrated into `/vendor/invoices/upload`; vendor can attach dispatch docs alongside the invoice itself. |
+| ~~Items 14–20 (RFQ auto-select / PO docs gating / GRN inspection / damage / PM approval)~~ | ✅ **Done** — full FLOW.md item set 14–20 shipped on 2026-05-08. |
 
 > **Note:** PR creation stays open to any authenticated user — anyone can raise a need. The narrowing applies at RFQ + PO creation (item 6), and at every approval gate downstream.
 

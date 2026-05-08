@@ -330,7 +330,7 @@ export default function CreateRFQPage() {
   const validate = () => {
     const next = {};
     if (!title.trim()) next.title = "Title is required.";
-    if (selected.length === 0) next.vendors = "Invite at least one vendor.";
+    // FLOW.md item 14 — vendors are auto-selected server-side; no user input required.
     const badItem = items.some((it) => {
       const qtyNum = Number(it.qty);
       return !it.name.trim() || !Number.isFinite(qtyNum) || qtyNum <= 0;
@@ -359,7 +359,7 @@ export default function CreateRFQPage() {
         title: title.trim(),
         pr_number: prNumber.trim() || null,
         due_date: dueDate || null,
-        vendors: selected,
+        // vendors auto-selected by the backend per item 14
         items: items.map((it) => ({
           name: it.name.trim(),
           code: it.code.trim() || null,
@@ -368,8 +368,9 @@ export default function CreateRFQPage() {
           qty: Number(it.qty) || 1,
         })),
       });
+      const inviteCount = Array.isArray(record.vendors) ? record.vendors.length : 0;
       toast.success(
-        `${record.number} sent to ${selected.length} vendor${selected.length === 1 ? "" : "s"}`,
+        `${record.number} created — sent to ${inviteCount} matching vendor${inviteCount === 1 ? "" : "s"}`,
       );
       nav("/app/quotations");
     } catch (err) {
@@ -582,225 +583,22 @@ export default function CreateRFQPage() {
           <FieldError message={errors.items} />
         </section>
 
-        {/* Invite Vendors */}
-        <section
-          className={`glass-card rounded-2xl p-6 ${
-            errors.vendors ? "border-danger/40" : ""
-          }`}
-        >
-          <div className="flex items-center justify-between mb-4 gap-2">
-            <div className="flex items-center gap-2">
-              <Users className={`h-5 w-5 ${errors.vendors ? "text-danger" : "text-primary"}`} />
-              <h2 className={`text-lg font-bold ${errors.vendors ? "text-danger" : "text-text"}`}>
-                Invite Vendors *
-              </h2>
-              <span className="text-xs text-text-muted">({selected.length} selected)</span>
+        {/* Invite Vendors — auto-selected (FLOW.md item 14) */}
+        <section className="glass-card rounded-2xl p-6">
+          <div className="flex items-start gap-3">
+            <div className="w-10 h-10 rounded-md bg-info-soft text-info flex items-center justify-center shrink-0">
+              <Users className="h-5 w-5" />
             </div>
-            <div className="relative w-56">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-text-muted" />
-              <input
-                type="text"
-                value={vendorQuery}
-                onChange={(e) => setVendorQuery(e.target.value)}
-                placeholder="Search vendors…"
-                className="w-full bg-surface-container-low/60 border border-border rounded-full focus:border-primary/60 focus:ring-2 focus:ring-primary/15 pl-9 pr-3 py-2 text-sm text-text placeholder:text-text-subtle outline-none transition-colors"
-              />
+            <div className="flex-1">
+              <h2 className="text-lg font-bold text-text mb-1">Vendor invitations</h2>
+              <p className="text-sm text-text-muted">
+                Vendors are <strong className="text-text">auto-selected</strong> based on the categories of the items above. The system invites every approved vendor whose category matches.
+              </p>
+              <p className="text-xs text-text-subtle mt-2">
+                You wont see who was invited. This keeps RFQ creation impartial — the consensus stage decides who wins.
+              </p>
             </div>
           </div>
-
-          {/* Auto-select banner — shows when PR-driven category match populated the picker */}
-          {autoSelectedCats.length > 0 && (
-            <div className="mb-4 px-4 py-3 rounded-md bg-info-soft border border-info/30 text-xs text-info flex items-start gap-2">
-              <Users className="h-4 w-4 mt-0.5 shrink-0" />
-              <div>
-                <span className="font-bold">Auto-selected by category</span>
-                {" — every approved vendor in "}
-                {autoSelectedCats.map((c, i) => (
-                  <span key={c}>
-                    <span className="font-semibold">{c}</span>
-                    {i < autoSelectedCats.length - 1 && " + "}
-                  </span>
-                ))}
-                {" was added based on the linked PR's items. Uncheck any you don't want to invite."}
-              </div>
-            </div>
-          )}
-
-          {vendorsLoading && vendors.length === 0 ? (
-            <div className="py-8 text-center text-sm text-text-muted">
-              <Loader2 className="inline-block h-4 w-4 animate-spin mr-1" />
-              Loading vendors…
-            </div>
-          ) : approvedVendors.length === 0 ? (
-            <div className="py-8 px-4 text-center border border-dashed border-border rounded-xl bg-surface-container-low/40">
-              {vendors.length === 0 ? (
-                <>
-                  <UserPlus className="h-10 w-10 mx-auto mb-3 text-text-subtle" strokeWidth={1.5} />
-                  <p className="text-sm font-semibold text-text mb-1">
-                    No vendors in the system yet
-                  </p>
-                  <p className="text-xs text-text-muted mb-4">
-                    Add a vendor and approve them to start inviting to RFQs.
-                  </p>
-                  <Link
-                    to="/admin/vendors"
-                    className="inline-flex items-center gap-2 px-4 py-2 bg-primary hover:brightness-110 text-primary-foreground text-xs font-bold rounded-full transition-all shadow-sm"
-                  >
-                    <Plus className="h-3.5 w-3.5" /> Add a vendor
-                  </Link>
-                </>
-              ) : vendorQuery ? (
-                <p className="text-sm text-text-muted">
-                  No approved vendors match <strong>"{vendorQuery}"</strong>.
-                </p>
-              ) : (
-                <>
-                  <p className="text-sm font-semibold text-text mb-1">
-                    You have {vendors.length} vendor{vendors.length === 1 ? "" : "s"}, but none are approved yet
-                  </p>
-                  <p className="text-xs text-text-muted mb-4">
-                    Only <strong>approved</strong> vendors can be invited to RFQs. Approve pending ones in the vendors master.
-                  </p>
-                  <Link
-                    to="/admin/vendors"
-                    className="inline-flex items-center gap-2 px-4 py-2 bg-primary hover:brightness-110 text-primary-foreground text-xs font-bold rounded-full transition-all shadow-sm"
-                  >
-                    Go to Vendors Master
-                  </Link>
-                </>
-              )}
-            </div>
-          ) : (
-            <>
-              {/* ─── Selected summary strip ──────────────────────────── */}
-              {selected.length > 0 && (
-                <div className="mb-4 px-4 py-3 rounded-md bg-success-soft/30 border border-success/30">
-                  <div className="flex items-center justify-between gap-3 mb-2">
-                    <div className="flex items-center gap-2 text-sm font-bold text-success">
-                      <Check className="h-4 w-4" strokeWidth={2.5} />
-                      {selected.length} vendor{selected.length === 1 ? "" : "s"} selected
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => setSelected([])}
-                      className="text-xs font-semibold text-text-muted hover:text-text flex items-center gap-1"
-                    >
-                      <X className="h-3.5 w-3.5" /> Clear all
-                    </button>
-                  </div>
-                  <div className="flex flex-wrap gap-1.5">
-                    {selected.map((name) => (
-                      <span
-                        key={name}
-                        className="inline-flex items-center gap-1 pl-2 pr-1 py-0.5 rounded-full bg-success text-white text-xs font-semibold"
-                      >
-                        {name}
-                        <button
-                          type="button"
-                          onClick={() => toggleVendor(name)}
-                          className="hover:bg-white/20 rounded p-0.5"
-                          aria-label={`Remove ${name}`}
-                        >
-                          <X className="h-3 w-3" strokeWidth={2.5} />
-                        </button>
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* ─── Per-category sections ────────────────────────────── */}
-              <div className="space-y-3">
-                {vendorsByCategory.map(([cat, list]) => {
-                  const meta = metaForCategory(cat);
-                  const Icon = meta.icon;
-                  const tone = TONE_STYLES[meta.tone] ?? TONE_STYLES.neutral;
-                  const selectedCount = list.filter((v) =>
-                    selected.includes(v.vendor_name),
-                  ).length;
-                  const allSelected = selectedCount === list.length;
-                  const someSelected = selectedCount > 0 && !allSelected;
-                  const isAutoCat = autoSelectedCats.includes(cat);
-                  return (
-                    <section
-                      key={cat}
-                      className={`rounded-xl border ${tone.border} bg-surface-container-low/40 overflow-hidden`}
-                    >
-                      <header className="px-3 sm:px-4 py-2.5 flex items-center justify-between gap-2 border-b border-border">
-                        <div className="flex items-center gap-2 min-w-0">
-                          <div
-                            className={`w-7 h-7 rounded-md flex items-center justify-center shrink-0 ${tone.iconBg}`}
-                          >
-                            <Icon className="h-3.5 w-3.5" strokeWidth={2.5} />
-                          </div>
-                          <h3 className={`text-sm font-bold ${tone.text} truncate`}>
-                            {cat}
-                          </h3>
-                          <span
-                            className={`text-[10px] uppercase tracking-widest font-bold tabular-nums px-1.5 py-0.5 rounded ${
-                              selectedCount > 0
-                                ? "bg-success text-white"
-                                : "bg-surface-container-high text-text-muted"
-                            }`}
-                          >
-                            {selectedCount}/{list.length}
-                          </span>
-                          {isAutoCat && (
-                            <span className="text-[9px] uppercase tracking-widest font-bold px-1.5 py-0.5 rounded bg-info-soft text-info border border-info/30">
-                              auto
-                            </span>
-                          )}
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => toggleCategory(cat, !allSelected)}
-                          className="text-xs font-bold text-info hover:bg-info-soft px-2 py-1 rounded transition-colors whitespace-nowrap"
-                        >
-                          {allSelected
-                            ? "Deselect all"
-                            : someSelected
-                              ? "Select rest"
-                              : "Select all"}
-                        </button>
-                      </header>
-                      <div className="p-3 flex flex-wrap gap-1.5">
-                        {list.map((v) => {
-                          const checked = selected.includes(v.vendor_name);
-                          return (
-                            <label
-                              key={v.code}
-                              className={`inline-flex items-center gap-2 pl-2 pr-3 py-1.5 border rounded-full cursor-pointer transition-all ${
-                                checked
-                                  ? "bg-success text-white border-success shadow-sm"
-                                  : "bg-surface-container-low/60 border-border text-text hover:border-success/60 hover:bg-surface-container"
-                              }`}
-                            >
-                              <input
-                                type="checkbox"
-                                checked={checked}
-                                onChange={() => toggleVendor(v.vendor_name)}
-                                className="h-3.5 w-3.5 rounded"
-                              />
-                              <span className="text-sm font-medium truncate max-w-[180px]">
-                                {v.vendor_name}
-                              </span>
-                              {checked && (
-                                <Check
-                                  className="h-3.5 w-3.5 -ml-1"
-                                  strokeWidth={2.75}
-                                />
-                              )}
-                            </label>
-                          );
-                        })}
-                      </div>
-                    </section>
-                  );
-                })}
-              </div>
-            </>
-          )}
-          <FieldError message={errors.vendors} />
         </section>
 
         {/* Footer actions */}

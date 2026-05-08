@@ -17,11 +17,12 @@ import {
   Layers,
   Trash2,
 } from "lucide-react";
-import { usePRStore, chainFromStage } from "../store.js";
+import { usePRStore } from "../store.js";
 import { useToast } from "../../../hooks/useToast.jsx";
 import { useAuthStore } from "../../auth/store.js";
 import RefreshButton from "../../../components/data/RefreshButton.jsx";
 import Skeleton from "../../../components/feedback/Skeleton.jsx";
+import KpiStatCard from "../../../components/data/KpiStatCard.jsx";
 
 const APPROVER_ROLES = new Set(["admin", "hod", "cfo", "ceo"]);
 
@@ -50,21 +51,61 @@ function formatDate(v) {
   });
 }
 
-function ApprovalBadge({ role, state }) {
+function ApprovalBadge({ label, state, title }) {
   const styles = {
     approved: "bg-success-soft text-success border-success/30",
     pending: "bg-warning-soft text-warning border-warning/30",
     rejected: "bg-danger-soft text-danger border-danger/30",
+    hold: "bg-warning-soft text-warning border-warning/30",
     waiting: "bg-surface-container border-border text-text-subtle",
   };
   return (
     <span
       className={`inline-flex items-center justify-center min-w-[42px] h-6 rounded px-1.5 text-[10px] font-bold border ${styles[state] ?? styles.waiting}`}
-      title={`${role}: ${state}`}
+      title={title ?? `${label}: ${state}`}
     >
-      {role}
+      {label}
     </span>
   );
+}
+
+/** Short, list-friendly label for a stage chip. */
+function shortStageLabel(stage) {
+  if (!stage) return "";
+  if (stage.role === "hod") {
+    if (!stage.department_code) return "HOD";
+    if (stage.department_code === ":requester_dept") return "REQ";
+    return stage.department_code;   // e.g. PURCH, FIN
+  }
+  return stage.role.toUpperCase();
+}
+
+/**
+ * Per-stage state for the row badges:
+ *   approved | rejected | hold | pending | waiting
+ * Read approval_history first; fall back to position vs current chain_stage.
+ */
+function stageStateFor(stage, idx, row) {
+  const history = Array.isArray(row.approval_history) ? row.approval_history : [];
+  // Last history entry for this stage key
+  for (let i = history.length - 1; i >= 0; i--) {
+    if (history[i]?.stage === stage.key) {
+      const action = history[i].action;
+      if (action === "approve") return "approved";
+      if (action === "reject") return "rejected";
+      if (action === "hold") {
+        return row.chain_stage === stage.key ? "hold" : "approved";
+      }
+    }
+  }
+  if (row.status === "approved") return "approved";
+  if (row.status === "rejected" || row.status === "cancelled") return "rejected";
+  // No history yet → derive from current position
+  const stages = Array.isArray(row.chain_stages) ? row.chain_stages : [];
+  const currentIdx = stages.findIndex((s) => s.key === row.chain_stage);
+  if (currentIdx === -1) return idx === 0 ? "pending" : "waiting";
+  if (idx === currentIdx) return "pending";
+  return idx < currentIdx ? "approved" : "waiting";
 }
 
 const STATUS_TONE = {
@@ -99,47 +140,8 @@ function StatusPill({ status }) {
   );
 }
 
-function StatCard({ label, value, icon: Icon, tone = "neutral", active, onClick }) {
-  // Tone drives the icon-tile background only; the card itself is always
-  // glass so the aesthetic stays cohesive across cards.
-  const iconBg = {
-    neutral: "bg-surface-container",
-    info: "bg-info-soft",
-    warning: "bg-warning-soft",
-    success: "bg-success-soft",
-    danger: "bg-danger-soft",
-  };
-  const iconColor = {
-    neutral: "text-text-muted",
-    info: "text-info",
-    warning: "text-warning",
-    success: "text-success",
-    danger: "text-danger",
-  };
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`glass-card text-left flex items-center gap-3 p-4 rounded-2xl transition-all duration-200 shrink-0 snap-start min-w-[140px] sm:min-w-0 hover:shadow-lg hover:-translate-y-0.5 ${
-        active ? "ring-2 ring-primary/40" : ""
-      }`}
-    >
-      <div
-        className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${iconBg[tone]}`}
-      >
-        <Icon className={`h-4 w-4 ${iconColor[tone]}`} strokeWidth={2.25} />
-      </div>
-      <div className="min-w-0">
-        <div className="text-[10px] uppercase tracking-[0.18em] font-semibold text-text-muted">
-          {label}
-        </div>
-        <div className="text-2xl font-bold tracking-tight tabular-nums leading-tight text-text">
-          {value}
-        </div>
-      </div>
-    </button>
-  );
-}
+// StatCard moved to shared component — see components/data/KpiStatCard.jsx
+const StatCard = KpiStatCard;
 
 function FilterBar({
   query,
@@ -948,24 +950,20 @@ export default function PurchaseRequestListPage() {
                     : row.status === "cancelled"
                       ? "var(--color-text-subtle)"
                       : "var(--color-warning)";
-              const chain =
-                row.chain ?? chainFromStage(row.chain_stage, row.status);
+              const stages = Array.isArray(row.chain_stages) ? row.chain_stages : [];
+              const currentStage = stages.find((s) => s.key === row.chain_stage);
               const requester = safe(row.requester_name ?? row.requester);
               const department = safe(row.department);
               const sub = isApproverRole
                 ? row.status === "approved"
-                  ? "Ready for PO"
+                  ? stages.length === 0 ? "Auto-approved" : "Ready for PO"
                   : row.status === "rejected"
                     ? "Rejected"
                     : row.status === "cancelled"
                       ? "Cancelled"
-                      : row.chain_stage === "hod"
-                        ? "Awaiting HOD approval"
-                        : row.chain_stage === "cfo"
-                          ? "Awaiting CFO approval"
-                          : row.chain_stage === "ceo"
-                            ? "Awaiting CEO approval"
-                            : ""
+                      : currentStage
+                        ? `Awaiting ${currentStage.label}`
+                        : ""
                 : row.status === "approved"
                   ? "Approved"
                   : row.status === "rejected"
@@ -1025,12 +1023,17 @@ export default function PurchaseRequestListPage() {
                     </div>
                   </div>
 
-                  {/* Approval chain (lg+, approver only) */}
-                  {isApproverRole && (
+                  {/* Approval chain — dynamic from rule (lg+, approver only) */}
+                  {isApproverRole && stages.length > 0 && (
                     <div className="hidden lg:flex gap-1.5 shrink-0">
-                      <ApprovalBadge role="HOD" state={chain.hod} />
-                      <ApprovalBadge role="CFO" state={chain.cfo} />
-                      <ApprovalBadge role="CEO" state={chain.ceo} />
+                      {stages.map((s, i) => (
+                        <ApprovalBadge
+                          key={s.key}
+                          label={shortStageLabel(s)}
+                          state={stageStateFor(s, i, row)}
+                          title={`${s.label}: ${stageStateFor(s, i, row)}`}
+                        />
+                      ))}
                     </div>
                   )}
 

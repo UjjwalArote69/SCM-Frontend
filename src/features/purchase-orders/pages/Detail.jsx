@@ -29,35 +29,23 @@ import { useToast } from "../../../hooks/useToast.jsx";
 import { useAuthStore } from "../../auth/store.js";
 import poApi from "../api.js";
 
-// FLOW.md item 8 — PO chain stages, in order. respective_hod is dynamic
-// (only present if the source RFQ resolved a respective department).
-const CHAIN_STAGES = [
-  { key: "purchase_hod", label: "Purchase HOD", role: "hod", deptCode: "PURCH" },
-  { key: "finance_hod", label: "Finance HOD", role: "hod", deptCode: "FIN" },
-  { key: "respective_hod", label: "Respective Dept HOD", role: "hod" },
+// PO chain stages now come from po.chain_stages (resolved server-side from
+// the matching approval rule). Legacy fallback covers POs created before
+// the rule engine landed — they keep the original 5-stage chain.
+const LEGACY_CHAIN_STAGES = [
+  { key: "purchase_hod", label: "Purchase HOD", role: "hod", department_code: "PURCH" },
+  { key: "finance_hod", label: "Finance HOD", role: "hod", department_code: "FIN" },
+  { key: "respective_hod", label: "Respective Dept HOD", role: "hod", department_code: ":requester_dept" },
   { key: "cfo", label: "CFO", role: "cfo" },
   { key: "ceo", label: "CEO", role: "ceo" },
 ];
 
-function userActsOnStage(user, stage, respectiveDeptCode) {
-  if (!user || !stage) return false;
+function userActsOnStage(user, stageObj) {
+  if (!user || !stageObj) return false;
   if (user.role === "admin") return true;
-  if (stage === "purchase_hod") {
-    return user.role === "hod" && user.department?.code === "PURCH";
-  }
-  if (stage === "finance_hod") {
-    return user.role === "hod" && user.department?.code === "FIN";
-  }
-  if (stage === "respective_hod") {
-    return (
-      user.role === "hod" &&
-      respectiveDeptCode &&
-      user.department?.code === respectiveDeptCode
-    );
-  }
-  if (stage === "cfo") return user.role === "cfo";
-  if (stage === "ceo") return user.role === "ceo";
-  return false;
+  if (user.role !== stageObj.role) return false;
+  if (!stageObj.department_code) return true;
+  return user.department?.code === stageObj.department_code;
 }
 
 // Mirrors PoController BACKOFFICE_ROLES on the backend
@@ -309,18 +297,17 @@ export default function PurchaseOrderDetailPage({ view = "admin" }) {
   const isAdmin = user?.role === "admin";
   const isBackoffice = BACKOFFICE_ROLES.has(user?.role);
 
-  // FLOW.md item 8 — internal approval chain state
+  // Internal approval chain state — chain_stages comes from the rule engine.
   const chainStage = po.chain_stage ?? "done"; // legacy POs default to done
   const chainDone = chainStage === "done";
-  const canActOnChain =
-    !chainDone &&
-    !isTerminal &&
-    userActsOnStage(user, chainStage, po.respective_dept_code);
-  const visibleChainSteps = CHAIN_STAGES.filter(
-    (s) => s.key !== "respective_hod" || po.respective_dept_code,
-  );
+  const visibleChainSteps = (Array.isArray(po.chain_stages) && po.chain_stages.length > 0)
+    ? po.chain_stages
+    : LEGACY_CHAIN_STAGES.filter(
+        (s) => s.key !== "respective_hod" || po.respective_dept_code,
+      );
   const stageIndex = visibleChainSteps.findIndex((s) => s.key === chainStage);
   const currentStage = visibleChainSteps[stageIndex];
+  const canActOnChain = !chainDone && !isTerminal && userActsOnStage(user, currentStage);
 
   const onChainSubmit = async ({ action, comments }) => {
     setActing(true);
@@ -431,9 +418,20 @@ export default function PurchaseOrderDetailPage({ view = "admin" }) {
           </button>
           <button
             type="button"
-            onClick={() => {
-              toast.info("Use 'Save as PDF' in the print dialog.");
-              setTimeout(() => window.print(), 150);
+            onClick={async () => {
+              try {
+                const res = await poApi.downloadPdf(po.number);
+                const url = URL.createObjectURL(res);
+                const a = document.createElement("a");
+                a.href = url;
+                a.download = `${po.number}.pdf`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                setTimeout(() => URL.revokeObjectURL(url), 1000);
+              } catch (err) {
+                toast.error(err?.response?.data?.message ?? "Could not download PDF");
+              }
             }}
             className="px-3 py-1.5 text-xs font-semibold text-text-muted border border-border rounded-md hover:bg-surface-container-low hover:text-text flex items-center gap-1.5"
           >
@@ -445,7 +443,7 @@ export default function PurchaseOrderDetailPage({ view = "admin" }) {
               onClick={() => {
                 const subject = `Purchase Order ${po.number}`;
                 const body = encodeURIComponent(
-                  `Please find PO ${po.number} for your review.\n\nOpen in SCM: ${window.location.href}`,
+                  `Please find PO ${po.number} for your review.\n\nOpen in Suppliers First: ${window.location.href}`,
                 );
                 window.location.href = `mailto:?subject=${encodeURIComponent(subject)}&body=${body}`;
               }}
@@ -746,10 +744,12 @@ export default function PurchaseOrderDetailPage({ view = "admin" }) {
         </div>
       </div>
 
-      {/* Dispatch documents (FLOW.md items 12-13) — visible once PO is in
-          a state where the vendor would be expected to dispatch. Per-doc
-          delete eligibility is decided inside the card (admin OR uploader). */}
-      {(po.status === "accepted" || po.status === "fulfilled") && (
+      {/* Dispatch documents (FLOW.md item 15) — visible once PO is in a
+          state where the vendor would be expected to dispatch. Hidden from
+          employees and customers (sensitive vendor invoices / E-way bills).
+          Per-doc delete eligibility is decided inside the card (admin OR uploader). */}
+      {(po.status === "accepted" || po.status === "fulfilled")
+        && !["employee", "customer"].includes(user?.role) && (
         <div className="mt-6 print:hidden">
           <PoDocumentsCard
             poNumber={po.number}
