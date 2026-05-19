@@ -1,6 +1,384 @@
-# SCM — Progress Log
+# Suppliers First — Progress Log
 
-Running changelog of what's been built, session by session, plus the current implementation snapshot. **CLAUDE.md** is the static reference (stack, conventions, routes); this file is the moving picture.
+Running changelog of what's been built, session by session, plus the current implementation snapshot. **CLAUDE.md** is the static reference (stack, conventions, routes); **DESIGN.md** is the canonical design system; this file is the moving picture.
+
+---
+
+## Session — 2026-05-12
+
+Massive flow + visibility day. Shipped FLOW.md items **24–33** (GRN polish + damaged-goods replacement workflow + employee lockdown + transport accountability + Purchase-HOD final approval stage), redesigned the **per-role portal experience** (employee / HOD / CFO / CEO), then — at the end — **replaced every hardcoded role allowlist** with an admin-editable permissions matrix so visibility is now configurable at runtime.
+
+### ✅ FLOW.md items 24–27 — GRN polish + vendor damage workflow + transport accountability
+
+Items 21–23 were verified already-shipped (write access to site_person/PM, PM approval, etc.). The four genuinely new pieces:
+
+**24 — Drop the "invoice / not invoice yet" pill picker** (later partially un-done — see "user pushback" below).
+- Backend: removed `invoice_type` from validators.
+- Frontend: removed the InvoiceTypePicker from GRN Create + the chip on GRN Detail.
+
+> 🐞 **User pushback**: I'd misread item 24 — the user only wanted "Invoice" (duplicate of Tax Invoice) and "No invoice yet" removed, not the pill picker entirely. Re-added the picker with just `tax_invoice` + `proforma` options.
+
+> 🐞 **Round 2**: user reported attaching a PDF to "Tax Invoice" also showed it under "Proforma" (single shared file state). Fixed by splitting into two independent slots — `taxInvoiceFile` + `proformaFile`, each with its own `PdfSlot` card. Backend `GrnDocumentController` was tightened to enforce **PDF-only** on invoice doc types (was `pdf,jpg,jpeg,png,webp`); damage photos still accept images.
+
+**25 — Vendor accept/reject damaged goods under GRN, target-date highlighted**.
+- Migration `2026_05_12_000000_add_replacement_target_to_app_grns.php` — new `replacement_target_date` + `replacement_comment` columns.
+- Backend: extended `acceptReplacement` to require `target_date` (>= today); added mirror `rejectReplacement` endpoint with `comment`. Both gated behind PM approval (chain_stage='done').
+- Frontend: new `AcceptReplacementModal` with a primary-soft + ring-highlighted Target Date picker; new `RejectReplacementModal` for disputes. Replaced the `window.prompt()` shim with a proper UI.
+
+**26 — Notify vendor after PM approval, schedule replacement**.
+- Backend: replacement banner + vendor actions only open when `chain_stage='done'` (was: visible on any damage report). Damage photos auto-load via blob fetch.
+- Frontend `AcceptReplacementModal` shows auto-populated damaged-line list, photo previews, then the target-date picker — exactly the spec.
+
+**27 — Transportation accountability**.
+- Migrations: `app_pos.transport_arranged_by` ('buyer'|'vendor') + `transport_vendor_id` FK; `app_vendors.vendor_type` ('supplier'|'transport'|'both').
+- Backend: PoController validates the pair (buyer arrangement requires a transport vendor); GRN `accountableVendorName()` resolves supplier vs transport per PO; GrnController index also surfaces GRNs to the transport vendor when buyer-arranged.
+- Frontend: new "Transport" section on PO Create (radio + transport-vendor picker); PO Detail shows "Transport arranged by" meta; GRN Detail damage card has an info-tinted accountability callout.
+
+### ✅ FLOW.md items 28–33 — vendor inspect+edit, two-stage approval, employee lockdown, photo previews
+
+**28 — Vendor can inspect and change the replacement quantity**.
+- Backend `acceptReplacement` now accepts `items: [{ code, name, replace_qty }]`, capped at the originally-reported damaged qty. Persists adjusted qty on GRN items snapshot + logs in approval_history.
+- Frontend modal renders one editable numeric input per damaged line, seeded with the reported damage; turns danger-red if user types over the cap. Submit button shows the live total ("Commit 7 units").
+
+**29 + 31 — Two-stage GRN approval chain (PM → Purchase HOD)**.
+- Chain extended: `pending_pm → pending_purchase_hod → done`. PM does the inspection at stage 1, Purchase HOD does the final approval at stage 2. `maybeFulfilPo()` only fires after the final approval, so a PO no longer auto-fulfils on PM approval alone.
+- `GrnController::updateStatus` routes by stage — at `pending_pm`, PM/admin can act; at `pending_purchase_hod`, Purchase HOD (`role=hod, dept.code=PURCH`) or admin.
+- Frontend: new `ChainStepper` shows the three steps with active-pulse on current stage. Action button label, modal title, and toast all adapt to stage (`Inspect & act` → "pass to Purchase HOD"; `Final approval` → "finalises GRN"). Vendor replacement banner only opens after the final approval.
+- Smoke test `test/api-smoke.mjs` updated — admin now needs two consecutive `/grns/{n}/status` calls to drive a GRN from `pending_pm` to `done`.
+
+**30 — Site_person read+create only**. Verified already in place; no code change.
+
+**32 — Employee role lockdown** (later replaced by the permissions refactor at the end of the session).
+- Initial implementation: `denyRoles: ["employee"]` on every non-PR nav item; new `wrapNoEmployee()` route helper; `employee` removed from `ORG_WIDE_VIEW_ROLES` on PoController + RfqController.
+- Later replaced — see "permissions-driven visibility" below.
+
+**33 — Damage photo preview**.
+- Rebuilt `DamagePhotoTile` to auto-fetch the auth-gated blob on mount and render an `<img>` thumbnail with `object-cover`, hover scale, and gradient overlay → "Click to enlarge". Linked-item code chip floats top-left.
+- Object URLs revoked on unmount; parent keys tiles by `doc.id` so a fresh component is created per doc (avoids the lint-flagged setState-in-effect pattern).
+
+### ✅ Vendor portal — `/vendor/grn` route added
+
+User asked "where is the accept/reject damage option in vendor portal?" — the Detail page Accept/Reject UI was built, but vendors had no way to reach it (no `/vendor/grn` route). Built `VendorGRNList` page (KPIs for Action-needed / Scheduled / Replaced / Disputed, per-row chip with status tone), wired routes, added Sidebar entry. Detail page's breadcrumb auto-routes to `/vendor/grn` for vendor viewers (was hardcoded `/app/grn`).
+
+Backend `GrnController::index` widened so a vendor sees GRNs where they're EITHER the supplier OR the buyer-arranged transport vendor (item 27 + the missing piece for them to action damage reports).
+
+### ✅ Role-specific portal experience — employee / HOD / CFO / CEO / admin
+
+User asked: "Employee should only see + create PR; HOD should be isolated to their department except FIN/PURCH HODs; CFO finance-centric; CEO sees all; keep admin as-is."
+
+**HOD department-isolation** — backend filter on PR/PO/RFQ/GRN/Payment/Invoice index + show. Non-FIN/PURCH HOD sees only records sourced from their department:
+- PR: `where('department', $deptCode)`
+- PO: `where('respective_dept_code', $deptCode)`
+- RFQ: `whereJsonContains('consents->respective_dept_code', $deptCode)`
+- GRN/Payment/Invoice: join via `app_pos.respective_dept_code` (subquery)
+- Finance HOD + Purchase HOD are exempt (they're cross-department approvers in the chain).
+- `show()` endpoints return **404** (not 403) on dept mismatch so existence isn't leaked.
+
+**CFO finance-centric portal**:
+- New `cfo` nav audience in `navConfig.js` — Finance section first (Invoices / Payments), then Approvals (PR / PO / Quotations), then Insights. Inventory dropped.
+- Sidebar dispatches to the CFO config when `audience='user' && role='cfo'`.
+- New `CFOHome.jsx` dashboard — hero with sign-off count, 3 financial KPIs (Outstanding / Paid this month / Invoices on book in compact ₹), 4 action queues, top-payments snapshot, quick links.
+
+**Employee** — initially given a custom `EmployeeHome` dashboard. User pushed back: "everything is looking redundant like on dashboard and on sidebar and on purchase request its all same." Right call — three surfaces showing the same data is bad design. Removed:
+- Deleted `EmployeeHome.jsx`
+- Deleted `EmployeeSidebarPanel.jsx`
+- `/app` for employee now redirects to `/app/purchase-requests` (the single source of truth — already has KPIs, filters, full data)
+- Hid "Dashboard" from employee nav (redirect would just duplicate "Purchase Requests")
+
+**CEO** — verified unchanged. CEO is in every `ORG_WIDE_VIEW_ROLES` allowlist; the new HOD-dept filter only fires for `role === 'hod'`.
+
+### 🐞 Bug rounds along the way
+
+User reported "I tried CFO portal it's showing some error so please test every portal properly." Caught three real bugs:
+
+1. **CFOHome white-screen** — imported `fmtINR` + `fmtCompactINR` from `utils/format.js` which doesn't exist (CLAUDE.md was stale on the path; the actual location is `features/reports/utils.js`). Inlined the formatters in CFOHome so the page is self-contained.
+2. **Employee was seeing 2 GRN rows** — GrnController had a `vendor` branch but no `elseif` fall-through to deny unlisted roles. Employee silently received all GRNs. Added the gate.
+3. **Employee could load `/reports/funnel`** — `ReportController::ensureInOrg` only blocked vendors. Added `employee` to the deny list.
+
+Then ran an 8-role × 6-endpoint visibility audit. Results:
+- Employee: PRs only (was: showed GRNs)
+- HOD IT: IT-dept only across all entities
+- HOD FIN/PURCH: org-wide (exempt)
+- CFO/CEO/Admin: full visibility
+- Vendor: scoped to own data
+- All correct after fixes.
+
+### ❌ Sidebar/topbar redesign — two failed iterations
+
+Built an `EmployeeSidebarPanel` to make the otherwise-sparse employee sidebar feel substantial. **First version** was too loud — filled red CTA button, 2×2 tone-coded status grid, sparkle icon, info-tinted dept badge in topbar, "+ New PR" pill in topbar, warning-tinted "in review" chip. User called it "very very very bad" + flagged that I'd "forgotten the aesthetic."
+
+Per DESIGN.md and prior conversations: the app is restrained — neutral surfaces, hover-reveal, no harsh fills, single accent at most. Reverted the topbar entirely. **Second version** of the sidebar panel was much quieter — NavLink-styled "+ New Request" item (not filled), single muted "3 in review · 8 approved" text line, three Recent rows with status dots, matching nav vocabulary.
+
+User then pointed out the second redundancy ("dashboard, sidebar, PR list all show the same thing") — at which point I deleted the panel entirely. The right answer was: one surface, no duplication. **Both iterations are gone.** Lesson: I default to "let me fill space with helpful info" when the right move is "let nothing fill space when there's nothing to add."
+
+### 🎯 Permissions-driven visibility — the architectural close
+
+User's culminating ask: "admin can select or deselect what everyone views like admin wants that employee can see pr po etc. then admin should select what everyone sees please properly organize that and test."
+
+The whole "hardcoded role allowlist" approach had been growing — `ORG_WIDE_VIEW_ROLES` constants in 6 controllers, `denyRoles` arrays in nav config, `wrapNoEmployee` route helper. The right architecture was already half-built: the `permissions` table + `role_permissions` matrix + `/admin/roles` UI all exist. Just needed to wire the rest.
+
+**Done end-to-end**:
+
+1. **PermissionsSeeder rewrite** — collapsed granular per-scope view perms (`pr.view.own/team/department/all`, `po.view.own/team/all`, etc.) into module-level grants (`pr.view`, `po.view`, `quote.view`, `grn.view`, `inventory.view`, `invoice.view`, `payment.view`, `reports.view`). The granular ones were never read by any controller — pure matrix noise. Cleaned up the legacy rows.
+2. **Default matrix updated** — minimal grants per role (employee gets `pr.view` only by default; admin widens via UI). Site_person gets `pr.view`/`po.view`/`grn.view`. CFO/CEO/director get the full view set. Etc.
+3. **Backend controllers refactored** — every index + show on PR/PO/RFQ/GRN/Payment/Invoice/Inventory/Report consults `$user->can('xx.view')` instead of `in_array($role, ORG_WIDE_VIEW_ROLES)`. Department-isolation still layers on top.
+4. **Frontend nav** — `denyRoles` is gone. Each nav item declares `permission: "xx.view"`; Sidebar filters items whose permission isn't in `user.permissions`. Empty sections collapse out.
+5. **Frontend routes** — new `PermissionGate` guard. Old `wrapNoEmployee` is gone. New `wrapPerm(Layout, Page, permission)` helper applied to every `/app/*` route. URL-typing without the grant lands on `/403`.
+6. **AppHome dispatcher** updated — derives "where to land" from permissions: PR-only user → `/app/purchase-requests`; CFO → CFO dashboard; everyone else → UserHome.
+
+**Dynamic toggle test, end-to-end**:
+
+```
+[1] Default employee grant:  pr.create, pr.view, profile.edit
+[2] Employee sees:           /pos=0, /grns=0
+[3] ADMIN: PUT /api/roles-permissions/employee with po.view + grn.view added
+[4] Employee re-logs → /me has po.view + grn.view
+    Employee sees:           /pos=2, /grns=2     ← visibility flipped ON
+[5] ADMIN: PUT to revoke
+[6] Employee sees:           /pos=0              ← visibility flipped OFF
+```
+
+**Verified across the board**:
+- Full pipeline smoke: **54/54 pass** (after two-stage GRN approval update to the test).
+- Production Vite build: clean (~322 KB main / ~97 KB gzipped).
+- ESLint clean on every touched file (only the two pre-existing warnings on GRN Detail's `useEffect` remain).
+
+### Caveats / open follow-ups
+
+- The seeder is idempotent but **destructive**: running `php artisan db:seed --class=PermissionsSeeder` wipes admin's custom matrix edits and resets to defaults. Document this in CLAUDE.md when next refreshed.
+- Existing logged-in sessions cache the old `permissions` array in localStorage. A hard refresh re-runs `/api/me` → permissions update. Tabs that don't refresh see stale visibility — noted in CLAUDE.md's gotchas section already.
+- Two pre-existing lint errors in `features/grn/pages/Detail.jsx` (setState-in-effect on mount + unused `err` in catch). Not introduced this session.
+- Inventory min-stock heuristic still hardcoded at 10 in InventoryController.
+- Notifications still client-only (no backend events).
+
+### Files touched (high-level inventory)
+
+**Backend** (Laravel)
+- New migrations: `add_replacement_target_to_app_grns`, `add_transport_to_app_pos`, `add_vendor_type_to_app_vendors` (all `2026_05_12_*`).
+- `database/seeders/PermissionsSeeder.php` — rewritten.
+- Controllers: `PrController`, `PoController`, `RfqController`, `GrnController`, `GrnDocumentController`, `PaymentController`, `InvoiceController`, `InventoryController`, `ReportController`, `RolePermissionController`.
+- Models: `AppGrn` (cast `replacement_target_date`), `AppPo` (new `transportVendor` belongsTo).
+- Routes: `+ POST /grns/{n}/reject-replacement`.
+
+**Frontend** (React)
+- New `src/app/guards/PermissionGate.jsx`.
+- `src/app/routes.jsx` — `wrapPerm` helper; permission-gated routes throughout.
+- `src/components/nav/navConfig.js` — permission per nav item; new `cfo` audience.
+- `src/components/nav/Sidebar.jsx` — permission-driven filter.
+- `src/features/user-home/pages/CFOHome.jsx` — new.
+- `src/features/vendor-portal/pages/VendorGRNList.jsx` — new.
+- `src/features/grn/pages/Create.jsx`, `Detail.jsx` — invoice picker + damage redesign + AcceptReplacement/RejectReplacement modals + ChainStepper.
+- `src/features/grn/api.js`, `store.js` — rejectReplacement + target_date.
+- `src/features/purchase-orders/pages/Create.jsx`, `Detail.jsx` — transport selector + meta.
+
+**Tests**
+- `test/api-smoke.mjs` updated: two consecutive approve calls for two-stage GRN chain.
+
+---
+
+## Session — 2026-05-09
+
+Big polish + plumbing day. Three threads ran in parallel: (1) **wire the role-permission matrix end-to-end** so toggling `grn.create` for HOD at `/admin/roles` actually changes who can log a GRN; (2) **redesign every admin/master page** to one consistent List archetype (Users / Departments / Items / Vendors / Categories / Companies); (3) **establish design discipline** — DESIGN.md as the canonical contract, the chrome can no longer be re-skinned from runtime data. Plus: fixed a 403 that was blocking site_person, locked the Integrations tab as read-only, completed the skeleton-loading rollout on every admin surface, and rewrote CLAUDE.md.
+
+### 🚪 Site_person was locked out of the whole `/app` portal
+
+User reported a 403 immediately after login as `site.ops@scm.com`. Login itself worked (token returned correctly); the redirect was crashing at the layout `RoleGate`.
+
+Root cause: `scm-frontend/src/app/routes.jsx` `USER_ROLES` allowlist was missing `site_person` and `project_manager` — the layout-level `RoleGate` kicked them to `/403` before any page even rendered. PROGRESS.md from yesterday claimed FLOW item 16 was implemented end-to-end (and the backend was), but the layout gate was never widened.
+
+**Fix** — added both roles to `USER_ROLES` in `routes.jsx`. Also caught a related second bug: `features/grn/pages/List.jsx` had a stale `WAREHOUSE_ROLES = ["admin","purchase_officer","manager","hod","cfo","ceo"]` set that didn't include `site_person` (the actual creator) AND included roles the backend rejects — so the right user couldn't see the "+ Create GRN" button, and the wrong users would 403 on submit. Synced to `["admin","site_person"]` (later widened to read from `role_permissions`, see permission system below).
+
+### 🌐 Widened backend view-role allowlists for site_person + project_manager
+
+Once the route gate let them through, the next layer of 403s came from controllers' `ORG_WIDE_VIEW_ROLES` / `READ_LIST_ROLES` / `APPROVER_ROLES` constants — site_person was effectively blind to PRs, POs, RFQs, invoices, and vendors. They should be able to **read everything** in the org (per FLOW intent), but write only what their role allows.
+
+Touched controllers:
+
+| File | Constant | Change |
+|---|---|---|
+| `app/Http/Controllers/Api/PoController.php:52` | `ORG_WIDE_VIEW_ROLES` | + site_person, project_manager |
+| `app/Http/Controllers/Api/RfqController.php:93` | `ORG_WIDE_VIEW_ROLES` | + site_person, project_manager |
+| `app/Http/Controllers/Api/InvoiceController.php:25` | `ORG_VIEW_ROLES` | + site_person, project_manager |
+| `app/Http/Controllers/Api/PrController.php:14` | `APPROVER_ROLES` (broad-view) | + site_person, project_manager (cannot approve — chain stages don't include them; constant is misnamed but only gates list visibility) |
+| `app/Http/Controllers/Api/VendorController.php:20` | `READ_LIST_ROLES` | + site_person, project_manager (also added director, accountant which were missing) |
+
+`GrnController.ORG_WIDE_VIEW_ROLES`, `PaymentController`, `InventoryController`, `ReportController`, `ItemController`, `DepartmentController` were already permissive enough.
+
+Verified by curl as `site.ops@scm.com`: `/api/{prs,pos,rfqs,grns,payments,invoices,vendors,items,departments}` all returned 200.
+
+### 🧪 New `test/setup-grn-fixture.mjs` helper
+
+The user wanted a fresh accepted PO sitting in the DB to test the GRN flow, without manually walking the PR → RFQ → PO chain through all 9 user logins. Wrote a one-shot script that:
+
+1. Logs in 9 users (admin, employee.it, hod.it, cfo.fin, ceo, purchase.purch, hod.purch, hod.fin, vendor@acme) with throttle handling.
+2. Creates a PR as employee.it; approves through HOD → CFO → CEO.
+3. Creates an RFQ as Purchase Officer; vendor submits a quote.
+4. Drives consensus — Purchase HOD + Finance HOD + IT HOD vote (script tolerates the case where chain auto-advances after 2 votes when respective dept slot is skipped).
+5. CFO + CEO approve the RFQ chain; Purchase HOD awards.
+6. Creates a PO; admin override drives the 5-stage internal chain to `done`.
+7. Vendor accepts.
+
+Output: PR / RFQ / PO numbers printed; PO is at `status=accepted` ready for site_person to GRN. Throttle-aware (sleeps 65s between login batches).
+
+### 🔐 Permission system wired end-to-end
+
+The biggest architectural change of the day. Yesterday's snapshot said *"Roles & Permissions matrix UI persists, controllers don't read it yet"* — which became visible when the user enabled `grn.create` for HOD at `/admin/roles` and it had no effect. Wired it through.
+
+**Backend:**
+
+- **`app/Models/User.php`** — new `abilities()` method reads `role_permissions` for the user's role (admin returns the special token `['*']`). New `can($code)` override consults that list. Per-request cached via a `$cachedAbilities` property; `refreshAbilities()` invalidates after same-request mutations.
+- **`routes/api.php` (`scm_user_payload`)** — payload now includes `permissions: [...]` on every `/login`, `/me`, and avatar-update response. Admin gets `["*"]`.
+- **`app/Http/Controllers/Api/GrnController.php::store`** — old hardcoded `WAREHOUSE_ROLES` allowlist replaced with `if (!$user || !$user->can('grn.create')) return 403`. The legacy `creatorRoles()` helper that read `app_company_settings.grn_creator_roles` is gone.
+- **`app/Http/Controllers/Api/SettingsController.php`** — `serialize()` now **derives** `grn_creator_roles` from `RolePermission::where('permission_code', 'grn.create')->pluck('role')` (admin always appended for failsafe). `update()` accepts the field and **mirrors** changes back into `role_permissions` via a new transactional `syncGrnCreatePermission()` that wipes `grn.create` rows and re-inserts the explicit ones. The `app_company_settings.grn_creator_roles` JSON column is left in place for back-compat reads but is no longer the source of truth.
+
+**Frontend:**
+
+- `features/grn/pages/{List,Create}.jsx` — switched from settings-store dependency to `user.permissions.includes('grn.create')` from auth store. Both pages now consume the canonical permission and the settings store import was removed.
+
+**Two admin UIs, one source of truth.** `/admin/roles` (Roles & Permissions matrix) and `/admin/settings → Access Control` both read/write the same `role_permissions` table. Toggling HOD's `grn.create` cell at /admin/roles makes the row appear in the Settings tab's allowlist; ticking HOD in Settings adds the matrix row. End-to-end smoke verified via curl: grant grn.create to HOD via /api/roles-permissions/hod → HOD's `/me` returns the permission → HOD POSTs /api/grns → 422 on bad PO (NOT 403, meaning the role gate passed).
+
+### 🎨 Roles & Permissions page rewritten (draft → save flow)
+
+The previous matrix page persisted **on every checkbox toggle**, which is jarring when an admin is mid-thought. User asked to redesign the page and require an explicit save.
+
+New layout:
+
+- **Left rail** — list of roles. Each row shows the role icon, label, total granted-permission count, and a small amber dot when there are unsaved changes for that role. Active role highlighted in primary-soft.
+- **Main panel** — selected role's permissions grouped by module (Purchase Requests / Quotations / GRN / Payments / Masters / Reports / System / Vendor Portal / Profile). Each module is a collapsible section with `n/N` count and an **Enable all / Disable all** chip. Search box at the top filters across all modules.
+- **Sticky save bar** at the bottom — appears only when there are unsaved changes. Shows which roles are dirty (e.g. *"Purchase Officer, HOD"*), Save and Discard buttons. Save button label is dynamic (`Save 3 roles`).
+
+Save semantics:
+
+- Toggling a checkbox mutates a **draft matrix** in local state — nothing hits the API.
+- Save calls `PUT /api/roles-permissions/{role}` once per dirty role in parallel, syncs state to the server response (which filters unknown codes), and toasts.
+- Discard reverts the draft to the last server snapshot.
+- Admin row stays read-only — admin always implicitly has every permission. Admin checkboxes show in warning-tone, can't be toggled.
+
+🐞 **White-screen bug after the rewrite.** When the user clicked Save the first time, React crashed with `Loader2 is not defined` at line 523 — I'd dropped `Loader2` from the import when converting the page-load spinner to a skeleton, but the save bar still uses it for the saving-state icon. Re-added the import; bundle still 319 kB.
+
+### 🎨 Page redesigns — every admin/master page on one archetype
+
+Six pages converted to a uniform **List page archetype** (codified later in DESIGN.md):
+
+```
+[ PageHeader title  subtitle  actions(Refresh, Import?, +Create) ]
+[ KpiStatCard × 3–4 — clickable filter buckets ]
+[ Filter bar (search + secondary dropdown + Clear pill when active) ]
+[ Card-row list — icon tile + identity + chips + status + hover actions ]
+[ Showing N of M counter ]
+```
+
+Per-row anatomy: **icon-tile** (tone-matched to entity status) + **mono code chip** + **bold name** + **sub-line meta** + **status pill** + **hover-reveal edit/delete buttons** at the far right. Whole row clickable to open the edit drawer; hover-lift with `border-primary` and `shadow-md`. Skeleton loaders mirror the row geometry — zero layout shift on load.
+
+Pages converted:
+
+| Page | KPI buckets | Notable |
+|---|---|---|
+| **`/admin/users`** | Total / Administrators / Approvers / Others | Avatar circles tinted by role tone (admin red, approvers amber, info blue). `you` badge prominent. Email shown with `Mail` icon. |
+| **`/admin/departments`** | Total / Active / Inactive / With Members | Briefcase icon tile. Members count chip in warning tone when > 0. Delete button shows AlertTriangle when dept has linked users (orphans them via `?force=1`). |
+| **`/admin/items`** | Total SKUs / Active / Inactive / Missing HSN | Compliance bucket — clicking Missing HSN narrows to rows that need HSN to be GST-billable. Inline warning chip on row when missing. |
+| **`/admin/vendors`** | Total / Approved / Pending / Suspended | Building2 icon tinted by approval status. Quick-action chips (Approve / Suspend / Reinstate) **kept visible** (not hover-revealed) since they're the primary affordance. ★ rating shown when > 0. Old yellow "N pending vendors" banner removed — Pending KPI does the same job. |
+| **`/admin/categories`** | Total / Active / Inactive / Sub-categories | Tag icon. Sub-category rows show a small `↳ under <parent>` chip in warning tone. Top-level rows show italic *"Top-level category"*. **Delete button added inline** — was previously only in the drawer. |
+| **`/admin/companies`** | Total / Active / Inactive / Missing GSTIN | Building2 icon. Country chip with `MapPin` icon. Compliance pattern matches Items. Switched from 1/2/3-col card grid to card-row to match the archetype. |
+
+All six use shared components (`KpiStatCard`, `StatusPill`, `EmptyState`, `Skeleton`) and the same hover/active states. Mobile: stack vertically, chips wrap below the title, action buttons self-align right.
+
+### 💀 Skeleton loading completed across the admin portal
+
+Yesterday left several admin pages still showing `Loader2 animate-spin` for initial loads. Today's pass converted the rest:
+
+- **`/admin/categories`** — table SkRow (5 cols)
+- **`/admin/companies`** — SkCompanyCard mirroring the row geometry (eventually became the new card-row pattern)
+- **`/admin/projects`** — SkProjectCard mirroring the icon + meta + title layout
+- **`/admin/inventory`** — SkInventoryRow (6 cols, mirrors Code / Item / Category / On Hand / Min / Status)
+- **`/admin/approvals`** — SkRuleCard (left-rail icons + chain pills + right action stack)
+- **`/admin/roles`** — full 2-col layout: 8 SkRoleRailItems on the left, header + 3 module sections × 4 SkPermissionRows on the right
+- **`/admin/settings`** — SkSettingsForm (5 form rows + label + Save button placeholder) replacing the centered spinner during initial fetch
+- **`/admin/reports`** — SkReport (4 KPI tiles + chart block + 5 table rows)
+
+Convention preserved per `DESIGN.md`: button-level spinners (Save, Refresh, Logo upload) still use `Loader2 animate-spin` — skeletons are only for page/list/dashboard initial-load states.
+
+### 📜 DESIGN.md created — design system as a canonical contract
+
+Mid-session, an "improve Settings" pass crossed the line. I'd:
+
+- Added a `BrandBootstrap` to `App.jsx` that read `settings.primary_color` and overrode `--brand-primary*` CSS variables (so Branding tab actually re-skinned the live app on save).
+- Replaced the hardcoded `Suppliers First` wordmark in Sidebar with `legal_name` from settings.
+- Switched the Sidebar's Factory icon to the uploaded logo when present.
+- Added a live-preview useEffect to the Branding tab so the page reskinned as the user picked colors.
+
+The user had previously saved `primary_color = "#9333ea"` (purple) and `legal_name = "Meka Industries Pvt Ltd"` to test those tabs — my changes propagated those values across the chrome, visibly altering the design without permission. User pushed back: *"why did you change the design?"*
+
+**Reverted all three pieces** — `BrandBootstrap` removed from `App.jsx`, sidebar back to hardcoded brand mark, BrandingTab live-preview useEffect deleted. Branding tab subtitle now correctly says *"drives PDF letterheads and email footers — the live UI's chrome uses the canonical theme defined in DESIGN.md and is not affected by changes here."*
+
+**Wrote `DESIGN.md`** as the canonical contract for the visual language. ~280 lines covering:
+
+- Brand identity (Suppliers First product,  parent, hardcoded chrome — never read from settings)
+- Full color tokens for **light** (warm-bone canvas with apricot corner-glow, red `#dc2626`) and **dark** (near-black with warm-coral `#ff5d3a`) themes
+- Body background gradients and `.scm-chrome` shield class
+- Typography (**Montserrat** — corrected from the earlier "Inter" claim in CLAUDE.md), scale, weights
+- Iconography (Lucide only)
+- Layout containers, breakpoints, spacing rhythm
+- Cornerstone components (`glass-card`, `KpiStatCard`, `StatusPill`, `EmptyState`, `Skeleton`, `PageHeader`)
+- Tone semantics (`success/warning/danger/info/neutral`) and role-tone mapping
+- Three page archetypes (List / Detail / Master)
+- Loading-state rules locked
+- Mobile patterns
+- **Explicit list of what `/admin/settings → Branding` actually controls** (PDFs and emails — *not* the live app)
+- "What NOT to do" section (no raw hex, no runtime brand overrides, no Material icons, no full-page spinners on known-layout pages)
+- Where-to-look-in-the-code table
+
+Linked from CLAUDE.md (top intro line + Sister-docs table) so future sessions don't lose track.
+
+### 🔒 Integrations tab locked as read-only
+
+After the brief flirtation with making Integrations actually configurable (I'd built a Configure drawer with per-integration credential schemas for SMTP / Slack / Tally / Razorpay / SAP), reality check: there's no transport code. Saving credentials that wouldn't be honored is misleading.
+
+User confirmed via clarifying question: lock it as **read-only / coming soon**.
+
+- Removed the Configure drawer and `INTEGRATION_SCHEMAS` constant (~150 lines).
+- Replaced with a static **roadmap view**: title + 🔒 Locked chip in warning tone, a callout banner explaining *why* it's locked (transport code hasn't been built), and 5 planned integrations as static cards with name + description + small lock icon.
+- No Connect/Disconnect buttons, no Save button — nothing the user clicks here can persist anything.
+- Backend `integrations[].config` validator left in place for forward-compat. When transport code lands, just swap the `IntegrationsTab` body back to an interactive form.
+
+### 🔧 GRN-creator allowlist (intermediate iteration, now retired)
+
+Earlier in the day I'd built a settings-driven GRN-creator allowlist as a quick win:
+
+- Migration `2026_05_09_000000_add_grn_creator_roles_to_settings.php` adding the JSON column.
+- `SettingsController::update` validates an array of role names; admin-failsafe always appends `admin`.
+- `GrnController::creatorRoles()` reads from settings with fallback defaults.
+- New "Access Control" tab in `/admin/settings` with role checkboxes; admin row locked-on.
+
+This worked but became redundant once the Roles & Permissions matrix was wired end-to-end (above) — the Access Control tab is now a thin shortcut that toggles `grn.create` rows in `role_permissions`. The migration column stays for back-compat, but the matrix is the source of truth. Any new code should use `$user->can('grn.create')`, not read from settings.
+
+### 📚 CLAUDE.md rewritten
+
+Grew **529 → 769 lines**. Captured everything new from today plus older content that was missing or stale:
+
+- Pipeline expanded to procure-to-pay (PR → RFQ → PO → GRN → Invoice → Payment).
+- 13 roles documented (was 11; added site_person + project_manager to every relevant table).
+- New **Permission system** section — explains `User::can($code)`, `role_permissions` table, the two admin UIs that write to the same matrix, `permissions: [...]` on `/api/me`.
+- Backend role helpers per controller — actual current values (canWriteRfq / canWritePo / GrnController::creatorRoles / widened ORG_WIDE_VIEW_ROLES / etc.).
+- 6-layer defense-in-depth (was 4) — added terminal-state guard and vendor-response scrub.
+- Backend API endpoints expanded — added `/agree`, `/withdraw-agreement`, `/assign-rfq-author`, `/assign-po-author`, `/accept-replacement`, `/grn-documents/*`, `/po-documents/*`, `/payments/*`, `/invoices/*`, `/inventory`, `/reports/*`, `/settings/logo`, `/roles-permissions`, `/approval-rules/*`, `/forgot-password`, `/reset-password`, `/me/avatar`, `/users/purchase-officers`, plus all PDF endpoints.
+- Models table rewritten with current schema fields (chain_stage, approval_history, replacement_status, pm_approved_*, items[].damaged, etc.). Documents `ChainEngine`, `chain_stages` `$appends`, auto-fulfil semantics with damage exclusion.
+- Auto-generated number formats added Invoice and Payment.
+- Folder structure refreshed (added `payments/`, `approval-rules/`, `po-documents/`, `ui/` feature folders).
+- Live route map refreshed — added `/vendor-login`, `/vendor-register`, `/forgot-password`, `/reset-password`, `/app/payments/*`, `/admin/payments/*`. Removed dead routes.
+- Theme tokens section now points at DESIGN.md as canonical.
+- New **List page archetype** section codifying the redesigned admin/master pattern.
+- Common gotchas added: two admin UIs writing to one table; permissions array stale on existing sessions; Branding doesn't retheme the live UI; Integrations tab is locked.
+- Font corrected: Inter → Montserrat (always was Montserrat in `index.css`).
+- Smoke test count updated 44/44 → 54/54; `setup-grn-fixture.mjs` added.
+
+### Notes / caveats
+
+- **Existing logged-in sessions cached the old `user` payload** (no `permissions` field). `AuthBootstrap` calls `fetchMe()` on app boot, so a hard refresh fixes it — but a tab that's already open won't auto-refresh after a permissions change. Documented in CLAUDE.md gotchas.
+- **Per-project PM scoping for GRN approval** — still open. Any `project_manager` can approve any GRN today.
+- **Notifications still client-only.** No backend events. User explicitly chose "just show it."
+- **Invoice PDF blade** — still not built. Approval page's "Download PDF" toasts "coming soon".
+- **List-row "Quick actions" dropdowns** on PR / PO / Quotation lists still decorative (toast "coming soon").
 
 ---
 
@@ -150,11 +528,11 @@ Same template language extended to the three remaining procurement docs. Each ge
 
 `PrintActions` shared component generalised: when a `pdfFetcher` prop is supplied, Print uses the iframe pattern + PDF downloads the blob; without it, falls back to `window.print()`. PR/PO/RFQ/GRN/Payment Detail pages all wired.
 
-### ✅ Rebrand SCM → Suppliers First
+### ✅ Rebrand Suppliers First → Suppliers First
 
 User-facing strings only — internal folder names (`scm-frontend/`), localStorage keys (`scm-auth`, `scm-theme`), DB name (`meka_scm`), and `App\Models` namespaces left untouched.
 
-Touched: browser title, sidebar wordmark, Landing page brand + footer, login CTA copy, PrintLetterhead/Footer, PR/PO email body strings, all 5 PDF blade defaults (`'Meka SCM'` → `'Suppliers First'`), legacy admin dashboard footer. The "Meka Group" parent line stays everywhere — it's the legal entity, not the app brand.
+Touched: browser title, sidebar wordmark, Landing page brand + footer, login CTA copy, PrintLetterhead/Footer, PR/PO email body strings, all 5 PDF blade defaults (`'Meka Suppliers First'` → `'Suppliers First'`), legacy admin dashboard footer. The "" parent line stays everywhere — it's the legal entity, not the app brand.
 
 ### ✅ KPI active-state treatment + shared component
 
@@ -449,7 +827,7 @@ User flagged the left panel as "very bad — not even properly placed": brand gl
 Rebuilt as a proper editorial three-zone layout:
 
 - **Top**: brand mark
-- **Middle (vertically centered)**: small red `VENDOR PORTAL` eyebrow → bold display headline `Built on tide & steel.` (was previously a separate italic line, promoted to the H1) → italic supporting line `Become a Meka Group vendor.` → 45-year paragraph → 3-step "what to expect" list with small numbered red dots (`Verify in minutes` / `Tell us about your business` / `Start receiving RFQs once approved`)
+- **Middle (vertically centered)**: small red `VENDOR PORTAL` eyebrow → bold display headline `Built on tide & steel.` (was previously a separate italic line, promoted to the H1) → italic supporting line `Become a  vendor.` → 45-year paragraph → 3-step "what to expect" list with small numbered red dots (`Verify in minutes` / `Tell us about your business` / `Start receiving RFQs once approved`)
 - **Bottom**: hairline rule + `MEKA GROUP` wordmark + `procurement@meka.in` contact
 
 Restrained red — only the eyebrow and tiny step numerals carry the accent. Matches the dashboard / PR aesthetic.
@@ -504,7 +882,7 @@ Cycled through designs based on feedback:
 
 **Sidebar**:
 - `bg-surface border-r border-border` (theme-respecting)
-- Brand strip aligned with topbar height (`h-14`): primary-coloured Factory icon tile + "Meka SCM" wordmark
+- Brand strip aligned with topbar height (`h-14`): primary-coloured Factory icon tile + "Meka Suppliers First" wordmark
 - NavItems: `bg-primary-soft text-primary font-semibold` rounded-lg active state (no left border, no full red fill)
 - Section labels with horizontal rule
 - No user info — sidebar is pure navigation
@@ -654,7 +1032,7 @@ Server-start commands were buried under "Local setup & commands". Hoisted a copy
 
 ### ✅ Permissions — wider allow scope for the parent `backupmeka` folder
 
-`scm-frontend/.claude/settings.local.json` — added `Read/Edit/Write` allow rules for `C:\Users\ujjwa\OneDrive\Desktop\Ujjwal\Work\SCM\backupmeka\**` (both backslash and forward-slash variants for Windows path-matching) plus an `additionalDirectories` entry, so file operations across both the React frontend and the Laravel backend skip the prompt.
+`scm-frontend/.claude/settings.local.json` — added `Read/Edit/Write` allow rules for `C:\Users\ujjwa\OneDrive\Desktop\Ujjwal\Work\Suppliers First\backupmeka\**` (both backslash and forward-slash variants for Windows path-matching) plus an `additionalDirectories` entry, so file operations across both the React frontend and the Laravel backend skip the prompt.
 
 
 
@@ -995,7 +1373,7 @@ Layered on top of item 10. Chain by amount:
 
 Backend done (frontend follow-up pending). Designed for **stack-portability** so a future Node.js backend can replace Laravel without breaking the React contract.
 
-**Audit of legacy upload patterns first** — the old Blade UI bypassed Laravel's `Storage` facade entirely, dropped files in `public/po_document/` / `public/document/` / etc., used filename pattern `{original}_{timestamp}.{ext}`, no server-side mime/size validation, no auth gate on the served URLs. Verdict: **don't replicate.** Multi-tenant SCM tool can't ship world-readable invoice PDFs.
+**Audit of legacy upload patterns first** — the old Blade UI bypassed Laravel's `Storage` facade entirely, dropped files in `public/po_document/` / `public/document/` / etc., used filename pattern `{original}_{timestamp}.{ext}`, no server-side mime/size validation, no auth gate on the served URLs. Verdict: **don't replicate.** Multi-tenant Suppliers First tool can't ship world-readable invoice PDFs.
 
 **Portability principles locked first** (so the contract drives both stacks):
 - Frontend never sees `file_path`. Only opaque IDs and a server-generated `download_url` on every doc record.
@@ -1062,7 +1440,7 @@ Existing rule: creator could delete only while PR was at HOD stage (still pendin
 
 ### 🧪 Trademark format experiments on PR list (reverted to original)
 
-Three list-page templates explored for the proposed "SCM trademark":
+Three list-page templates explored for the proposed "Suppliers First trademark":
 
 - **v1 — Standard List** — KPI strip with 5 unified `KpiCard`s (icon-square + 10pt uppercase label + 2xl black tabular value), bordered toolbar with search + filter chip rail, mobile cards / desktop wide-row split, mobile FAB.
 - **v2 — Quiet Intelligence** — borderless surfaces, large flat title + tiny breadcrumb, hero "what matters now" panel with subtle primary-soft → transparent gradient, underline tabs (Linear/GitHub style) instead of pill chips, dot-style status indicators, denser rows (`py-3`).
@@ -1191,45 +1569,58 @@ Earlier the item-code field was locked after create. Admin can now rename codes 
 
 ---
 
-## Current implementation snapshot — 2026-05-08
+## Current implementation snapshot — 2026-05-09
 
 ### ✅ API-wired, RBAC-enforced, production-ready
 
-- **Auth** — Laravel login/logout with bearer token, `throttle:5,1` on `/api/login`, `PUT /api/me` for self-update, `AuthBootstrap` self-heals tampered localStorage. `RoleGate` wraps every `/app`, `/vendor`, `/admin` route. **24 dept-scoped demo accounts** following `<role>.<dept>@scm.com` convention.
-- **Purchase Requests** — full HOD → CFO → CEO chain. Role-gated `updateStatus`, terminal-state guards, scoped index, `approval_history` audit trail. Frontend: timeline, KPI stats, print/PDF, mobile-app polish (FAB, horizontal KPI strip, card-style rows). **Assignment system**: Purchase HOD can assign a `purchase_officer` as the RFQ author once approved.
-- **Quotations / RFQs** — Create/delete now narrowed to **`admin` + `purchase_officer` only** (item 6). `BACKOFFICE_ROLES` retained for award/close + consensus voting. Three-party consensus + CFO/CEO chain + Purchase-HOD-only award all wired (FLOW.md §3 fully implemented). **Vendor rate lock during consensus** (item 7) + **vendor-portal scrub** of approval internals.
-- **Purchase Orders** — Create narrowed to **`admin` + `purchase_officer` only**. **5-stage internal approval chain** (`purchase_hod → finance_hod → respective_hod → cfo → ceo → done` — item 8) before vendor can act. PO Detail shows step rail; vendor Accept/Reject locked until `chain_stage='done'`. **Assignment system**: Purchase HOD can assign a `purchase_officer` as the PO author once RFQ is awarded.
-- **Payments** (NEW today — items 10 & 11) — Finance dept module. **Cost-tiered approval chain** by amount: `<₹50k` clears immediately; `₹50k–<₹5L` needs CFO; `≥₹5L` needs CFO + CEO. Visible to every in-org role (transparency); vendors scoped to own. Mark-paid gated to `cleared_to_pay`. Full audit trail in `approval_history`. UI: money-focused KPIs (Outstanding / Paid this month), filter chips, tier badges, Activity timeline.
-- **PO documents** — `app_po_documents` + 5 endpoints + `PoDocumentsCard` integrated into PO Detail and `/vendor/invoices/upload`. Vendor uploads dispatch docs (E-Way Bill / delivery note / invoice scan) post-accept; in-org viewers download streamed bytes; employees/customers blocked.
-- **GRN** — RBAC (`site_person` + admin create; admin deletes). PO must be `accepted/fulfilled`. Per-line `ordered/received/damaged` columns. PM approval gate (`chain_stage='pending_pm' → done`). `maybeFulfilPo()` only counts approved GRNs; damaged units don't count toward fulfilment. Auto-fulfil now correctly persists the just-approved GRN before recomputing (bug fix today).
-- **Invoices** — `app_invoices` table + `InvoiceController` + RBAC (vendor own-only / internal back-office read / CFO+accountant+admin approve). Vendor `/vendor/invoices/upload` creates a real invoice row with PO link + totals + items snapshot. CFO/admin approves at `/admin/invoices/:id/approve`; status flips pending → approved; vendor sees flip on their list.
-- **Inventory** — derived server-side from approved GRNs (no inventory table). `InventoryController::index` aggregates `received - damaged` across non-rejected GRNs and joins active items master. Frontend at `/admin/inventory` + `/app/inventory` with KPI strip + search + low-stock badge.
-- **Items / Vendors / Departments / Users / Categories / Companies / Projects masters** — full CRUD, all admin-editable.
-- **Profile** — shared user/vendor component. Vendor profile asset uploads (logo, GST PDF, PAN PDF, brochure) wired.
+- **Auth** — Laravel login/logout with bearer token (sha256 hashed on `users.api_token`), `throttle:5,1` on `/api/login`, `PUT /api/me` for self-update, `AuthBootstrap` self-heals tampered localStorage on every page load. `RoleGate` wraps every `/app`, `/vendor`, `/admin` route. **24 dept-scoped demo accounts** following `<role>.<dept>@scm.com` convention. `/api/me` payload now includes `permissions: [...]` (admin gets `["*"]`).
+- **Permission system (NEW today)** — `permissions` + `role_permissions` tables drive `User::can($code)`. Controllers consult the matrix at runtime; admin always implicitly passes. **Wired for `grn.create`** today — `GrnController::store` gates via `$user->can('grn.create')`. Other gates (PR / PO / RFQ approval) still use hardcoded role lists; broader `can()` wiring is the next phase.
+- **Purchase Requests** — full HOD → CFO → CEO chain (rule-driven via `app_approval_rules` + `ChainEngine`). Role-gated `updateStatus`, terminal-state guards, scoped index, `approval_history` audit trail. Frontend: timeline, KPI stats, print/PDF, mobile-app polish. **Assignment system**: Purchase HOD assigns a `purchase_officer` as the RFQ author once approved.
+- **Quotations / RFQs** — Create/delete narrowed to **`admin` + `purchase_officer` only**. Three-party consensus + CFO/CEO chain + Purchase-HOD-only award. Vendor rate lock during consensus + vendor-portal scrub of approval internals. Vendors **auto-selected by item category** — admin override available.
+- **Purchase Orders** — Create narrowed to **`admin` + `purchase_officer` only**. **5-stage internal approval chain** (`purchase_hod → finance_hod → respective_hod → cfo → ceo → done`). Vendor Accept/Reject locked until `chain_stage='done'`. **Assignment system**: Purchase HOD assigns a `purchase_officer` as the PO author once RFQ is awarded.
+- **Payments** — Finance dept module. **Cost-tiered approval chain** by amount: `<₹50k` clears immediately; `₹50k–<₹5L` needs CFO; `≥₹5L` needs CFO + CEO. Visible to every in-org role; vendors scoped to own. Full audit trail.
+- **PO documents** — `app_po_documents` + endpoints + `PoDocumentsCard` integrated into PO Detail and `/vendor/invoices/upload`. Vendor uploads dispatch docs (E-Way Bill / delivery note / invoice scan) post-accept; in-org viewers download streamed bytes; employees/customers blocked.
+- **GRN** — Permission-driven create gate (`grn.create` in `role_permissions`; defaults: admin + site_person + project_manager). PO must be `accepted/fulfilled`. Per-line `ordered/received/damaged` columns. PM approval gate (`chain_stage='pending_pm' → done`). `maybeFulfilPo()` only counts approved GRNs; damaged units don't count toward fulfilment. **Damage tracking**: per-line `damaged` qty + free-text remark/by-whom/comment + photo uploads linked to specific item indexes. Vendor must accept replacement banner.
+- **Invoices** — `app_invoices` + `InvoiceController` with vendor own-only / internal back-office read / CFO+accountant+admin approve. Vendor `/vendor/invoices/upload` creates a real invoice row with PO link + totals + items snapshot.
+- **Inventory** — derived server-side from approved GRNs (`received - damaged` aggregated per active SKU). KPI strip + search + low-stock badge.
+- **Masters (Users / Departments / Items / Vendors / Categories / Companies / Projects)** — all redesigned today to a uniform **List page archetype** (KPI strip + filter bar + card-row layout + Showing N of M counter). Skeleton loaders mirror row geometry. Compliance buckets where relevant (Items: Missing HSN; Companies: Missing GSTIN). All admin-editable.
+- **Profile** — shared user/vendor component with avatar upload (2 MB max, jpg/png/webp). Vendor profile asset uploads (logo, GST PDF, PAN PDF, brochure) wired.
 - **Dashboards** — UserHome + VendorHome + AdminHome fully dynamic.
-- **Vendor portal** — RFQ list, quote submission, PO list/detail with internal-state scrub, real invoice list + upload. Defense-in-depth: API responses for vendor callers strip `consents`, `chain_stage`, `approval_history`, `respective_dept_code` etc. Only `rates_locked` / `released` booleans surface.
+- **Vendor portal** — RFQ list, quote submission, PO list/detail with internal-state scrub, real invoice list + upload. API responses for vendor callers strip `consents`, `chain_stage`, `approval_history`, `respective_dept_code` etc.
 - **Reports** — 8 pre-built procurement analytics (spend by vendor/dept/category, monthly trend, pending approvals, vendor performance, funnel, cycle time) with custom SVG charts + CSV export.
-- **Approval Rules engine** — `app_approval_rules` table + `ChainEngine` service drives PR/PO/Payment chains. Admin-editable at `/admin/approvals`.
-- **Roles & Permissions matrix** — `app_permissions` + `app_role_permissions` tables + UI persistence. Controllers still gate on hardcoded role lists; `$user->can()` wiring deferred.
-- **Auth password reset** — real `/api/forgot-password` + `/api/reset-password` with hashed tokens, 60-min expiry, throttled. SMTP-less dev mode returns the URL inline.
-- **Settings** — singleton company settings + logo upload, used as PDF letterhead defaults.
-- **PR / PO / RFQ / GRN / Payment PDFs** — DomPDF endpoints + matching letterhead/items/sigs/footer pattern. Print uses hidden iframe (no popup blocker).
-- **KPI tile active state** — shared `KpiStatCard` with tone-matched active filter treatment (tinted card + colored border + ring + filled icon + "FILTER" chip). Used on PR/PO/RFQ/GRN/Inventory/Invoices list pages.
-- **Sidebar + Topbar** — role-driven labels; mobile off-canvas drawer with backdrop, auto-close on route change, body scroll lock. Hamburger on mobile, condensed layout.
+- **Approval Rules engine** — `app_approval_rules` + `ChainEngine` drives PR/PO/Payment chains. Admin-editable at `/admin/approvals`.
+- **Roles & Permissions matrix (REWRITTEN today)** — `/admin/roles` is a 2-col layout (role rail + permission panel) with **draft → save flow**. Edits hold in local state until explicit Save click; sticky save bar shows dirty roles + bulk Save / Discard. Per-module Enable/Disable all + search box. `/admin/settings → Access Control` is a thin shortcut that writes the same `role_permissions` table — no drift between the two UIs.
+- **Auth password reset** — `/api/forgot-password` + `/api/reset-password` with hashed tokens, 60-min expiry, throttled. SMTP-less dev mode returns the URL inline.
+- **Settings** — Company / Branding / Integrations (locked) / Access Control / My Profile tabs. Singleton company settings + logo upload, used as PDF letterhead defaults. **Branding does NOT retheme the live UI** — it drives PDFs and emails only (per `DESIGN.md`).
+- **PR / PO / RFQ / GRN / Payment PDFs** — DomPDF endpoints + matching letterhead/items/sigs/footer pattern. Print uses hidden iframe.
+- **List page archetype (NEW today)** — codified pattern across every admin/master page: `PageHeader` + `KpiStatCard × 3–4` (clickable filters) + filter bar + card-row list + counter. Per-row anatomy: tone-tinted icon tile + mono code chip + name + meta sub-line + status pill + hover-reveal actions. Documented in `DESIGN.md`.
+- **Sidebar + Topbar** — audience-driven labels; **brand mark hardcoded to "Suppliers First" + Factory icon** (per `DESIGN.md` — never reads from settings). Mobile off-canvas drawer with backdrop, auto-close on route change, body scroll lock.
 - **Performance** — route-level code splitting (main bundle 319 kB / 96 kB gzipped), bundled detail responses, lazy attachment thumbnails, DB indexes on hot columns.
-- **Brand** — "Suppliers First" across all user-facing surfaces (browser title, sidebar, PDFs, emails, footers). Internal folder/DB names retained.
+- **Brand** — "Suppliers First" across all user-facing surfaces. Internal folder/DB names retained.
+- **Skeleton loading** — every admin / list / dashboard surface uses geometry-matched skeletons on initial load. Button-level spinners reserved for save/refresh actions.
+- **DESIGN.md** — canonical design system documentation. Color tokens (light + dark), typography (Montserrat), layout, component conventions, page archetypes, what NOT to do.
 
 ### ✅ Security posture
 
-Defense-in-depth: route guards (`<RoleGate>`) → axios interceptor bearer → Laravel `ApiToken` middleware → controller RBAC → terminal-state guards → chain-stage guards → vendor-response scrub → login throttle. Reusable `ChainStatusModal` + `AssignAuthorModal` components.
+Defense-in-depth (6 layers):
+
+```
+1. Route guard       <RoleGate allow={[...]}>          redirect to /403 if not in list
+2. HTTP interceptor  axios baseURL + Bearer attach     adds Authorization header
+3. Edge middleware   ApiToken                          validates sha256(token)
+4. Controller RBAC   helpers / can() / constants       in_array($role, …) or $user->can()
+5. Terminal-state    409 if record already terminal    if (in_array($status, TERMINAL)) abort(409)
+6. Vendor scrub      scrubForVendor() on responses     hides consents, chain_stage, approval_history
+```
 
 ### 🟡 Partial / known stubs
 
-- **Notifications** — client-side seed (Zustand persist), no server events. User explicitly chose "just show it" for now.
+- **Notifications** — client-side Zustand seed, no server events. User explicitly chose "just show it" for now.
 - **List-row "Quick actions" dropdowns** on PR / PO / Quotation lists are decorative — chevron-menu just toasts "coming soon".
 - **GSTIN registry lookup** in vendor registration falls back to a mock company table when the network call fails — intentional demo offline mode.
-- **Roles & Permissions matrix UI persists, controllers don't read it yet** — admins edit at `/admin/roles` and rows save, but `Controller::canX()` still hardcodes role lists. Wiring `$user->can('pr.approve')` is a separate phase.
+- **`$user->can()` wiring** — only `grn.create` is wired today. Most other RBAC checks (`pr.approve`, `po.create`, `quote.award`, etc.) still use hardcoded role lists. The matrix at `/admin/roles` persists everything; backend just doesn't consult it yet for those codes.
 - **Invoice PDF endpoint** — `pdf.invoice.blade.php` not yet built. Approval page's "Download PDF" toasts "coming soon" until the blade lands.
+- **Integrations** — `/admin/settings → Integrations` is **locked** as a read-only roadmap. Transport code (SMTP send, Slack webhook POST, ERP bridge) hasn't been built. Backend `integrations[].config` validator stays in place for forward-compat.
 - **Help Center** link in profile menu → toast.
 
 ### 🔴 Not started
@@ -1344,8 +1735,8 @@ Confirmed every `api.js` payload matches the corresponding controller's validato
 ### Demo-data cleanup
 
 - Deleted leftover **"Pwn Co"** vendor (test pollution from when there was a security hole that let any vendor `POST /vendors`).
-- **Reinstated "Global SCM Vendor"** to `approved` (had been suspended during a security smoke test before the fix landed).
-- Back-filled all open RFQs to include "Global SCM Vendor" in their invite list (so the vendor user `vendor@scm.com` actually sees RFQs in the portal).
+- **Reinstated "Global Suppliers First Vendor"** to `approved` (had been suspended during a security smoke test before the fix landed).
+- Back-filled all open RFQs to include "Global Suppliers First Vendor" in their invite list (so the vendor user `vendor@scm.com` actually sees RFQs in the portal).
 
 ---
 
@@ -1389,7 +1780,7 @@ Turned a mostly-scaffolded app into a production-grade procurement pipeline with
 
 ### Seeder wiring
 
-- `DemoUsersSeeder` now creates one user per role (`<role>@scm.com`) AND seeds linked `app_vendors` rows for `vendor@acme.com` → "Acme Industries" and `vendor@scm.com` → "Global SCM Vendor". Without this linkage, vendor-scoped list queries returned empty.
+- `DemoUsersSeeder` now creates one user per role (`<role>@scm.com`) AND seeds linked `app_vendors` rows for `vendor@acme.com` → "Acme Industries" and `vendor@scm.com` → "Global Suppliers First Vendor". Without this linkage, vendor-scoped list queries returned empty.
 
 ### Bug fixes
 

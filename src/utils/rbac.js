@@ -1,8 +1,8 @@
-import { USER_ROLES, ROLES } from "../data/roles.js";
+import { USER_PORTAL_ROLES, ROLES } from "../data/roles.js";
 import { hasPermission } from "../data/permissions.js";
 
 export function isUserRole(role) {
-  return USER_ROLES.includes(role);
+  return USER_PORTAL_ROLES.includes(role);
 }
 
 export function isVendor(role) {

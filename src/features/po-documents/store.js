@@ -31,9 +31,9 @@ export const usePoDocumentsStore = create((set, get) => ({
     }
   },
 
-  upload: async ({ po_number, doc_type, file }, onProgress) => {
+  upload: async ({ po_number, doc_type, file, caption, voice_note }, onProgress) => {
     const record = await poDocumentsApi.upload(
-      { po_number, doc_type, file },
+      { po_number, doc_type, file, caption, voice_note },
       onProgress,
     );
     set((s) => {

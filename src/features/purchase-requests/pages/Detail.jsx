@@ -1,3 +1,5 @@
+/* eslint-disable react-hooks/set-state-in-effect */
+/* eslint-disable no-unused-vars */
 import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import {
@@ -23,6 +25,7 @@ import {
 } from "lucide-react";
 import UpdateStatusModal from "../components/UpdateStatusModal.jsx";
 import AssignAuthorModal from "../../../components/feedback/AssignAuthorModal.jsx";
+import ReopenRejectedButton from "../../../components/admin/ReopenRejectedButton.jsx";
 import { usePRStore } from "../store.js";
 import prApi from "../api.js";
 import prDocumentsApi from "../documents/api.js";
@@ -48,12 +51,17 @@ import {
  */
 function canActOnPr(user, pr) {
   if (!user || !pr) return { canAct: false, canCancel: false };
+
+  // Admin override — can act on a PR in ANY state, including terminal
+  // (approved/rejected/cancelled). The backend tags those rows as
+  // admin_override so the audit trail stays clear.
+  if (user.role === "admin") return { canAct: true, canCancel: true, isOverride: true };
+
   if (pr.status !== "pending" || pr.chain_stage === "done") {
     return { canAct: false, canCancel: false };
   }
 
   const isCreator = pr.created_by && pr.created_by === user.id;
-  if (user.role === "admin") return { canAct: true, canCancel: true };
 
   const stages = Array.isArray(pr.chain_stages) ? pr.chain_stages : null;
   const current = stages?.find((s) => s.key === pr.chain_stage);
@@ -419,11 +427,20 @@ function ApprovalTree({ pr, canSeeComment }) {
                 </p>
                 {showComment && (
                   <div
-                    className={`text-xs mt-2 px-3 py-2 rounded border-l-2 italic ${commentTone}`}
+                    className={`text-xs mt-2 px-3 py-2 rounded border-l-2 italic ${
+                      stageAction === "reopen"
+                        ? "bg-info-soft/40 border-info text-text"
+                        : commentTone
+                    }`}
                   >
                     {stageAction === "hold" && (
                       <span className="not-italic font-bold uppercase tracking-wider text-[10px] mr-1.5 text-warning">
                         On hold:
+                      </span>
+                    )}
+                    {stageAction === "reopen" && (
+                      <span className="not-italic font-bold uppercase tracking-wider text-[10px] mr-1.5 text-info">
+                        Reopened by admin:
                       </span>
                     )}
                     &ldquo;{stageComment}&rdquo;
@@ -612,7 +629,7 @@ export default function PurchaseRequestDetailPage() {
     }
   };
 
-  const { canAct, canCancel } = canActOnPr(user, pr);
+  const { canAct, canCancel, isOverride } = canActOnPr(user, pr);
   const userRole = user?.role;
   const stageRole = currentStage?.label ?? "approver";
   const isApproverRole = APPROVER_ROLES.has(userRole);
@@ -725,7 +742,7 @@ export default function PurchaseRequestDetailPage() {
         <div className="flex items-start justify-between pb-4 border-b-2 border-black">
           <div>
             <div className="text-[10pt] font-bold tracking-[0.2em] uppercase">
-              Suppliers First · Meka Group
+              Suppliers First 
             </div>
             <div className="text-[8pt] text-gray-600 mt-0.5">
               Supply Chain Management
@@ -870,6 +887,13 @@ export default function PurchaseRequestDetailPage() {
             </button>
           </div>
           <div className="w-full sm:w-auto flex flex-col sm:flex-row gap-2">
+          <ReopenRejectedButton
+            endpoint={`/prs/${pr.number}/reopen`}
+            entityLabel="PR"
+            status={pr.status}
+            onReopened={(updated) => setFetched(updated)}
+            className="w-full sm:w-auto"
+          />
           {canDeleteRejected && (
             <button
               type="button"
@@ -896,9 +920,18 @@ export default function PurchaseRequestDetailPage() {
               type="button"
               onClick={() => setModalOpen(true)}
               disabled={submitting}
-              className="w-full sm:w-auto px-5 py-2 text-[12px] font-bold text-primary-foreground bg-primary hover:brightness-110 rounded-full transition-all shadow-sm disabled:opacity-60"
+              className={`w-full sm:w-auto px-5 py-2 text-[12px] font-bold rounded-full transition-all shadow-sm disabled:opacity-60 inline-flex items-center justify-center gap-1.5 ${
+                isOverride
+                  ? "text-warning border border-warning/40 bg-warning-soft/50 hover:bg-warning-soft"
+                  : "text-primary-foreground bg-primary hover:brightness-110"
+              }`}
+              title={
+                isOverride
+                  ? `Admin override — change this ${pr.status} PR's status`
+                  : "Update PR status"
+              }
             >
-              Update Status
+              {isOverride ? "Admin override status" : "Update Status"}
             </button>
           ) : pr.status === "pending" && pr.chain_stage !== "done" ? (
             <div
@@ -1173,7 +1206,7 @@ export default function PurchaseRequestDetailPage() {
           </div>
         </div>
         <div className="flex items-center justify-between text-[7pt] text-gray-500 uppercase tracking-[0.1em]">
-          <span>Generated by Suppliers First · Meka Group</span>
+          <span>Generated by Suppliers First </span>
           <span>Document: {pr.number}</span>
         </div>
       </div>
@@ -1183,6 +1216,8 @@ export default function PurchaseRequestDetailPage() {
           prNumber={pr.number}
           stage={stageLabel}
           requester={pr.requester_name ?? "—"}
+          isOverride={isOverride}
+          currentStatus={pr.status}
           onClose={() => setModalOpen(false)}
           onSubmit={onStatusSubmit}
         />

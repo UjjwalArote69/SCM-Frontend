@@ -1,22 +1,23 @@
 import { create } from "zustand";
 import departmentsApi from "./api.js";
+import { makeListFetcher } from "../../../utils/storeCache.js";
 
 export const useDepartmentsStore = create((set, get) => ({
   items: [],
   loading: false,
   error: null,
+  lastFetchedAt: null,
+  _inflight: null,
 
-  fetchAll: async () => {
-    set({ loading: true, error: null });
-    try {
-      const items = await departmentsApi.list();
-      set({ items: Array.isArray(items) ? items : [], loading: false });
-      return items;
-    } catch (err) {
-      set({ error: err?.message ?? "Failed to load", loading: false });
-      throw err;
-    }
-  },
+  // Departments are a small, slow-changing master — keep them fresh for
+  // 5 minutes instead of the default 30s to cut redundant requests across
+  // the many pages that resolve dept codes (PRs, GRNs, payments, ...).
+  fetchAll: makeListFetcher({
+    get, set,
+    fetcher: () => departmentsApi.list(),
+    ttlMs: 300_000,
+    errorLabel: "Failed to load departments",
+  }),
 
   create: async (payload) => {
     const created = await departmentsApi.create(payload);

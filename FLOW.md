@@ -1,6 +1,6 @@
-# SCM — Flow Diagrams
+# Suppliers First — Flow Diagrams
 
-> Visual reference for how the Meka SCM system fits together.
+> Visual reference for how the Meka Suppliers First system fits together.
 > Diagrams use **Mermaid** — render in GitHub, Notion, or VS Code (with the Mermaid extension).
 
 ---
@@ -16,6 +16,7 @@
 7. [Role-Based Access](#7-role-based-access) — who lands where, who can do what
 8. [Auth & Request Lifecycle](#8-auth--request-lifecycle) — login, bearer flow, self-healing
 9. [Data Model (ERD)](#9-data-model-erd) — core tables and relationships
+10. [GRN & Damaged-Goods Replacement](#10-grn--damaged-goods-replacement) — items 21–27, pending implementation
 
 ---
 
@@ -564,6 +565,154 @@ erDiagram
         bigint created_by FK
     }
 ```
+
+---
+
+## 10. GRN Approval & Damaged-Goods Workflow
+
+> **Status — fully implemented.** GRNs now run through a full 5-stage chain (PM → Purchase HOD → Finance HOD → CFO → CEO → done) with a Vendor Agreement detour for damaged shipments. Voice notes, admin overrides, and a quick-pay path on Outstanding are all wired.
+
+### 10.1 · Two cases, one chain
+
+**Case 1 — Clean delivery.** Site logs a receipt with `damaged=0` on every line. The GRN walks straight through the 5-stage chain:
+
+```
+pending_pm → pending_purchase_hod → pending_finance_hod → pending_cfo → pending_ceo → done
+```
+
+**Case 2 — Damaged delivery.** Site logs a receipt with `damaged > 0` on at least one line (or `replacement_status='pending'` set at create). The chain pauses for vendor agreement between Purchase HOD and Finance HOD:
+
+```
+pending_pm → pending_purchase_hod
+            → pending_vendor_replacement              ← chain pauses here
+            → (vendor + site agree on date)
+            → chain restarts at pending_pm
+            → pending_purchase_hod
+            → pending_finance_hod → pending_cfo → pending_ceo → done
+```
+
+After both sides agree (`target_date_agreed = true`), `GrnController::acceptReplacement` / `siteRespondTargetDate` rewinds `chain_stage = 'pending_pm'` and appends a `chain_restarted` history row. PM and Purchase HOD then act again on the revised plan. Finance HOD / CFO / CEO see the GRN for the first time after that second pass.
+
+### 10.2 · Full flow diagram
+
+```mermaid
+flowchart TD
+    classDef site fill:#fef3c7,stroke:#a16207,stroke-width:2px,color:#713f12
+    classDef pm fill:#ede9fe,stroke:#6d28d9,stroke-width:2px,color:#4c1d95
+    classDef hod fill:#ffedd5,stroke:#c2410c,stroke-width:2px,color:#7c2d12
+    classDef vendor fill:#fce7f3,stroke:#be185d,stroke-width:2px,color:#831843
+    classDef finance fill:#ede9fe,stroke:#6d28d9,stroke-width:2px,color:#4c1d95
+    classDef done fill:#d1fae5,stroke:#047857,stroke-width:3px,color:#064e3b
+    classDef reject fill:#fee2e2,stroke:#b91c1c,stroke-width:2px,color:#7f1d1d
+
+    Site["📥&nbsp;<b>Site person</b><br/>creates GRN<br/>chain_stage: pending_pm"]:::site
+    Damaged{{"Any line has<br/>damaged > 0?"}}:::pm
+
+    PM1["🔍&nbsp;<b>PM Inspection</b>"]:::pm
+    PHOD1["🛒&nbsp;<b>Purchase HOD</b>"]:::hod
+    Detour["🤝&nbsp;<b>pending_vendor_replacement</b><br/>chain pauses"]:::vendor
+    Vendor["🏢&nbsp;<b>Vendor portal</b><br/>accepts / counters / disputes<br/>(voice note optional)"]:::vendor
+    SiteRespond["🧱&nbsp;<b>Site / PM</b><br/>accepts vendor counter<br/>or proposes back"]:::site
+    Agreed{{"target_date_agreed?"}}:::pm
+    Restart["♻️&nbsp;<b>Chain restarts</b><br/>chain_stage: pending_pm<br/>history.chain_restarted"]:::pm
+
+    PM2["🔍&nbsp;<b>PM (round 2)</b>"]:::pm
+    PHOD2["🛒&nbsp;<b>Purchase HOD (round 2)</b>"]:::hod
+
+    FHOD["💰&nbsp;<b>Finance HOD</b>"]:::finance
+    CFO["💼&nbsp;<b>CFO</b>"]:::finance
+    CEO["👑&nbsp;<b>CEO</b>"]:::finance
+    Done(["✅&nbsp;<b>chain_stage: done</b><br/>PO auto-fulfilment fires<br/>GRN moves to Payments → Outstanding"]):::done
+    Rejected(["❌&nbsp;Rejected"]):::reject
+
+    Site --> PM1
+    PM1 -->|approve| PHOD1
+    PM1 -.->|reject| Rejected
+    PHOD1 -->|approve| Damaged
+    Damaged -->|no — clean| FHOD
+    Damaged -->|yes — damaged| Detour
+    Detour --> Vendor
+    Vendor -->|"counter date"| SiteRespond
+    SiteRespond -->|"counter back"| Vendor
+    Vendor -->|"accept"| Agreed
+    SiteRespond -->|"accept vendor's date"| Agreed
+    Agreed -->|yes| Restart
+    Restart --> PM2 --> PHOD2 --> FHOD
+    FHOD -->|approve| CFO
+    CFO -->|approve| CEO
+    CEO -->|approve| Done
+    FHOD -.->|reject| Rejected
+    CFO -.->|reject| Rejected
+    CEO -.->|reject| Rejected
+    Vendor -.->|"dispute<br/>(rejectReplacement)"| Rejected
+```
+
+### 10.3 · Vendor replacement negotiation
+
+When the GRN sits at `pending_vendor_replacement`, the chain is gated. Finance HOD / CFO / CEO cannot act (`updateStatus` returns 403). The only way forward is the vendor + site reaching agreement via the replacement endpoints:
+
+| Endpoint | Caller | Body | Effect |
+| --- | --- | --- | --- |
+| `POST /grns/{n}/accept-replacement` `action=counter` | Vendor | `target_date`, `commitment_note`, `items[]`, `voice_note?` | Sets `replacement_target_date`, `target_date_proposed_by='vendor'`, keeps `target_date_agreed=false`. |
+| `POST /grns/{n}/accept-replacement` `action=accept` | Vendor | optional `commitment_note`, `voice_note?` | Accepts site's proposed date. Sets `target_date_agreed=true` AND rewinds chain to `pending_pm`. |
+| `POST /grns/{n}/site-respond-date` `action=counter` | Site / PM | `target_date`, `note?` | Site counter-proposes back. Resets proposer to `site`. |
+| `POST /grns/{n}/site-respond-date` `action=accept` | Site / PM | optional `note` | Site accepts vendor's counter. Sets `target_date_agreed=true` AND rewinds chain to `pending_pm`. |
+| `POST /grns/{n}/reject-replacement` | Vendor | `comment` and/or `voice_note` | Disputes the damage report. Sets `replacement_status='rejected'`. Chain stays stuck pending admin intervention. |
+
+The two-click confirm on the vendor portal's **Accept** button is intentional — locking the date is irreversible (chain restart kicks in immediately).
+
+### 10.4 · Admin chain override
+
+`POST /grns/{n}/admin-chain-override` lets admin flip any approve/reject decision in the chain, bypassing terminal-state + chain-done guards. Body:
+
+```json
+{ "to_stage": "pending_cfo", "action": "rewind|force_reject|force_approve",
+  "comment": "Required ≥3 chars", "voice_note": "optional base64" }
+```
+
+| Action | Effect |
+| --- | --- |
+| `rewind` | `chain_stage = to_stage`; status flips from `rejected` to `pending` if it was rejected. Approval history is preserved but the row-list `stageStateFor` helper treats it as a reset point. |
+| `force_reject` | `status = 'rejected'`, `chain_stage = to_stage` (the stage flagged as the rejecter). |
+| `force_approve` | `chain_stage = 'done'`, status stays non-rejected; triggers `maybeFulfilPo()` so PO can auto-flip to fulfilled. |
+
+Every override appends a history row with `admin_override: true` and full `from_stage / to_stage / from_status / to_status`.
+
+### 10.5 · Permissions
+
+| Role | grn.view | grn.create | grn.approve | Quick-pay (Outstanding) | Admin override |
+| --- | --- | --- | --- | --- | --- |
+| admin | ✓ | ✓ | ✓ | ✓ | ✓ |
+| project_manager | ✓ |   | ✓ |   |   |
+| hod (Purchase) | ✓ |   | ✓ |   |   |
+| hod (Finance) | ✓ |   | ✓ | ✓ |   |
+| hod (other) | ✓ |   | ✓ |   |   |
+| cfo | ✓ |   | ✓ |   |   |
+| ceo | ✓ |   | ✓ |   |   |
+| site_person | ✓ | ✓ |   |   |   |
+| purchase_officer | ✓ |   |   |   |   |
+| accountant | ✓ |   |   |   |   |
+| vendor (own GRNs only) | ✓ |   |   |   |   |
+| employee, customer |   |   |   |   |   |
+
+Frontend gates still mirror this — `canCfoAct = isCfo && chain_stage === 'pending_cfo'`, etc. — but the permission set now matches what the chain actually allows, so `useCan('grn.approve')` returns true for every approver role.
+
+### 10.6 · Transportation accountability (item 27)
+
+Schema in place:
+
+- `app_pos.transport_arranged_by` enum `buyer | vendor` (default `vendor`).
+- `app_pos.transport_vendor_id` (nullable FK to `app_vendors`).
+- `app_vendors.vendor_type` flag — `supplier | transport | both` — so the same firm can play either role.
+
+Damage accountability:
+
+| Transport arranged by | Accountable for damage |
+| --- | --- |
+| `buyer` | The contracted transport vendor (resolved via `transport_vendor_id`). |
+| `vendor` | The supplier vendor. |
+
+`GrnController::accountableVendorName()` returns the right party. The Vendor Agreement detour gates on this — the chain only routes to the vendor identified as accountable.
 
 ---
 

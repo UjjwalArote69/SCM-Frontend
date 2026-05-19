@@ -1,6 +1,6 @@
-// End-to-end API smoke test for SCM backend.
+// End-to-end API smoke test for Suppliers First backend.
 // Run: node test/api-smoke.mjs
-const BASE = process.env.SCM_API || "http://127.0.0.1:8000/api";
+const BASE = process.env.Suppliers First_API || "http://127.0.0.1:8000/api";
 const PASS = "password";
 
 const results = [];
@@ -264,7 +264,7 @@ function section(t) { console.log(`\n=== ${t} ===`); }
   if (rfqNumber && tokens["vendor@scm.com"]) {
     const r = await api("POST", `/rfqs/${rfqNumber}/submit`, {
       token: tokens["vendor@scm.com"],
-      body: { prices: [110], gst: [18], comment: "Global SCM bid" },
+      body: { prices: [110], gst: [18], comment: "Global Suppliers First bid" },
     });
     record("Global vendor submits quote", r.status === 200, `status=${r.status}`);
   }
@@ -438,14 +438,21 @@ function section(t) { console.log(`\n=== ${t} ===`); }
 
   section("GRN");
 
-  // GRNs need PM approval (FLOW.md item 20) — admin acts as override here.
-  // Without approval the GRN sits at chain_stage=pending_pm and the PO
-  // auto-fulfilment check skips it.
+  // GRNs need FIVE approvals to reach 'done' (FLOW item 52):
+  // pending_pm → pending_purchase_hod → pending_finance_hod → pending_cfo
+  // → pending_ceo → done. Admin overrides every stage, so we call
+  // /status five times. Auto-fulfilment fires only at 'done'.
   const approveGrn = async (grnNum) => {
     if (!grnNum) return null;
-    return api("POST", `/grns/${grnNum}/status`, {
-      token: adminTok, body: { action: "approve" },
-    });
+    let last = null;
+    for (let i = 0; i < 5; i++) {
+      last = await api("POST", `/grns/${grnNum}/status`, {
+        token: adminTok, body: { action: "approve" },
+      });
+      if (last?.status !== 200) return last;
+      if (last?.data?.data?.chain_stage === "done") return last;
+    }
+    return last;
   };
 
   // Track GRNs so cleanup can delete them — without this, each run leaves

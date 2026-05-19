@@ -9,7 +9,7 @@ export default function PublicLayout({ children }) {
         <Link to="/" className="flex items-center gap-2">
           <Boxes className="h-6 w-6 text-primary" strokeWidth={2.25} />
           <span className="text-primary font-black tracking-tighter text-xl uppercase">
-            SCM
+            Suppliers First
           </span>
         </Link>
         <div className="flex items-center gap-4">

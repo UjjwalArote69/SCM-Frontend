@@ -1,20 +1,19 @@
 import { create } from "zustand";
 import rfqApi from "./api.js";
+import { makeListFetcher } from "../../utils/storeCache.js";
 
 export const useRFQStore = create((set, get) => ({
   items: [],
   loading: false,
   error: null,
+  lastFetchedAt: null,
+  _inflight: null,
 
-  fetchAll: async () => {
-    set({ loading: true, error: null });
-    try {
-      const data = await rfqApi.list();
-      set({ items: data, loading: false });
-    } catch (err) {
-      set({ loading: false, error: err?.message ?? "Failed to load RFQs" });
-    }
-  },
+  fetchAll: makeListFetcher({
+    get, set,
+    fetcher: () => rfqApi.list(),
+    errorLabel: "Failed to load RFQs",
+  }),
 
   byNumber: (number) => get().items.find((r) => r.number === number),
 

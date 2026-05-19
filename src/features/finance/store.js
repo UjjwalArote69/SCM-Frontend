@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import invoiceApi from "./api.js";
+import { makeListFetcher } from "../../utils/storeCache.js";
 
 /**
  * Vendor invoices store. Mirrors the shape used by usePRStore / usePOStore
@@ -10,19 +11,14 @@ export const useInvoiceStore = create((set, get) => ({
   items: [],
   loading: false,
   error: null,
+  lastFetchedAt: null,
+  _inflight: null,
 
-  fetchAll: async (params = {}) => {
-    set({ loading: true, error: null });
-    try {
-      const data = await invoiceApi.list(params);
-      set({ items: Array.isArray(data) ? data : [], loading: false });
-    } catch (err) {
-      set({
-        error: err?.response?.data?.message ?? "Failed to load invoices",
-        loading: false,
-      });
-    }
-  },
+  fetchAll: makeListFetcher({
+    get, set,
+    fetcher: () => invoiceApi.list(),
+    errorLabel: "Failed to load invoices",
+  }),
 
   get: async (number) => {
     const data = await invoiceApi.get(number);

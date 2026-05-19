@@ -46,7 +46,7 @@ function TopNav() {
           </span>
           <div className="leading-none">
             <div className="text-sm font-black tracking-tight text-text">Suppliers First</div>
-            <div className="text-[9px] mt-1 tracking-[0.32em] uppercase text-text-subtle">Meka Group</div>
+            {/* <div className="text-[9px] mt-1 tracking-[0.32em] uppercase text-text-subtle"></div> */}
           </div>
         </Link>
 
@@ -434,7 +434,7 @@ function Footer() {
           </span>
           <div className="leading-none">
             <div className="text-sm font-black tracking-tight text-text">Suppliers First</div>
-            <div className="text-[9px] mt-1 tracking-[0.32em] uppercase text-text-subtle">Meka Group</div>
+            {/* <div className="text-[9px] mt-1 tracking-[0.32em] uppercase text-text-subtle"></div> */}
           </div>
         </div>
 
@@ -446,7 +446,7 @@ function Footer() {
         </nav>
 
         <div className="text-xs text-text-subtle">
-          © {new Date().getFullYear()} Meka Group · India
+          © {new Date().getFullYear()}  India
         </div>
       </div>
     </footer>

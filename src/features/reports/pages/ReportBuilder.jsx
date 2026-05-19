@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   BarChart3, Building2, Tag, TrendingUp, Hourglass,
-  Award, Filter, Clock, Loader2, AlertTriangle,
+  Award, Filter, Clock, AlertTriangle,
 } from "lucide-react";
 import PageHeader from "../../../components/data/PageHeader.jsx";
+import Skeleton from "../../../components/feedback/Skeleton.jsx";
 import DateRangeFilter from "../components/DateRangeFilter.jsx";
 import {
   SpendByVendor, SpendByDepartment, SpendByCategory, MonthlyTrend,
@@ -11,6 +12,31 @@ import {
 } from "../components/Reports.jsx";
 import reportsApi from "../api.js";
 import { defaultRange } from "../utils.js";
+
+function SkReport() {
+  return (
+    <div className="bg-surface-container-lowest border border-border rounded-lg p-6 space-y-6">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <div key={i} className="space-y-2">
+            <Skeleton className="h-3 w-16" />
+            <Skeleton className="h-7 w-20" />
+          </div>
+        ))}
+      </div>
+      <Skeleton className="h-56 w-full rounded-md" />
+      <div className="space-y-2">
+        {Array.from({ length: 5 }).map((_, i) => (
+          <div key={i} className="flex items-center gap-3">
+            <Skeleton className="h-4 w-32" />
+            <Skeleton className="h-4 w-20 ml-auto" />
+            <Skeleton className="h-4 w-16" />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 // Each entry is one report tile: kind, label, description, icon, fetch fn, renderer, supportsRange.
 const REPORTS = [
@@ -171,11 +197,7 @@ export default function ReportBuilderPage() {
             />
           )}
 
-          {loading && !data && (
-            <div className="bg-surface-container-lowest border border-border rounded-lg p-12 text-center text-text-muted">
-              <Loader2 className="h-6 w-6 animate-spin inline mr-2" /> Loading…
-            </div>
-          )}
+          {loading && !data && <SkReport />}
 
           {error && (
             <div className="bg-danger-soft border border-danger/30 rounded-lg p-4 flex gap-3 items-start">

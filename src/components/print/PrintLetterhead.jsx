@@ -10,7 +10,7 @@ export default function PrintLetterhead({ docType, docNumber, subtitle }) {
       <div className="flex items-start justify-between pb-4 border-b-2 border-black">
         <div>
           <div className="text-[10pt] font-bold tracking-tight">
-            Suppliers First · Meka Group
+            Suppliers First 
           </div>
           <div className="text-[8pt] text-gray-600 mt-0.5">
             Procurement

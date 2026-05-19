@@ -12,12 +12,15 @@ import {
   Truck,
   Receipt,
   ScrollText,
+  MessageSquare,
+  Mic,
 } from "lucide-react";
 import { usePoDocumentsStore } from "../store.js";
 import poDocumentsApi from "../api.js";
 import { useToast } from "../../../hooks/useToast.jsx";
 import { useAuthStore } from "../../auth/store.js";
 import { DocumentPreviewModal } from "../../../components/misc/DocumentPreview.jsx";
+import VoiceRecorder from "../../../components/forms/VoiceRecorder.jsx";
 
 /**
  * Reusable Documents card for a single PO.
@@ -99,6 +102,11 @@ export default function PoDocumentsCard({
   const [progress, setProgress] = useState(0);
   const [dragOver, setDragOver] = useState(false);
   const [error, setError] = useState(null);
+  // Optional voice note + caption — vendors can describe the upload by
+  // speaking (live transcript fills the caption box) instead of typing.
+  const [caption, setCaption] = useState("");
+  const [voiceNote, setVoiceNote] = useState(null);
+  const [showVoice, setShowVoice] = useState(false);
 
   // Preview modal — open immediately with loading state, swap in blob URL.
   const [previewing, setPreviewing] = useState(null); // { url, name, kind } | null
@@ -154,10 +162,22 @@ export default function PoDocumentsCard({
     setSubmitting(true);
     setProgress(0);
     try {
-      await upload({ po_number: poNumber, doc_type: docType, file: pickedFile }, setProgress);
+      await upload(
+        {
+          po_number: poNumber,
+          doc_type: docType,
+          file: pickedFile,
+          caption: caption.trim() || null,
+          voice_note: voiceNote || null,
+        },
+        setProgress,
+      );
       toast.success(`Uploaded ${pickedFile.name}`);
       setPickedFile(null);
       setProgress(0);
+      setCaption("");
+      setVoiceNote(null);
+      setShowVoice(false);
       if (inputRef.current) inputRef.current.value = "";
     } catch (err) {
       const serverMsg =
@@ -298,6 +318,60 @@ export default function PoDocumentsCard({
             )}
           </div>
 
+          {/* Optional caption + voice note. Collapsed by default to keep
+              the upload form lean; opens with a single click. */}
+          <div className="rounded-lg border border-border bg-surface-container-low/40">
+            <button
+              type="button"
+              onClick={() => setShowVoice((v) => !v)}
+              disabled={submitting}
+              className="w-full px-3 py-2 flex items-center justify-between gap-2 text-xs font-bold text-text hover:bg-surface-container-low/60 rounded-lg transition-colors"
+            >
+              <span className="inline-flex items-center gap-1.5">
+                <Mic className="h-3.5 w-3.5 text-primary" strokeWidth={2.25} />
+                Add a voice note or short caption
+                <span className="text-text-subtle font-normal normal-case">
+                  (optional · speak or type)
+                </span>
+              </span>
+              <span className="inline-flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-text-muted">
+                {voiceNote && (
+                  <span className="px-1.5 py-0.5 rounded-full bg-success-soft text-success font-bold">
+                    Voice ready
+                  </span>
+                )}
+                {caption.trim() && (
+                  <span className="px-1.5 py-0.5 rounded-full bg-info-soft text-info font-bold">
+                    Caption
+                  </span>
+                )}
+                <span className="text-text-subtle">{showVoice ? "Hide" : "Show"}</span>
+              </span>
+            </button>
+            {showVoice && (
+              <div className="px-3 pb-3 pt-1 space-y-2">
+                <VoiceRecorder
+                  onTranscript={(text) => setCaption(text)}
+                  onAudioChange={(b64) => setVoiceNote(b64)}
+                  disabled={submitting}
+                  language="en-IN"
+                  maxSeconds={90}
+                />
+                <label className="flex items-center gap-1.5 text-[11px] font-semibold text-text-muted uppercase tracking-wider">
+                  <MessageSquare className="h-3 w-3" /> Caption
+                </label>
+                <textarea
+                  rows={2}
+                  value={caption}
+                  onChange={(e) => setCaption(e.target.value)}
+                  disabled={submitting}
+                  placeholder="e.g. E-Way Bill for the second truck — delivery scheduled tomorrow."
+                  className="w-full bg-surface-container-lowest border border-border focus:border-primary rounded-md px-3 py-2 text-sm text-text outline-none resize-none"
+                />
+              </div>
+            )}
+          </div>
+
           {error && (
             <div className="flex items-start gap-2 text-xs text-danger bg-danger-soft/40 border border-danger/30 rounded-md px-3 py-2">
               <AlertCircle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
@@ -328,6 +402,9 @@ export default function PoDocumentsCard({
                 onClick={() => {
                   setPickedFile(null);
                   setError(null);
+                  setCaption("");
+                  setVoiceNote(null);
+                  setShowVoice(false);
                   if (inputRef.current) inputRef.current.value = "";
                 }}
                 className="px-3 py-1.5 text-xs font-semibold text-text-muted hover:text-text rounded-md hover:bg-surface-container-low"
@@ -368,8 +445,9 @@ export default function PoDocumentsCard({
               return (
                 <li
                   key={d.id}
-                  className={`flex items-center gap-3 ${compact ? "px-4 py-3" : "px-5 py-3.5"} hover:bg-surface-container-low/40`}
+                  className={`flex flex-col gap-2 ${compact ? "px-4 py-3" : "px-5 py-3.5"} hover:bg-surface-container-low/40`}
                 >
+                <div className="flex items-center gap-3">
                   <div className="w-9 h-9 rounded-md bg-info-soft text-info flex items-center justify-center shrink-0">
                     <Icon className="h-4 w-4" strokeWidth={2} />
                   </div>
@@ -381,6 +459,11 @@ export default function PoDocumentsCard({
                       <span className="text-[10px] uppercase tracking-widest font-bold px-1.5 py-0.5 rounded bg-info-soft text-info border border-info/20">
                         {meta.label}
                       </span>
+                      {d.voice_note && (
+                        <span className="inline-flex items-center gap-1 text-[10px] uppercase tracking-widest font-bold px-1.5 py-0.5 rounded bg-primary-soft text-primary border border-primary/20">
+                          <Mic className="h-3 w-3" /> Voice
+                        </span>
+                      )}
                     </div>
                     <div className="text-xs text-text-muted">
                       {fmtSize(d.size_bytes)} ·{" "}
@@ -427,6 +510,29 @@ export default function PoDocumentsCard({
                       </button>
                     )}
                   </div>
+                </div>
+                {(d.caption || d.voice_note) && (
+                  <div className="ml-12 mr-2 space-y-1.5">
+                    {d.caption && (
+                      <div className="text-xs italic text-text-muted bg-surface-container-low/60 border border-border rounded-md px-3 py-1.5">
+                        &ldquo;{d.caption}&rdquo;
+                      </div>
+                    )}
+                    {d.voice_note && (
+                      <div className="bg-primary-soft/40 border border-primary/20 rounded-md px-2 py-1.5">
+                        <div className="text-[10px] font-bold uppercase tracking-wider text-primary mb-1 flex items-center gap-1">
+                          <Mic className="h-3 w-3" /> Voice note from {d.uploaded_by?.name ?? "vendor"}
+                        </div>
+                        <audio
+                          src={d.voice_note}
+                          controls
+                          preload="metadata"
+                          className="w-full h-8"
+                        />
+                      </div>
+                    )}
+                  </div>
+                )}
                 </li>
               );
             })}

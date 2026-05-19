@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 import { useEffect, useState } from "react";
 import { useNavigate, Link, Navigate } from "react-router-dom";
 import {
@@ -26,21 +27,8 @@ import { useRFQStore } from "../store.js";
 import { useVendorsStore } from "../../masters/vendors/store.js";
 import { usePRStore } from "../../purchase-requests/store.js";
 import { useAuthStore } from "../../auth/store.js";
+import { useCan } from "../../../hooks/useCan.js";
 import { useToast } from "../../../hooks/useToast.jsx";
-
-// Mirrors RfqController::canWriteRfq — admin, purchase_officer, OR HOD of
-// Procurement / Purchase. The HOD has both options: create directly here,
-// or delegate via "Assign RFQ author" on PR Detail. Generic HODs (IT, FIN,
-// etc.) still can't author.
-const RFQ_WRITE_HOD_DEPT_CODES = new Set(["PROC", "PURCH"]);
-function canWriteRfq(user) {
-  if (!user) return false;
-  if (user.role === "admin" || user.role === "purchase_officer") return true;
-  if (user.role === "hod") {
-    return RFQ_WRITE_HOD_DEPT_CODES.has(user.department?.code);
-  }
-  return false;
-}
 
 const UOMS = ["EA", "KG", "RL", "SET", "BOX", "LTR", "MTR", "PCS", "NOS"];
 
@@ -161,6 +149,10 @@ export default function CreateRFQPage() {
   const toast = useToast();
   const create = useRFQStore((s) => s.create);
   const user = useAuthStore((s) => s.user);
+  // Server-authoritative permission — matches the route's <PermissionGate
+  // require="quote.create">. Defense-in-depth in case this page renders
+  // through a different path or the route guard changes.
+  const canCreate = useCan("quote.create");
 
   // Real vendors
   const vendors = useVendorsStore((s) => s.items);
@@ -189,9 +181,10 @@ export default function CreateRFQPage() {
     fetchPRs();
   }, [fetchVendors, fetchPRs]);
 
-  // Role gate — non-back-office roles get redirected to the list.
-  // Must run after all hooks above to satisfy rules-of-hooks.
-  if (user && !canWriteRfq(user)) {
+  // Permission gate — users without quote.create get bounced to the list.
+  // Must run after all hooks above to satisfy rules-of-hooks. Mirrors the
+  // route's <PermissionGate require="quote.create"> as defence-in-depth.
+  if (user && !canCreate) {
     return <Navigate to="/app/quotations" replace />;
   }
 
@@ -304,8 +297,8 @@ export default function CreateRFQPage() {
   };
 
   // Group the search-filtered vendors by category. "Other" bucket catches
-  // legacy vendors that were seeded without a category (Acme, Global SCM,
-  // Meka Group). Categories are sorted by their CATEGORY_META.order so the
+  // legacy vendors that were seeded without a category (Acme, Global Suppliers First,
+  // ). Categories are sorted by their CATEGORY_META.order so the
   // procurement-priority order is consistent.
   const vendorsByCategory = (() => {
     const groups = {};
@@ -337,7 +330,9 @@ export default function CreateRFQPage() {
     });
     if (badItem)
       next.items = "Every item needs a name and a quantity greater than zero.";
-    if (dueDate) {
+    if (!dueDate) {
+      next.due_date = "Due date is required.";
+    } else {
       const picked = new Date(dueDate);
       const today = new Date();
       today.setHours(0, 0, 0, 0);
@@ -460,10 +455,11 @@ export default function CreateRFQPage() {
 
             <div>
               <label className="block text-xs font-semibold text-text-muted mb-1 uppercase">
-                Due Date
+                Due Date <span className="text-danger">*</span>
               </label>
               <input
                 type="date"
+                required
                 className={inputCls(errors.due_date)}
                 value={dueDate}
                 onChange={(e) => {

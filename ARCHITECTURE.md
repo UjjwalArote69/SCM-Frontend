@@ -1,4 +1,4 @@
-# SCM Frontend — Architecture & App Flow
+# Suppliers First Frontend — Architecture & App Flow
 
 Complete map of the codebase, routing, and user journeys. Read this alongside `CLAUDE.md` (which stays short and is auto-loaded every session).
 
@@ -340,7 +340,7 @@ Sidebar items come from `NAV_CONFIG.user` in `components/nav/navConfig.js`.
 
 ---
 
-## 4. Business flow (SCM happy path)
+## 4. Business flow (Suppliers First happy path)
 
 This is what the software exists to coordinate.
 

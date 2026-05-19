@@ -46,18 +46,23 @@ export default function ProfileMenu({ user, onClose }) {
       : role === "admin"
         ? "/admin/settings"
         : "/app/profile";
-  const settingsLink = role === "admin" ? "/admin/settings" : "/app/profile";
 
+  // Only admins have a distinct Settings page (org-wide config). For every
+  // other role "Settings" used to point at the same /app/profile path as
+  // "My Profile", which read as two duplicate items in the dropdown. Drop
+  // it unless we actually have somewhere else to go.
   const items = [
     { to: profileLink, icon: User, label: "My Profile" },
-    { to: settingsLink, icon: Settings, label: "Settings" },
-    {
-      to: "#",
-      icon: HelpCircle,
-      label: "Help Center",
-      onClick: () => toast.info("Help center is coming soon"),
-    },
   ];
+  if (role === "admin") {
+    items.push({ to: "/admin/settings", icon: Settings, label: "Settings" });
+  }
+  items.push({
+    to: "#",
+    icon: HelpCircle,
+    label: "Help Center",
+    onClick: () => toast.info("Help center is coming soon"),
+  });
 
   const handleLogout = () => {
     onClose?.();

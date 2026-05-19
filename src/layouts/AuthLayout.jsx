@@ -34,10 +34,10 @@ export default function AuthLayout({
           </div>
           <div className="leading-none">
             <div className="text-sm font-black tracking-[0.22em] uppercase text-text">
-              SCM
+              Suppliers First
             </div>
             <div className="text-[9px] mt-1 tracking-[0.32em] uppercase text-text-subtle">
-              Meka Group
+              
             </div>
           </div>
         </div>
@@ -77,7 +77,7 @@ export default function AuthLayout({
           <div className="flex items-center gap-2 lg:invisible">
             <Boxes className="h-6 w-6 text-primary" strokeWidth={2.25} />
             <span className="text-primary font-black tracking-tighter text-xl uppercase">
-              SCM
+              Suppliers First
             </span>
           </div>
           <ThemeToggle />

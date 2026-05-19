@@ -138,20 +138,22 @@ export default function VendorInvoicesPage() {
 
         {initialLoading ? (
           <div className="bg-surface-container-lowest rounded-lg overflow-hidden border border-border">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="bg-surface-container-low text-[10px] font-bold text-text-muted uppercase tracking-widest">
-                  <th className="px-6 py-3 text-left">Invoice #</th>
-                  <th className="px-6 py-3 text-left">PO</th>
-                  <th className="px-6 py-3 text-left">Date</th>
-                  <th className="px-6 py-3 text-right">Amount</th>
-                  <th className="px-6 py-3 text-left">Status</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border">
-                {Array.from({ length: 4 }).map((_, i) => <SkRow key={i} />)}
-              </tbody>
-            </table>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm min-w-[680px]">
+                <thead>
+                  <tr className="bg-surface-container-low text-[10px] font-bold text-text-muted uppercase tracking-widest">
+                    <th className="px-6 py-3 text-left">Invoice #</th>
+                    <th className="px-6 py-3 text-left">PO</th>
+                    <th className="px-6 py-3 text-left">Date</th>
+                    <th className="px-6 py-3 text-right">Amount</th>
+                    <th className="px-6 py-3 text-left">Status</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border">
+                  {Array.from({ length: 4 }).map((_, i) => <SkRow key={i} />)}
+                </tbody>
+              </table>
+            </div>
           </div>
         ) : filtered.length === 0 && invoices.length > 0 ? (
           <div className="text-center py-10 text-text-muted text-sm border border-border rounded-lg bg-surface-container-lowest">
@@ -170,40 +172,42 @@ export default function VendorInvoicesPage() {
           />
         ) : (
           <div className="bg-surface-container-lowest rounded-lg overflow-hidden border border-border">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="bg-surface-container-low text-[10px] font-bold text-text-muted uppercase tracking-widest">
-                  <th className="px-6 py-3 text-left">Invoice #</th>
-                  <th className="px-6 py-3 text-left">PO</th>
-                  <th className="px-6 py-3 text-left">Date</th>
-                  <th className="px-6 py-3 text-right">Amount</th>
-                  <th className="px-6 py-3 text-left">Status</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border">
-                {filtered.map((r) => (
-                  <tr key={r.number} className="hover:bg-surface-container-low">
-                    <td className="px-6 py-4 font-mono font-bold text-primary">
-                      {r.number}
-                    </td>
-                    <td className="px-6 py-4 font-mono text-info">
-                      {r.po_number ?? "—"}
-                    </td>
-                    <td className="px-6 py-4 text-text-muted text-xs">
-                      {r.invoice_date ?? "—"}
-                    </td>
-                    <td className="px-6 py-4 text-right font-mono font-semibold tabular-nums">
-                      {formatINR(r.total)}
-                    </td>
-                    <td className="px-6 py-4">
-                      <StatusPill tone={STATUS_TONE[r.status] ?? "neutral"}>
-                        {r.status}
-                      </StatusPill>
-                    </td>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm min-w-[680px]">
+                <thead>
+                  <tr className="bg-surface-container-low text-[10px] font-bold text-text-muted uppercase tracking-widest">
+                    <th className="px-6 py-3 text-left">Invoice #</th>
+                    <th className="px-6 py-3 text-left">PO</th>
+                    <th className="px-6 py-3 text-left">Date</th>
+                    <th className="px-6 py-3 text-right">Amount</th>
+                    <th className="px-6 py-3 text-left">Status</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="divide-y divide-border">
+                  {filtered.map((r) => (
+                    <tr key={r.number} className="hover:bg-surface-container-low">
+                      <td className="px-6 py-4 font-mono font-bold text-primary">
+                        {r.number}
+                      </td>
+                      <td className="px-6 py-4 font-mono text-info">
+                        {r.po_number ?? "—"}
+                      </td>
+                      <td className="px-6 py-4 text-text-muted text-xs">
+                        {r.invoice_date ?? "—"}
+                      </td>
+                      <td className="px-6 py-4 text-right font-mono font-semibold tabular-nums">
+                        {formatINR(r.total)}
+                      </td>
+                      <td className="px-6 py-4">
+                        <StatusPill tone={STATUS_TONE[r.status] ?? "neutral"}>
+                          {r.status}
+                        </StatusPill>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         )}
       </section>
@@ -215,7 +219,8 @@ export default function VendorInvoicesPage() {
             Ready to invoice <span className="text-text-subtle font-normal">— {invoiceablePOs.length} {invoiceablePOs.length === 1 ? "PO" : "POs"} eligible</span>
           </h2>
           <div className="bg-surface-container-lowest rounded-lg overflow-hidden border border-border">
-            <table className="w-full text-sm">
+            <div className="overflow-x-auto">
+            <table className="w-full text-sm min-w-[820px]">
               <thead>
                 <tr className="bg-surface-container-low text-[10px] font-bold text-text-muted uppercase tracking-widest">
                   <th className="px-6 py-3 text-left">PO #</th>
@@ -263,6 +268,7 @@ export default function VendorInvoicesPage() {
                 ))}
               </tbody>
             </table>
+            </div>
           </div>
         </section>
       )}

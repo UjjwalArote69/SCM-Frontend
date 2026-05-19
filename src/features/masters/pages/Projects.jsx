@@ -1,11 +1,30 @@
 import { useEffect, useMemo, useState } from "react";
-import { Plus, FolderKanban, Edit3, Search, Loader2 } from "lucide-react";
+import { Plus, FolderKanban, Edit3, Search } from "lucide-react";
 import PageHeader from "../../../components/data/PageHeader.jsx";
 import StatusPill from "../../../components/data/StatusPill.jsx";
 import EmptyState from "../../../components/ui/EmptyState.jsx";
+import Skeleton from "../../../components/feedback/Skeleton.jsx";
 import GenericMasterDrawer from "../components/GenericMasterDrawer.jsx";
 import useProjectsStore from "../projects/store.js";
 import { useAuthStore } from "../../auth/store.js";
+
+function SkProjectCard() {
+  return (
+    <div className="glass-card rounded-2xl p-5 shadow-sm">
+      <div className="flex items-start gap-4">
+        <Skeleton className="h-10 w-10 rounded-md shrink-0" />
+        <div className="flex-1 min-w-0 space-y-2">
+          <div className="flex items-center gap-3">
+            <Skeleton className="h-3 w-24" />
+            <Skeleton className="h-5 w-16 rounded-full" />
+          </div>
+          <Skeleton className="h-4 w-56" />
+          <Skeleton className="h-3 w-72" />
+        </div>
+      </div>
+    </div>
+  );
+}
 
 const STATUS_OPTIONS = [
   { value: "active", label: "Active" },
@@ -97,8 +116,8 @@ export default function ProjectsPage() {
       </div>
 
       {loading && items.length === 0 ? (
-        <div className="text-center py-12 text-text-muted">
-          <Loader2 className="h-5 w-5 animate-spin inline mr-2" /> Loading…
+        <div className="space-y-3">
+          {Array.from({ length: 5 }).map((_, i) => <SkProjectCard key={i} />)}
         </div>
       ) : filtered.length === 0 ? (
         <EmptyState

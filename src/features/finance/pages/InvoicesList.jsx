@@ -110,7 +110,8 @@ export default function InvoicesListPage() {
               : "No invoices match the current filter."}
           </div>
         ) : (
-          <table className="w-full text-sm">
+          <div className="overflow-x-auto">
+          <table className="w-full text-sm min-w-[820px]">
             <thead>
               <tr className="bg-surface-container-low text-xs font-semibold text-text-muted uppercase">
                 <th className="px-6 py-3 text-left">Invoice #</th>
@@ -160,6 +161,7 @@ export default function InvoicesListPage() {
               ))}
             </tbody>
           </table>
+          </div>
         )}
       </div>
     </div>

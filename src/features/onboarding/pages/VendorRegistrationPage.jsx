@@ -59,10 +59,10 @@ function Brand({ size = "md" }) {
       </div>
       <div className="leading-none">
         <div className="text-sm font-black tracking-[0.22em] uppercase">
-          SCM
+          Suppliers First
         </div>
         <div className="text-[9px] mt-1 tracking-[0.32em] uppercase text-text-subtle">
-          Meka Vendor Portal
+           Vendor Portal
         </div>
       </div>
     </Link>
@@ -416,7 +416,7 @@ function SidePanel() {
           Built on tide<br />&amp; steel.
         </h1>
         <p className="italic text-text-muted text-lg mt-5 leading-snug">
-          Become a Meka Group vendor.
+          Become a vendor.
         </p>
         <p className="text-[14px] text-text-muted mt-6 leading-relaxed">
           Forty-five years of marine, dredging and infrastructure work.
@@ -440,7 +440,7 @@ function SidePanel() {
       </div>
 
       <div className="relative pt-6 border-t border-outline-variant/60 flex items-center justify-between text-[11px] text-text-subtle">
-        <span className="tracking-[0.24em] uppercase font-semibold">Meka Group</span>
+        <span className="tracking-[0.24em] uppercase font-semibold"></span>
         <span>procurement@meka.in</span>
       </div>
     </aside>
@@ -638,7 +638,7 @@ function RegisterScreen({ goLogin, onSendOtp }) {
 
   return (
     <Page
-      eyebrow="New to Meka"
+      eyebrow="New"
       title="Create your vendor account"
       lede="Quick start — give us your email or phone, verify, and we'll take it from there."
       footer={
@@ -2445,7 +2445,7 @@ function FinalSuccessScreen({ details, categories, reference, onReset }) {
 
           <div className="italic text-text-muted text-xl mb-2">All set.</div>
           <h1 className="text-3xl sm:text-4xl font-bold text-text leading-tight mb-3">
-            You&apos;re registered with Meka
+            You&apos;re registered with Suppliers First
           </h1>
           <p className="text-[15px] text-text-muted leading-relaxed max-w-md mx-auto">
             Thanks{details?.name ? `, ${details.name.split(" ")[0]}` : ""}. Our
@@ -2664,7 +2664,7 @@ export default function VendorRegistrationPage() {
     try {
       const vendor = await submitToBackend();
       const ref =
-        vendor?.code || "MEKA-" + (Math.floor(Math.random() * 90000) + 10000);
+        vendor?.code || "SUPPLIERS-FIRST-" + (Math.floor(Math.random() * 90000) + 10000);
       setReference(ref);
       setScreen("welcome");
       toast.success("Account created — let's set up your supplier profile");

@@ -14,6 +14,9 @@ export const paymentApi = {
     client
       .post(`/payments/${number}/mark-paid`, payload)
       .then((r) => r.data.data),
+  /** One-shot create-and-pay from the Outstanding page. Admin/FIN HOD only. */
+  quickPay: (payload) =>
+    client.post(`/payments/quick-pay`, payload).then((r) => r.data.data),
   remove: (number) => client.delete(`/payments/${number}`).then((r) => r.data),
 
   /** Stream payment voucher as PDF; returns a Blob. */

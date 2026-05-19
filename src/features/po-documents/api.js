@@ -15,11 +15,13 @@ export const poDocumentsApi = {
    * Multipart upload. Returns the new document record (contract shape).
    * `onProgress` receives 0..1 for progress UI.
    */
-  upload: ({ po_number, doc_type, file }, onProgress) => {
+  upload: ({ po_number, doc_type, file, caption, voice_note }, onProgress) => {
     const fd = new FormData();
     fd.append("po_number", po_number);
     fd.append("doc_type", doc_type);
     fd.append("file", file);
+    if (caption) fd.append("caption", caption);
+    if (voice_note) fd.append("voice_note", voice_note);
     return client
       .post("/po-documents", fd, {
         headers: { "Content-Type": "multipart/form-data" },

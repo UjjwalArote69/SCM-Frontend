@@ -1,47 +1,35 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import {
-  Banknote,
-  Search,
-  Plus,
-  CheckCircle2,
-  Clock,
-  ChevronRight,
-  ShieldCheck,
-  Wallet,
-  Hourglass,
-  CalendarCheck,
+  Banknote, Plus, ShieldCheck, Wallet, Hourglass, CalendarCheck,
+  ChevronRight, GitBranch, TrendingUp, Building2, Truck,
 } from "lucide-react";
 import { usePaymentStore } from "../store.js";
 import { useAuthStore } from "../../auth/store.js";
+import { useCan } from "../../../hooks/useCan.js";
 import Skeleton from "../../../components/feedback/Skeleton.jsx";
+import client from "../../../api/client.js";
+import { usePOStore } from "../../purchase-orders/store.js";
+import { useGRNStore } from "../../grn/store.js";
 
-// FLOW.md item 11 — must mirror PaymentController thresholds.
-const TIER_2 = 50_000;
-const TIER_3 = 500_000;
+/**
+ * FLOW item 49 — Payments parent is a dashboard. No list view here.
+ *
+ * Each section answers a different question, so nothing repeats:
+ *   - KPI strip   : the four headline numbers (item 44 spec)
+ *   - Pipeline    : where work is stuck in the approval chain
+ *   - Top vendors : who we owe the most
+ *   - Trend       : how monthly velocity has shifted
+ *   - Nav cards   : tools — deep-link to the focused ledgers (no numbers)
+ */
 
-function tierFor(amount) {
-  const n = Number(amount ?? 0);
-  if (n >= TIER_3) return { label: "Tier 3", short: "T3", cls: "bg-warning-soft text-warning border-warning/30" };
-  if (n >= TIER_2) return { label: "Tier 2", short: "T2", cls: "bg-info-soft text-info border-info/20" };
-  return { label: "Tier 1", short: "T1", cls: "bg-success-soft text-success border-success/30" };
-}
+// Per item 40, payments wait at one of these stages.
+const PENDING_APPROVAL_STAGES = new Set([
+  "pending_finance_hod",
+  "pending_cfo",
+  "pending_ceo",
+]);
 
-const STAGE_SHORT_LABEL = {
-  pending_cfo: "Awaiting CFO",
-  pending_ceo: "Awaiting CEO",
-  cleared_to_pay: "Cleared to pay",
-  done: "Done",
-};
-
-function fmtINR(n) {
-  return `₹${Number(n ?? 0).toLocaleString(undefined, {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  })}`;
-}
-
-/** Compact ₹ formatting for KPI cards: 1234567 → ₹12.3L. */
 function fmtCompactINR(n) {
   const v = Number(n ?? 0);
   if (Math.abs(v) >= 10_000_000) return `₹${(v / 10_000_000).toFixed(1)}Cr`;
@@ -50,91 +38,336 @@ function fmtCompactINR(n) {
   return `₹${v.toFixed(0)}`;
 }
 
-function formatDate(v) {
-  if (!v) return "—";
-  const d = new Date(v);
-  if (Number.isNaN(d.getTime())) return "—";
-  return d.toLocaleDateString(undefined, {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
-}
 
-const STATUS_TONE = {
-  pending: "bg-warning-soft text-warning border-warning/30",
-  paid: "bg-success-soft text-success border-success/30",
-  rejected: "bg-danger-soft text-danger border-danger/30",
-};
+export default function PaymentsListPage() {
+  const rows = usePaymentStore((s) => s.items);
+  const loading = usePaymentStore((s) => s.loading);
+  const fetchAll = usePaymentStore((s) => s.fetchAll);
+  const user = useAuthStore((s) => s.user);
 
-function StatusPill({ status }) {
-  const Icon = status === "paid" ? CheckCircle2 : Clock;
+  // Outstanding is computed off POs + GRNs (just like the Outstanding page)
+  // so the dashboard number matches the page it deep-links into.
+  const pos = usePOStore((s) => s.items);
+  const fetchPOs = usePOStore((s) => s.fetchAll);
+  const grns = useGRNStore((s) => s.items);
+  const fetchGRNs = useGRNStore((s) => s.fetchAll);
+
+  // GRNs that have cleared Purchase HOD — precursor work that doesn't yet
+  // have a payment record. Pulled off the same endpoint the Awaiting
+  // Approval page uses, so the dashboard and the list stay in lockstep.
+  const [grnsInFlight, setGrnsInFlight] = useState([]);
+  const [grnsLoaded, setGrnsLoaded] = useState(false);
+  const reloadGrns = async () => {
+    try {
+      const r = await client.get("/payments/awaiting-approval");
+      setGrnsInFlight(Array.isArray(r.data?.data) ? r.data.data : []);
+    } catch {
+      setGrnsInFlight([]);
+    } finally {
+      setGrnsLoaded(true);
+    }
+  };
+
+  useEffect(() => {
+    fetchAll();
+    fetchPOs();
+    fetchGRNs();
+    reloadGrns();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Per-PO paid-sum cache (used by both Outstanding and Top-vendors calcs).
+  // Same shape as the Outstanding page so numbers match exactly.
+  const paidByPo = useMemo(() => {
+    const m = new Map();
+    for (const p of rows) {
+      if (p.status !== "paid") continue;
+      m.set(p.po_number, (m.get(p.po_number) ?? 0) + (Number(p.amount) || 0));
+    }
+    return m;
+  }, [rows]);
+
+  // Outstanding rows = one per CEO-approved GRN whose source PO has an
+  // open balance. Built identically to /app/payments/outstanding so the
+  // dashboard's Outstanding number stays in lockstep with the page it
+  // deep-links into.
+  const outstandingRows = useMemo(() => {
+    const poByNumber = new Map(pos.map((p) => [p.number, p]));
+    const out = [];
+    for (const g of grns) {
+      if (g.chain_stage !== "done" || g.status === "rejected") continue;
+      const po = poByNumber.get(g.po_number);
+      if (!po) continue;
+      const rateMap = new Map();
+      for (const it of po.items ?? []) {
+        const k = it.code || it.name;
+        if (k) rateMap.set(k, Number(it.rate) || 0);
+      }
+      let grnValue = 0;
+      for (const it of g.items ?? []) {
+        const k = it.code || it.name;
+        const rate = rateMap.get(k) ?? 0;
+        const accepted = Math.max(
+          0,
+          (Number(it.received) || 0) - (Number(it.damaged) || 0),
+        );
+        grnValue += accepted * rate;
+      }
+      const poTotal = Number(po.total) || 0;
+      const poPaid = paidByPo.get(po.number) ?? 0;
+      const poOutstanding = Math.max(0, poTotal - poPaid);
+      if (poOutstanding <= 0) continue;
+      out.push({ vendor: po.vendor ?? "—", grnValue });
+    }
+    return out;
+  }, [pos, grns, paidByPo]);
+
+  // ─── KPI numbers ──────────────────────────────────────────────────────
+  // Outstanding now mirrors the Outstanding page's total — ₹ on
+  // CEO-approved GRNs whose source PO isn't fully paid yet. This counts
+  // both "no draft yet" and "draft in flight" GRNs as money we owe.
+  const stats = useMemo(() => {
+    const now = new Date();
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    let paidFTM = 0, paidCumulative = 0;
+    let pendingPayments = 0;
+    for (const r of rows) {
+      const amt = Number(r.amount) || 0;
+      if (r.status === "paid") {
+        paidCumulative += amt;
+        if (r.paid_at) {
+          const d = new Date(r.paid_at);
+          if (!Number.isNaN(d.getTime()) && d >= startOfMonth) paidFTM += amt;
+        }
+      } else if (r.status !== "rejected") {
+        if (PENDING_APPROVAL_STAGES.has(r.chain_stage)) pendingPayments++;
+      }
+    }
+    const outstanding = outstandingRows.reduce((s, r) => s + r.grnValue, 0);
+    // Awaiting Approval = payments-in-chain + GRNs-in-chain. Both flow
+    // through the same Finance HOD → CFO → CEO gates, so a finance lead
+    // looking at this dashboard wants the whole queue surfaced.
+    const grnsCount = grnsInFlight.length;
+    return {
+      outstanding,
+      outstandingGrns: outstandingRows.length,
+      paidFTM,
+      paidCumulative,
+      awaitingApproval: pendingPayments + grnsCount,
+      pendingPayments,
+      grnsCount,
+    };
+  }, [rows, grnsInFlight, outstandingRows]);
+
+  // ─── Approval pipeline — count per stage, payments + GRNs interleaved ─
+  // GRNs don't have an amount yet, so they only contribute to the count.
+  // Vendor-replacement detour (damaged GRNs) gets its own row so finance
+  // can see how many deals are waiting on the vendor side.
+  const pipeline = useMemo(() => {
+    const buckets = {
+      pending_finance_hod:        { label: "Finance HOD",      count: 0, amount: 0, grns: 0 },
+      pending_cfo:                { label: "CFO",              count: 0, amount: 0, grns: 0 },
+      pending_ceo:                { label: "CEO",              count: 0, amount: 0, grns: 0 },
+      pending_vendor_replacement: { label: "Vendor agreement", count: 0, amount: 0, grns: 0 },
+      cleared_to_pay:             { label: "Cleared to pay",   count: 0, amount: 0, grns: 0 },
+    };
+    for (const r of rows) {
+      if (r.status === "paid" || r.status === "rejected") continue;
+      if (buckets[r.chain_stage]) {
+        buckets[r.chain_stage].count++;
+        buckets[r.chain_stage].amount += Number(r.amount) || 0;
+      }
+    }
+    for (const g of grnsInFlight) {
+      if (buckets[g.chain_stage]) {
+        buckets[g.chain_stage].count++;
+        buckets[g.chain_stage].grns++;
+      }
+    }
+    return Object.entries(buckets)
+      .filter(([, v]) => v.count > 0 || v.label !== "Vendor agreement")
+      .map(([k, v]) => ({ key: k, ...v }));
+  }, [rows, grnsInFlight]);
+
+  // ─── Top vendors owed ─────────────────────────────────────────────────
+  // Aggregates the same outstandingRows used by the Outstanding page so the
+  // "who do we owe?" answer here lines up with what shows up there.
+  const topVendors = useMemo(() => {
+    const byVendor = new Map();
+    for (const r of outstandingRows) {
+      const v = r.vendor || "—";
+      byVendor.set(v, (byVendor.get(v) ?? 0) + r.grnValue);
+    }
+    return [...byVendor.entries()]
+      .map(([vendor, amount]) => ({ vendor, amount }))
+      .sort((a, b) => b.amount - a.amount)
+      .slice(0, 5);
+  }, [outstandingRows]);
+
+  // ─── Monthly trend — paid ₹, last 12 months ───────────────────────────
+  // Different from "FTM" + "Cumulative" KPIs (single-period numbers) — this
+  // shows the trajectory + month-over-month comparison.
+  const monthlyTrend = useMemo(() => {
+    const buckets = [];
+    const now = new Date();
+    for (let i = 11; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      buckets.push({
+        key: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`,
+        label: d.toLocaleString(undefined, { month: "short" }),
+        total: 0,
+      });
+    }
+    const lookup = new Map(buckets.map((b) => [b.key, b]));
+    for (const r of rows) {
+      if (r.status !== "paid" || !r.paid_at) continue;
+      const d = new Date(r.paid_at);
+      if (Number.isNaN(d.getTime())) continue;
+      const k = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+      if (lookup.has(k)) lookup.get(k).total += Number(r.amount) || 0;
+    }
+    return buckets;
+  }, [rows]);
+
+  // Wait for BOTH payments and GRNs to load before flipping out of skeleton,
+  // otherwise the Awaiting Approval card flashes 0 → real-count when GRNs
+  // arrive a beat after payments do.
+  const initialLoading = (loading && rows.length === 0) || !grnsLoaded;
+  // Server-authoritative permission — matches the route's <PermissionGate
+  // require="payment.create">. Admins manage who has it at /admin/roles.
+  const showCreate = useCan("payment.create");
+
   return (
-    <span
-      className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold border capitalize ${
-        STATUS_TONE[status] ?? STATUS_TONE.pending
-      }`}
-    >
-      <Icon className="h-3 w-3" strokeWidth={2.5} />
-      {status}
-    </span>
+    <div className="max-w-[1400px] mx-auto pb-8">
+      {/* Header */}
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-3 mb-5 sm:mb-6">
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-bold text-text tracking-tight flex items-center gap-2">
+            <Banknote className="h-7 w-7 text-primary" /> Payments
+          </h1>
+          <p className="text-text-muted text-sm mt-1 hidden sm:block">
+            Snapshot of vendor payments — drill into a sub-page for line-by-line detail.
+          </p>
+        </div>
+        {showCreate && (
+          <Link
+            to="/app/payments/new"
+            className="inline-flex bg-primary hover:brightness-110 text-primary-foreground px-4 py-2 rounded-md font-bold text-sm items-center justify-center gap-2 transition-colors shadow-sm whitespace-nowrap self-start md:self-auto"
+          >
+            <Plus className="h-4 w-4" /> New Payment
+          </Link>
+        )}
+      </div>
+
+      {/* KPI cards are the navigation — each opens its own page.
+          Item 49 + user feedback: no separate nav cards below the diagrams. */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+        {initialLoading ? (
+          Array.from({ length: 4 }).map((_, i) => <SkKpi key={i} />)
+        ) : (
+          <>
+            <Kpi
+              to="/app/payments/awaiting"
+              icon={Hourglass}
+              tone="info"
+              label="Awaiting approval"
+              value={stats.awaitingApproval}
+              sub={
+                stats.grnsCount > 0
+                  ? `${stats.pendingPayments} payment${stats.pendingPayments === 1 ? "" : "s"} · ${stats.grnsCount} GRN${stats.grnsCount === 1 ? "" : "s"}`
+                  : "Finance HOD / CFO / CEO"
+              }
+            />
+            <Kpi
+              to="/app/payments/outstanding"
+              icon={Wallet}
+              tone="warning"
+              label="Outstanding"
+              value={fmtCompactINR(stats.outstanding)}
+              sub={
+                stats.outstandingGrns > 0
+                  ? `${stats.outstandingGrns} GRN${stats.outstandingGrns === 1 ? "" : "s"} on open POs`
+                  : "All POs settled"
+              }
+            />
+            <Kpi to="/app/payments/ftm"         icon={CalendarCheck} tone="success" label="Payment (FTM)"      value={fmtCompactINR(stats.paidFTM)}                sub="Released this month" />
+            <Kpi to="/app/payments/cumulative"  icon={ShieldCheck}   tone="success" label="Cumulative"         value={fmtCompactINR(stats.paidCumulative)}         sub="Lifetime released" />
+          </>
+        )}
+      </div>
+
+      {/* Two charts side-by-side: pipeline + top vendors */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
+        <ChartCard
+          icon={GitBranch}
+          title="Approval pipeline"
+          subtitle="Where work is stuck right now"
+          loading={initialLoading}
+        >
+          <PipelineChart data={pipeline} />
+        </ChartCard>
+
+        <ChartCard
+          icon={Building2}
+          title="Top vendors owed"
+          subtitle="The five biggest open balances"
+          loading={initialLoading}
+        >
+          <TopVendorsChart data={topVendors} />
+        </ChartCard>
+      </div>
+
+      {/* Monthly trend — line, full width */}
+      <ChartCard
+        icon={TrendingUp}
+        title="12-month payment velocity"
+        subtitle="₹ released per calendar month"
+        loading={initialLoading}
+      >
+        <TrendLine data={monthlyTrend} />
+      </ChartCard>
+    </div>
   );
 }
 
-/** Roles that can create a payment from this page. Mirrors PaymentController. */
-function canCreatePayment(user) {
-  if (!user) return false;
-  if (user.role === "admin" || user.role === "accountant") return true;
-  if (user.role === "hod" && user.department?.code === "FIN") return true;
-  return false;
-}
+// ─── small helpers ─────────────────────────────────────────────────────────
 
-function KpiCard({ label, value, sub, icon: Icon, tone = "neutral", active, onClick }) {
-  const tones = {
-    neutral: { ring: "border-border", iconBg: "bg-surface-container-high text-text" },
-    warning: { ring: "border-warning/20", iconBg: "bg-warning-soft text-warning" },
-    success: { ring: "border-success/20", iconBg: "bg-success-soft text-success" },
-    info: { ring: "border-info/20", iconBg: "bg-info-soft text-info" },
-  };
-  const t = tones[tone] ?? tones.neutral;
-  const Comp = onClick ? "button" : "div";
-  return (
-    <Comp
-      type={onClick ? "button" : undefined}
-      onClick={onClick}
-      className={`shrink-0 snap-start min-w-[180px] sm:min-w-0 text-left flex flex-col gap-2 p-4 rounded-lg border bg-surface-container-lowest transition-all duration-200 shadow-sm ${
-        t.ring
-      } ${
-        onClick
-          ? `hover:shadow-lg hover:-translate-y-0.5 hover:border-primary/40 ${
-              active ? "ring-2 ring-primary ring-offset-2 ring-offset-bg" : ""
-            }`
-          : ""
-      }`}
-    >
+const TONES = {
+  warning: { ring: "border-warning/20", iconBg: "bg-warning-soft text-warning", num: "text-warning" },
+  success: { ring: "border-success/20", iconBg: "bg-success-soft text-success", num: "text-success" },
+  info:    { ring: "border-info/20",    iconBg: "bg-info-soft text-info",       num: "text-info" },
+  neutral: { ring: "border-border",     iconBg: "bg-surface-container text-text", num: "text-text" },
+};
+
+function Kpi({ icon: Icon, label, value, sub, tone, to }) {
+  const t = TONES[tone] ?? TONES.neutral;
+  const className = `relative flex flex-col gap-2 p-4 rounded-lg border bg-surface-container-lowest shadow-sm transition-all duration-200 ${t.ring}${
+    to ? " group hover:shadow-lg hover:-translate-y-0.5 hover:border-primary/40 cursor-pointer" : ""
+  }`;
+  const body = (
+    <>
       <div className="flex items-center justify-between">
         <div className={`w-9 h-9 rounded-md flex items-center justify-center ${t.iconBg}`}>
           <Icon className="h-4 w-4" strokeWidth={2.25} />
         </div>
+        {to && (
+          <ChevronRight className="h-4 w-4 text-text-subtle opacity-0 group-hover:opacity-100 transition-opacity" />
+        )}
       </div>
       <div>
-        <div className="text-[10px] uppercase tracking-widest font-bold text-text-muted">
-          {label}
-        </div>
-        <div className="text-xl sm:text-2xl font-black tracking-tight text-text leading-tight">
-          {value}
-        </div>
+        <div className="text-[10px] uppercase tracking-widest font-bold text-text-muted">{label}</div>
+        <div className="text-xl sm:text-2xl font-black tracking-tight text-text leading-tight">{value}</div>
         {sub && <div className="text-[11px] text-text-subtle mt-0.5">{sub}</div>}
       </div>
-    </Comp>
+    </>
   );
+  if (to) return <Link to={to} className={className}>{body}</Link>;
+  return <div className={className}>{body}</div>;
 }
 
-/* ─── Loading skeletons — match real layout so cards don't reflow ─── */
-
-function SkKpiCard() {
+function SkKpi() {
   return (
-    <div className="shrink-0 snap-start min-w-[180px] sm:min-w-0 flex flex-col gap-2 p-4 rounded-lg border border-border bg-surface-container-lowest shadow-sm">
+    <div className="flex flex-col gap-2 p-4 rounded-lg border border-border bg-surface-container-lowest shadow-sm">
       <Skeleton className="h-9 w-9 rounded-md" />
       <div className="space-y-1.5">
         <Skeleton className="h-2.5 w-20" />
@@ -145,383 +378,227 @@ function SkKpiCard() {
   );
 }
 
-function SkRow() {
+function ChartCard({ icon: Icon, title, subtitle, loading, children }) {
   return (
-    <>
-      {/* Mobile card */}
-      <div className="md:hidden flex items-center gap-3 px-4 py-3.5 border-b border-border last:border-b-0">
-        <div className="min-w-0 flex-1 space-y-2">
-          <div className="flex items-center justify-between gap-2">
-            <Skeleton className="h-3.5 w-24" />
-            <Skeleton className="h-5 w-16 rounded-full" />
-          </div>
-          <Skeleton className="h-3 w-2/3" />
-          <div className="flex items-center gap-2">
-            <Skeleton className="h-4 w-20" />
-            <Skeleton className="h-4 w-8 rounded" />
-          </div>
+    <div className="bg-surface-container-lowest border border-border rounded-lg p-5">
+      <div className="flex items-center gap-2 mb-3">
+        <Icon className="h-4 w-4 text-text-muted" />
+        <div className="min-w-0">
+          <h2 className="text-sm font-bold uppercase tracking-wider text-text">{title}</h2>
+          <p className="text-[11px] text-text-subtle">{subtitle}</p>
         </div>
-        <Skeleton className="h-4 w-4 shrink-0" />
       </div>
-      {/* Desktop row */}
-      <div className="hidden md:flex items-center px-4 py-3 border-b border-border last:border-b-0">
-        <div className="w-32"><Skeleton className="h-3.5 w-24" /></div>
-        <div className="w-32"><Skeleton className="h-3 w-20" /></div>
-        <div className="flex-1 min-w-[140px] pr-2"><Skeleton className="h-4 w-3/4" /></div>
-        <div className="w-32 flex justify-end"><Skeleton className="h-4 w-20" /></div>
-        <div className="w-16 flex justify-center"><Skeleton className="h-4 w-8 rounded" /></div>
-        <div className="w-40"><Skeleton className="h-3 w-28" /></div>
-        <div className="w-28"><Skeleton className="h-5 w-20 rounded-full" /></div>
-      </div>
-    </>
+      {loading ? <Skeleton className="h-44 w-full" /> : children}
+    </div>
   );
 }
 
-export default function PaymentsListPage() {
-  const rows = usePaymentStore((s) => s.items);
-  const loading = usePaymentStore((s) => s.loading);
-  const fetchAll = usePaymentStore((s) => s.fetchAll);
-  const user = useAuthStore((s) => s.user);
-  const [query, setQuery] = useState("");
-  const [status, setStatus] = useState("all");
+// ─── Charts — three distinct visualisations ───────────────────────────────
 
-  useEffect(() => {
-    fetchAll();
-  }, [fetchAll]);
-
-  // Money-focused stats — far more useful than raw counts when the page
-  // owner's job is "what do I owe and what's stuck."
-  const stats = useMemo(() => {
-    const now = new Date();
-    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-    let outstanding = 0;
-    let paidThisMonth = 0;
-    let awaitingApproval = 0;
-    let clearedReady = 0;
-    for (const r of rows) {
-      const amt = Number(r.amount) || 0;
-      if (r.status === "pending") {
-        outstanding += amt;
-        if (r.chain_stage === "cleared_to_pay") clearedReady++;
-        else if (
-          r.chain_stage === "pending_cfo" ||
-          r.chain_stage === "pending_ceo"
-        ) {
-          awaitingApproval++;
-        }
-      } else if (r.status === "paid" && r.paid_at) {
-        const d = new Date(r.paid_at);
-        if (!Number.isNaN(d.getTime()) && d >= startOfMonth) paidThisMonth += amt;
-      }
-    }
-    return { outstanding, paidThisMonth, awaitingApproval, clearedReady };
-  }, [rows]);
-
-  const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    return rows.filter((r) => {
-      const matchQuery =
-        !q ||
-        r.number.toLowerCase().includes(q) ||
-        r.po_number.toLowerCase().includes(q) ||
-        (r.vendor ?? "").toLowerCase().includes(q);
-      let matchStatus = true;
-      if (status === "pending") matchStatus = r.status === "pending";
-      else if (status === "paid") matchStatus = r.status === "paid";
-      else if (status === "awaiting") {
-        matchStatus =
-          r.status === "pending" &&
-          (r.chain_stage === "pending_cfo" || r.chain_stage === "pending_ceo");
-      } else if (status === "cleared") {
-        matchStatus =
-          r.status === "pending" && r.chain_stage === "cleared_to_pay";
-      } else if (status === "rejected") matchStatus = r.status === "rejected";
-      return matchQuery && matchStatus;
-    });
-  }, [rows, query, status]);
-
-  const showCreate = canCreatePayment(user);
-
-  // Initial loading: first fetch in flight AND nothing cached yet. Drives the
-  // skeleton swap on the KPI strip + row list.
-  const initialLoading = loading && rows.length === 0;
-
-  const filterChips = [
-    { key: "all", label: "All", count: rows.length },
-    { key: "awaiting", label: "Awaiting approval", count: stats.awaitingApproval },
-    { key: "cleared", label: "Cleared to pay", count: stats.clearedReady },
-    {
-      key: "pending",
-      label: "Pending",
-      count: rows.filter((r) => r.status === "pending").length,
-    },
-    {
-      key: "paid",
-      label: "Paid",
-      count: rows.filter((r) => r.status === "paid").length,
-    },
-  ];
-
+/**
+ * Approval pipeline — vertical bars per stage with count + amount label.
+ * Tells the story "the queue is 3 deep at CFO, 1 at CEO" — actionable.
+ */
+function PipelineChart({ data }) {
+  const max = Math.max(1, ...data.map((d) => d.count));
+  const total = data.reduce((s, d) => s + d.count, 0);
+  if (total === 0) {
+    return (
+      <div className="h-44 flex flex-col items-center justify-center text-text-subtle text-sm">
+        <GitBranch className="h-8 w-8 mb-2" />
+        Pipeline is clear — no pending approvals.
+      </div>
+    );
+  }
+  const STAGE_COLORS = {
+    pending_finance_hod:        "var(--info)",
+    pending_cfo:                "var(--warning)",
+    pending_ceo:                "var(--danger)",
+    pending_vendor_replacement: "var(--warning)",
+    cleared_to_pay:             "var(--success)",
+  };
   return (
-    <div className="max-w-[1400px] mx-auto pb-20 sm:pb-0">
-      {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-3 mb-5 sm:mb-6">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-text tracking-tight flex items-center gap-2">
-            <Banknote className="h-7 w-7 text-primary" /> Payments
-          </h1>
-          <p className="text-text-muted text-sm mt-1 hidden sm:block">
-            Vendor payments — issued by Finance against accepted POs.
-          </p>
-        </div>
-        {showCreate && (
-          <Link
-            to="/app/payments/new"
-            className="hidden sm:inline-flex bg-primary hover:brightness-110 text-primary-foreground px-4 py-2 rounded-md font-bold text-sm items-center gap-2 transition-colors shadow-sm whitespace-nowrap"
-          >
-            <Plus className="h-4 w-4" /> New Payment
-          </Link>
-        )}
-      </div>
-
-      {/* Money-focused KPI strip — horizontal scroll on mobile */}
-      <div className="-mx-4 sm:mx-0 mb-5">
-        <div className="flex sm:grid sm:grid-cols-4 gap-2 sm:gap-3 px-4 sm:px-0 overflow-x-auto sm:overflow-visible snap-x snap-mandatory pb-1 sm:pb-0 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-          {initialLoading ? (
-            Array.from({ length: 4 }).map((_, i) => <SkKpiCard key={i} />)
-          ) : (
-            <>
-              <KpiCard
-                label="Outstanding"
-                value={fmtCompactINR(stats.outstanding)}
-                sub={`${rows.filter((r) => r.status === "pending").length} pending`}
-                icon={Wallet}
-                tone="warning"
-              />
-              <KpiCard
-                label="Paid this month"
-                value={fmtCompactINR(stats.paidThisMonth)}
-                sub="Funds released"
-                icon={CalendarCheck}
-                tone="success"
-              />
-              <KpiCard
-                label="Awaiting approval"
-                value={stats.awaitingApproval}
-                sub="CFO / CEO sign-off"
-                icon={Hourglass}
-                tone="info"
-                onClick={() => setStatus("awaiting")}
-                active={status === "awaiting"}
-              />
-              <KpiCard
-                label="Cleared to pay"
-                value={stats.clearedReady}
-                sub="Finance HOD action"
-                icon={ShieldCheck}
-                tone="success"
-                onClick={() => setStatus("cleared")}
-                active={status === "cleared"}
-              />
-            </>
-          )}
-        </div>
-      </div>
-
-      {/* Filter chips + search */}
-      <div className="glass-card rounded-2xl p-3 mb-4 flex flex-col gap-3">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-text-muted" />
-          <input
-            type="text"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search by PAY number, PO, or vendor…"
-            className="w-full bg-transparent border border-border rounded-md focus:border-primary focus:ring-0 pl-10 pr-3 py-2 text-sm text-text outline-none"
+    <div className="space-y-2">
+      {data.map((stage) => {
+        const widthPct = (stage.count / max) * 100;
+        const color = STAGE_COLORS[stage.key] ?? "var(--text-muted)";
+        const payments = stage.count - stage.grns;
+        return (
+          <div key={stage.key} className="space-y-1">
+            <div className="flex items-baseline justify-between text-xs">
+              <span className="font-semibold text-text">{stage.label}</span>
+              <span className="text-text-muted inline-flex items-center gap-1.5">
+                <span className="font-bold text-text tabular-nums">{stage.count}</span>
+                {stage.grns > 0 && (
+                  <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-info-soft text-info text-[9px] font-bold uppercase tracking-wider">
+                    <Truck className="h-2.5 w-2.5" strokeWidth={2.5} /> {stage.grns}
+                  </span>
+                )}
+                {stage.amount > 0 && (
+                  <>
+                    <span className="text-text-subtle">·</span>
+                    <span className="text-text-subtle">{fmtCompactINR(stage.amount)}</span>
+                  </>
+                )}
+              </span>
+            </div>
+            <div className="h-3 bg-surface-container rounded-sm overflow-hidden flex">
+              {payments > 0 && (
+                <div
+                  className="h-full transition-all duration-300"
+                  style={{
+                    width: `${(payments / max) * 100}%`,
+                    background: color,
+                  }}
+                  title={`${payments} payment${payments === 1 ? "" : "s"}`}
+                />
+              )}
+              {stage.grns > 0 && (
+                <div
+                  className="h-full transition-all duration-300"
+                  style={{
+                    width: `${(stage.grns / max) * 100}%`,
+                    background: color,
+                    opacity: 0.45,
+                    backgroundImage:
+                      "repeating-linear-gradient(45deg, transparent, transparent 4px, rgba(255,255,255,0.18) 4px, rgba(255,255,255,0.18) 8px)",
+                  }}
+                  title={`${stage.grns} GRN${stage.grns === 1 ? "" : "s"} (no payment drafted yet)`}
+                />
+              )}
+              {stage.count === 0 && (
+                <div
+                  className="h-full"
+                  style={{ width: `${widthPct}%`, background: color, opacity: 0.15 }}
+                />
+              )}
+            </div>
+          </div>
+        );
+      })}
+      <div className="flex items-center gap-3 pt-1 text-[10px] text-text-subtle">
+        <span className="inline-flex items-center gap-1">
+          <span className="w-3 h-2 rounded-sm bg-info" /> Payments
+        </span>
+        <span className="inline-flex items-center gap-1">
+          <span
+            className="w-3 h-2 rounded-sm bg-info/45"
+            style={{
+              backgroundImage:
+                "repeating-linear-gradient(45deg, transparent, transparent 3px, rgba(255,255,255,0.18) 3px, rgba(255,255,255,0.18) 6px)",
+            }}
           />
-        </div>
-        <div className="flex gap-1.5 sm:gap-2 overflow-x-auto -mx-1 px-1 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-          {filterChips.map((f) => {
-            const active = status === f.key;
-            return (
-              <button
-                key={f.key}
-                type="button"
-                onClick={() => setStatus(f.key)}
-                className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors flex items-center gap-1.5 ${
-                  active
-                    ? "bg-primary text-primary-foreground border-primary"
-                    : "bg-surface-container-low text-text-muted border-border hover:bg-surface-container-high"
-                }`}
-              >
-                {f.label}
-                <span
-                  className={`text-[10px] font-bold rounded px-1 ${
-                    active
-                      ? "bg-primary-foreground/20 text-primary-foreground"
-                      : "text-text-subtle"
-                  }`}
-                >
-                  {f.count}
-                </span>
-              </button>
-            );
-          })}
-        </div>
+          GRNs in flight
+        </span>
       </div>
+    </div>
+  );
+}
 
-      {initialLoading ? (
-        <div className="bg-surface-container-lowest rounded-lg overflow-hidden border border-border shadow-sm">
-          {/* Desktop header — kept so column widths read true */}
-          <div className="hidden md:flex items-center bg-surface-container-low border-b border-border px-4 py-3 text-[10px] font-bold text-text-muted uppercase tracking-widest">
-            <div className="w-32">Number</div>
-            <div className="w-32">PO</div>
-            <div className="flex-1 min-w-[140px]">Vendor</div>
-            <div className="w-32 text-right">Amount</div>
-            <div className="w-16 text-center">Tier</div>
-            <div className="w-40">Stage</div>
-            <div className="w-28">Status</div>
-          </div>
-          {Array.from({ length: 6 }).map((_, i) => (
-            <SkRow key={i} />
-          ))}
-        </div>
-      ) : filtered.length === 0 ? (
-        <div className="bg-surface-container-low rounded-2xl p-12 sm:p-16 flex flex-col items-center text-center border border-dashed border-border">
-          <Banknote className="h-9 w-9 text-text-subtle mb-4" strokeWidth={1.5} />
-          <h2 className="text-xl font-bold text-text mb-1 tracking-tight">
-            {rows.length === 0 ? "No payments yet" : "No matching payments"}
-          </h2>
-          <p className="text-text-muted text-sm max-w-md">
-            {rows.length === 0 && showCreate
-              ? "Once a PO is accepted by the vendor, you can issue a payment from here."
-              : rows.length === 0
-                ? "Vendor payments will appear here once Finance creates them."
-                : "Try a different filter or search term."}
-          </p>
-        </div>
-      ) : (
-        <div className="bg-surface-container-lowest rounded-lg overflow-hidden border border-border shadow-sm">
-          {/* Desktop header */}
-          <div className="hidden md:flex items-center bg-surface-container-low border-b border-border px-4 py-3 text-[10px] font-bold text-text-muted uppercase tracking-widest">
-            <div className="w-32">Number</div>
-            <div className="w-32">PO</div>
-            <div className="flex-1 min-w-[140px]">Vendor</div>
-            <div className="w-32 text-right">Amount</div>
-            <div className="w-16 text-center">Tier</div>
-            <div className="w-40">Stage</div>
-            <div className="w-28">Status</div>
-          </div>
-          <div className="divide-y divide-border">
-            {filtered.map((row) => {
-              const tier = tierFor(row.amount);
-              const isPending = row.status === "pending";
-              const stageLabel =
-                isPending && STAGE_SHORT_LABEL[row.chain_stage]
-                  ? STAGE_SHORT_LABEL[row.chain_stage]
-                  : null;
-              return (
-                <Link
-                  key={row.id ?? row.number}
-                  to={`/app/payments/${row.number}`}
-                  className="block hover:bg-surface-container-low transition-colors active:bg-surface-container"
-                >
-                  {/* Mobile card */}
-                  <div className="md:hidden flex items-center gap-3 px-4 py-3.5">
-                    <div className="min-w-0 flex-1 space-y-1.5">
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="font-bold text-primary font-mono text-[13px]">
-                          {row.number}
-                        </span>
-                        <StatusPill status={row.status} />
-                      </div>
-                      <div className="text-xs text-text-muted truncate">
-                        <span className="font-medium text-text">{row.vendor}</span>
-                        {" · "}
-                        <span className="font-mono">{row.po_number}</span>
-                      </div>
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="text-sm font-bold text-text font-mono">
-                          {fmtINR(row.amount)}
-                        </span>
-                        <span
-                          className={`text-[10px] uppercase tracking-wider font-bold px-1.5 py-0.5 rounded border ${tier.cls}`}
-                        >
-                          {tier.short}
-                        </span>
-                        {stageLabel && (
-                          <span className="text-[10px] uppercase tracking-wider font-semibold text-text-muted">
-                            · {stageLabel}
-                          </span>
-                        )}
-                        {row.paid_at && (
-                          <span className="text-[10px] text-text-subtle">
-                            · paid {formatDate(row.paid_at)}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                    <ChevronRight className="h-4 w-4 text-text-subtle shrink-0" />
-                  </div>
-                  {/* Desktop row */}
-                  <div className="hidden md:flex items-center px-4 py-3 text-sm">
-                    <div className="w-32 font-bold text-primary font-mono text-[13px]">
-                      {row.number}
-                    </div>
-                    <div className="w-32 font-mono text-xs text-text-muted">
-                      {row.po_number}
-                    </div>
-                    <div className="flex-1 min-w-[140px] font-semibold text-text truncate pr-2">
-                      {row.vendor}
-                    </div>
-                    <div className="w-32 text-right font-mono font-semibold tabular-nums">
-                      {fmtINR(row.amount)}
-                    </div>
-                    <div className="w-16 text-center">
-                      <span
-                        className={`text-[10px] uppercase tracking-wider font-bold px-1.5 py-0.5 rounded border ${tier.cls}`}
-                      >
-                        {tier.short}
-                      </span>
-                    </div>
-                    <div className="w-40 text-xs text-text-muted">
-                      {row.status === "paid" && row.paid_at
-                        ? `Paid ${formatDate(row.paid_at)}`
-                        : stageLabel ?? "—"}
-                    </div>
-                    <div className="w-28">
-                      <StatusPill status={row.status} />
-                    </div>
-                  </div>
-                </Link>
-              );
-            })}
-          </div>
-        </div>
-      )}
+/**
+ * Top vendors owed — horizontal bars, label inside or beside the bar.
+ * Distinct from the donut shape used elsewhere in the app.
+ */
+function TopVendorsChart({ data }) {
+  if (data.length === 0) {
+    return (
+      <div className="h-44 flex flex-col items-center justify-center text-text-subtle text-sm">
+        <Building2 className="h-8 w-8 mb-2" />
+        No outstanding vendor balances.
+      </div>
+    );
+  }
+  const max = Math.max(1, ...data.map((d) => d.amount));
+  return (
+    <ul className="space-y-2.5">
+      {data.map((v) => {
+        const widthPct = (v.amount / max) * 100;
+        return (
+          <li key={v.vendor} className="space-y-1">
+            <div className="flex items-baseline justify-between gap-2 text-xs">
+              <span className="font-semibold text-text truncate" title={v.vendor}>{v.vendor}</span>
+              <span className="font-bold text-warning tabular-nums shrink-0">{fmtCompactINR(v.amount)}</span>
+            </div>
+            <div className="h-2.5 bg-surface-container rounded-sm overflow-hidden">
+              <div
+                className="h-full bg-warning rounded-sm transition-all duration-300"
+                style={{ width: `${widthPct}%`, opacity: 0.85 }}
+              />
+            </div>
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
 
-      {filtered.length > 0 && (
-        <div className="flex items-center justify-between mt-4 text-xs text-text-muted">
-          <span>
-            Showing <strong className="text-text">{filtered.length}</strong>
-            {filtered.length !== rows.length && (
-              <> of <strong className="text-text">{rows.length}</strong></>
-            )}{" "}
-            payment{filtered.length === 1 ? "" : "s"}
-          </span>
-        </div>
-      )}
-
-      {/* Mobile FAB */}
-      {showCreate && (
-        <Link
-          to="/app/payments/new"
-          className="sm:hidden fixed bottom-5 right-4 z-30 bg-primary hover:brightness-110 text-primary-foreground rounded-full shadow-lg w-14 h-14 flex items-center justify-center active:scale-95 transition-transform"
-          aria-label="New Payment"
-        >
-          <Plus className="h-6 w-6" strokeWidth={2.5} />
-        </Link>
-      )}
+/**
+ * Monthly trend — line chart with markers + area fill underneath. Distinct
+ * style from the vertical bars used in PipelineChart so the two charts
+ * don't visually compete.
+ */
+function TrendLine({ data }) {
+  const max = Math.max(1, ...data.map((d) => d.total));
+  const W = 1000, H = 180, padL = 40, padB = 28, padT = 12;
+  const innerW = W - padL - 20;
+  const innerH = H - padT - padB;
+  const stepX = data.length > 1 ? innerW / (data.length - 1) : 0;
+  const xy = (d, i) => ({
+    x: padL + i * stepX,
+    y: padT + innerH - (d.total / max) * innerH,
+  });
+  const path = data.map((d, i) => {
+    const { x, y } = xy(d, i);
+    return `${i === 0 ? "M" : "L"} ${x} ${y}`;
+  }).join(" ");
+  const area = data.length > 0
+    ? `${path} L ${padL + (data.length - 1) * stepX} ${padT + innerH} L ${padL} ${padT + innerH} Z`
+    : "";
+  // Three y-axis tick lines: 0, max/2, max
+  const ticks = [0, 0.5, 1].map((f) => ({
+    value: max * f,
+    y: padT + innerH - f * innerH,
+  }));
+  const totalPaid = data.reduce((s, d) => s + d.total, 0);
+  if (totalPaid === 0) {
+    return (
+      <div className="h-44 flex flex-col items-center justify-center text-text-subtle text-sm">
+        <TrendingUp className="h-8 w-8 mb-2" />
+        No payments released in the last 12 months yet.
+      </div>
+    );
+  }
+  return (
+    <div className="overflow-x-auto">
+      <svg viewBox={`0 0 ${W} ${H}`} width="100%" height={H} preserveAspectRatio="xMidYMid meet">
+        {/* y-axis gridlines + labels */}
+        {ticks.map((t) => (
+          <g key={t.y}>
+            <line x1={padL} y1={t.y} x2={W - 20} y2={t.y} stroke="var(--border)" strokeWidth="0.5" />
+            <text x={padL - 6} y={t.y + 3} textAnchor="end" className="fill-text-subtle" fontSize="9">
+              {fmtCompactINR(t.value)}
+            </text>
+          </g>
+        ))}
+        {/* Area fill under line */}
+        {area && <path d={area} fill="var(--success)" opacity="0.12" />}
+        {/* Trend line */}
+        <path d={path} fill="none" stroke="var(--success)" strokeWidth="2" strokeLinejoin="round" />
+        {/* Markers + month labels */}
+        {data.map((d, i) => {
+          const { x, y } = xy(d, i);
+          return (
+            <g key={d.key}>
+              {d.total > 0 && (
+                <circle cx={x} cy={y} r="3" fill="var(--success)" stroke="var(--bg)" strokeWidth="1.5" />
+              )}
+              <text x={x} y={H - 10} textAnchor="middle" className="fill-text-subtle" fontSize="9">
+                {d.label}
+              </text>
+            </g>
+          );
+        })}
+      </svg>
     </div>
   );
 }

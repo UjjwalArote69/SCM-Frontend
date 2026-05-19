@@ -1,20 +1,19 @@
 import { create } from "zustand";
 import usersApi from "./api.js";
+import { makeListFetcher } from "../../../utils/storeCache.js";
 
 export const useUsersStore = create((set, get) => ({
   items: [],
   loading: false,
   error: null,
+  lastFetchedAt: null,
+  _inflight: null,
 
-  fetchAll: async (params) => {
-    set({ loading: true, error: null });
-    try {
-      const data = await usersApi.list(params);
-      set({ items: data, loading: false });
-    } catch (err) {
-      set({ loading: false, error: err?.message ?? "Failed to load users" });
-    }
-  },
+  fetchAll: makeListFetcher({
+    get, set,
+    fetcher: () => usersApi.list(),
+    errorLabel: "Failed to load users",
+  }),
 
   byId: (id) => get().items.find((u) => u.id === id),
 

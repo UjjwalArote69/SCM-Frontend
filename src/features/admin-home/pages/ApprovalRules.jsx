@@ -1,16 +1,48 @@
 import { useEffect, useMemo, useState } from "react";
 import {
-  Plus, ArrowRight, Loader2, ShieldCheck, FileText, ShoppingCart, Wallet,
+  Plus, ArrowRight, ShieldCheck, FileText, ShoppingCart, Wallet,
   ChevronUp, ChevronDown, Power, Settings, Info, Trash2,
 } from "lucide-react";
 import PageHeader from "../../../components/data/PageHeader.jsx";
 import EmptyState from "../../../components/ui/EmptyState.jsx";
+import Skeleton from "../../../components/feedback/Skeleton.jsx";
 import RuleDrawer from "../../approval-rules/components/RuleDrawer.jsx";
 import useApprovalRulesStore from "../../approval-rules/store.js";
 import useDepartmentsStore from "../../masters/departments/store.js";
 import { useAuthStore } from "../../auth/store.js";
 import approvalRulesApi from "../../approval-rules/api.js";
 import { useToast } from "../../../hooks/useToast.jsx";
+
+function SkRuleCard() {
+  return (
+    <div className="bg-surface-container-lowest border border-border rounded-lg p-4 flex items-start gap-4">
+      <div className="flex flex-col items-center gap-2 pt-1">
+        <Skeleton className="h-7 w-7 rounded-md" />
+        <Skeleton className="h-4 w-4 rounded" />
+        <Skeleton className="h-4 w-4 rounded" />
+      </div>
+      <div className="flex-1 min-w-0 space-y-3">
+        <div className="flex items-center gap-3">
+          <Skeleton className="h-5 w-48" />
+          <Skeleton className="h-5 w-16 rounded-full" />
+        </div>
+        <Skeleton className="h-3 w-72" />
+        <div className="flex items-center gap-2">
+          <Skeleton className="h-7 w-24 rounded-full" />
+          <Skeleton className="h-3 w-3" />
+          <Skeleton className="h-7 w-24 rounded-full" />
+          <Skeleton className="h-3 w-3" />
+          <Skeleton className="h-7 w-24 rounded-full" />
+        </div>
+      </div>
+      <div className="flex flex-col items-end gap-2 pt-1">
+        <Skeleton className="h-7 w-7 rounded" />
+        <Skeleton className="h-7 w-7 rounded" />
+        <Skeleton className="h-7 w-7 rounded" />
+      </div>
+    </div>
+  );
+}
 
 const ENTITY_META = {
   pr: {
@@ -144,8 +176,8 @@ export default function ApprovalRulesPage() {
         </div>
 
         {loading && tabRules.length === 0 ? (
-          <div className="text-center py-12 text-text-muted">
-            <Loader2 className="h-5 w-5 animate-spin inline mr-2" /> Loading…
+          <div className="space-y-2">
+            {Array.from({ length: 3 }).map((_, i) => <SkRuleCard key={i} />)}
           </div>
         ) : tabRules.length === 0 ? (
           <EmptyState

@@ -10,6 +10,7 @@ import {
   Link2,
   AlertCircle,
   Loader2,
+  Truck,
 } from "lucide-react";
 import PageHeader from "../../../components/data/PageHeader.jsx";
 import { usePOStore } from "../store.js";
@@ -82,6 +83,8 @@ export default function PurchaseOrderCreatePage() {
   const [expected, setExpected] = useState("");
   const [notes, setNotes] = useState("");
   const [items, setItems] = useState([emptyItem()]);
+  const [transportArrangedBy, setTransportArrangedBy] = useState("vendor");
+  const [transportVendorId, setTransportVendorId] = useState("");
   const [errors, setErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
   const [lockedByRfq, setLockedByRfq] = useState(false);
@@ -93,6 +96,9 @@ export default function PurchaseOrderCreatePage() {
   }, [fetchVendors, fetchPRs, fetchRFQs]);
 
   const approvedVendors = vendors.filter((v) => v.approval_status === "approved");
+  const transportVendors = approvedVendors.filter(
+    (v) => v.vendor_type === "transport" || v.vendor_type === "both",
+  );
   const approvedPRs = prs.filter((p) => p.status === "approved");
   const awardedRFQs = rfqs.filter((r) => r.status === "awarded" && r.awarded_vendor);
 
@@ -230,7 +236,9 @@ export default function PurchaseOrderCreatePage() {
     const next = {};
     if (!vendor.trim()) next.vendor = "Vendor is required.";
     if (!poDate) next.po_date = "PO date is required.";
-    if (expected) {
+    if (!expected) {
+      next.expected_delivery = "Expected delivery date is required.";
+    } else {
       const picked = new Date(expected);
       const today = new Date();
       today.setHours(0, 0, 0, 0);
@@ -248,6 +256,9 @@ export default function PurchaseOrderCreatePage() {
       );
     });
     if (bad) next.items = "Every item needs a name, qty > 0, and a valid rate.";
+    if (transportArrangedBy === "buyer" && !transportVendorId) {
+      next.transport_vendor_id = "Pick a transport vendor when buyer arranges transport.";
+    }
     return next;
   };
 
@@ -267,6 +278,10 @@ export default function PurchaseOrderCreatePage() {
         business_unit: bu || null,
         po_date: poDate,
         expected_delivery: expected || null,
+        transport_arranged_by: transportArrangedBy,
+        transport_vendor_id: transportArrangedBy === "buyer" && transportVendorId
+          ? Number(transportVendorId)
+          : null,
         notes: notes.trim() || null,
         items: items.map((it) => ({
           name: it.name.trim(),
@@ -421,10 +436,11 @@ export default function PurchaseOrderCreatePage() {
               </div>
               <div>
                 <label className="block text-xs font-semibold text-text-muted mb-1 uppercase">
-                  PO Date *
+                  PO Date <span className="text-danger">*</span>
                 </label>
                 <input
                   type="date"
+                  required
                   className={inputCls(errors.po_date)}
                   value={poDate}
                   onChange={(e) => {
@@ -436,10 +452,11 @@ export default function PurchaseOrderCreatePage() {
               </div>
               <div>
                 <label className="block text-xs font-semibold text-text-muted mb-1 uppercase">
-                  Expected Delivery
+                  Expected Delivery <span className="text-danger">*</span>
                 </label>
                 <input
                   type="date"
+                  required
                   className={inputCls(errors.expected_delivery)}
                   value={expected}
                   onChange={(e) => {
@@ -474,6 +491,69 @@ export default function PurchaseOrderCreatePage() {
                 />
               </div>
             </div>
+          </section>
+
+          {/* Transport accountability (FLOW item 27) */}
+          <section className="bg-surface-container-lowest rounded-lg p-6 relative border border-border">
+            <div className="absolute left-0 top-0 bottom-0 w-1 bg-info rounded-l-lg" />
+            <h2 className="text-lg font-bold text-text mb-2 border-b border-border pb-3 flex items-center gap-2">
+              <Truck className="h-5 w-5 text-info" /> Transport
+            </h2>
+            <p className="text-xs text-text-muted mb-4">
+              Whoever arranges transport is accountable for damage in transit.
+            </p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
+              {[
+                { v: "vendor", label: "Vendor arranges (FOR / Free on Delivery)", hint: "Supplier vendor is accountable for damage in transit." },
+                { v: "buyer",  label: "We arrange (via transport vendor)",        hint: "Transport vendor is accountable for damage in transit." },
+              ].map((opt) => (
+                <button
+                  key={opt.v}
+                  type="button"
+                  onClick={() => {
+                    setTransportArrangedBy(opt.v);
+                    if (opt.v !== "buyer") {
+                      setTransportVendorId("");
+                      clearError("transport_vendor_id");
+                    }
+                  }}
+                  className={`text-left p-3 rounded-md border-2 transition-colors ${
+                    transportArrangedBy === opt.v
+                      ? "border-primary bg-primary-soft/40"
+                      : "border-border hover:border-primary/50 bg-surface-container-low"
+                  }`}
+                >
+                  <div className="text-sm font-bold text-text">{opt.label}</div>
+                  <div className="text-xs text-text-muted mt-0.5">{opt.hint}</div>
+                </button>
+              ))}
+            </div>
+            {transportArrangedBy === "buyer" && (
+              <div>
+                <label className="block text-xs font-semibold text-text-muted mb-1 uppercase">
+                  Transport Vendor *
+                </label>
+                <select
+                  className={inputCls(errors.transport_vendor_id)}
+                  value={transportVendorId}
+                  onChange={(e) => {
+                    setTransportVendorId(e.target.value);
+                    clearError("transport_vendor_id");
+                  }}
+                >
+                  <option value="">Select transport vendor…</option>
+                  {transportVendors.map((v) => (
+                    <option key={v.id} value={v.id}>{v.vendor_name}</option>
+                  ))}
+                </select>
+                {transportVendors.length === 0 && (
+                  <p className="text-xs text-warning mt-1">
+                    No transport-typed vendors in master. Add one via Admin → Vendors (set type to "transport" or "both").
+                  </p>
+                )}
+                <FieldError message={errors.transport_vendor_id} />
+              </div>
+            )}
           </section>
 
           {/* Items — one card per line, responsive grid (no horizontal scroll) */}

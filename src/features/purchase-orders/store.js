@@ -1,20 +1,19 @@
 import { create } from "zustand";
 import poApi from "./api.js";
+import { makeListFetcher } from "../../utils/storeCache.js";
 
 export const usePOStore = create((set, get) => ({
   items: [],
   loading: false,
   error: null,
+  lastFetchedAt: null,
+  _inflight: null,
 
-  fetchAll: async () => {
-    set({ loading: true, error: null });
-    try {
-      const data = await poApi.list();
-      set({ items: data, loading: false });
-    } catch (err) {
-      set({ loading: false, error: err?.message ?? "Failed to load POs" });
-    }
-  },
+  fetchAll: makeListFetcher({
+    get, set,
+    fetcher: () => poApi.list(),
+    errorLabel: "Failed to load POs",
+  }),
 
   byNumber: (number) => get().items.find((p) => p.number === number),
 
@@ -24,14 +23,20 @@ export const usePOStore = create((set, get) => ({
     return record;
   },
 
-  accept: async (number) => {
-    const updated = await poApi.accept(number);
+  accept: async (number, payload = {}) => {
+    const updated = await poApi.accept(number, payload);
     set((s) => ({ items: s.items.map((p) => (p.number === number ? updated : p)) }));
     return updated;
   },
 
-  reject: async (number) => {
-    const updated = await poApi.reject(number);
+  reject: async (number, payload = {}) => {
+    const updated = await poApi.reject(number, payload);
+    set((s) => ({ items: s.items.map((p) => (p.number === number ? updated : p)) }));
+    return updated;
+  },
+
+  vendorNote: async (number, payload) => {
+    const updated = await poApi.vendorNote(number, payload);
     set((s) => ({ items: s.items.map((p) => (p.number === number ? updated : p)) }));
     return updated;
   },

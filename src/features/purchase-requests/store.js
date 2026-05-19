@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import prApi from "./api.js";
+import { makeListFetcher } from "../../utils/storeCache.js";
 
 // Normalize server chain_stage into the {hod,cfo,ceo} shape the list UI renders
 export function chainFromStage(stage, status) {
@@ -19,16 +20,14 @@ export const usePRStore = create((set, get) => ({
   items: [],
   loading: false,
   error: null,
+  lastFetchedAt: null,
+  _inflight: null,
 
-  fetchAll: async () => {
-    set({ loading: true, error: null });
-    try {
-      const data = await prApi.list();
-      set({ items: data, loading: false });
-    } catch (err) {
-      set({ loading: false, error: err?.message ?? "Failed to load PRs" });
-    }
-  },
+  fetchAll: makeListFetcher({
+    get, set,
+    fetcher: () => prApi.list(),
+    errorLabel: "Failed to load PRs",
+  }),
 
   byNumber: (number) => get().items.find((p) => p.number === number),
 

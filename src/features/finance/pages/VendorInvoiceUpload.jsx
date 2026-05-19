@@ -110,6 +110,14 @@ export default function VendorInvoiceUploadPage() {
   const submit = async (e) => {
     e.preventDefault();
     if (!po) return;
+    if (!invoiceDate) {
+      toast.error("Invoice date is required");
+      return;
+    }
+    if (!dueDate) {
+      toast.error("Due date is required");
+      return;
+    }
     if (!total || Number(total) <= 0) {
       toast.error("Total must be greater than 0");
       return;
@@ -289,10 +297,11 @@ export default function VendorInvoiceUploadPage() {
                 </div>
                 <div>
                   <label className="block text-[10px] font-bold uppercase tracking-widest text-text-muted mb-1.5">
-                    Invoice Date
+                    Invoice Date <span className="text-danger">*</span>
                   </label>
                   <input
                     type="date"
+                    required
                     value={invoiceDate}
                     onChange={(e) => setInvoiceDate(e.target.value)}
                     className="w-full rounded-lg px-3 py-2 text-sm bg-surface-container-lowest border border-border text-text focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none"
@@ -300,10 +309,11 @@ export default function VendorInvoiceUploadPage() {
                 </div>
                 <div>
                   <label className="block text-[10px] font-bold uppercase tracking-widest text-text-muted mb-1.5">
-                    Due Date
+                    Due Date <span className="text-danger">*</span>
                   </label>
                   <input
                     type="date"
+                    required
                     value={dueDate}
                     onChange={(e) => setDueDate(e.target.value)}
                     className="w-full rounded-lg px-3 py-2 text-sm bg-surface-container-lowest border border-border text-text focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none"

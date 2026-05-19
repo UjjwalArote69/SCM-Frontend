@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import {
   ChevronRight,
@@ -23,6 +23,7 @@ import { useAuthStore } from "../../auth/store.js";
 import EmptyState from "../../../components/ui/EmptyState.jsx";
 import AwardFlowPanel from "../components/AwardFlowPanel.jsx";
 import AssignAuthorModal from "../../../components/feedback/AssignAuthorModal.jsx";
+import ReopenRejectedButton from "../../../components/admin/ReopenRejectedButton.jsx";
 import PrintLetterhead from "../../../components/print/PrintLetterhead.jsx";
 import PrintFooter from "../../../components/print/PrintFooter.jsx";
 import PrintActions from "../../../components/print/PrintActions.jsx";
@@ -69,11 +70,36 @@ function VendorCard({
   onAward,
   canFireAward,
   isAgreedVendor,
+  hasAgreedVendor,
+  hasAnyVotes,
+  isVoted,
   isTerminal,
   acting,
   totalFor,
   lineTotalsFor,
 }) {
+  // Two-click "armed → confirm" pattern for the Award button. The award
+  // makes the RFQ terminal so a mis-tap is expensive — first click arms,
+  // second click within 5 s fires. Auto-disarms after the timeout.
+  const [armed, setArmed] = useState(false);
+  const armTimerRef = useRef(null);
+  useEffect(() => {
+    if (!armed) return;
+    armTimerRef.current = setTimeout(() => setArmed(false), 5000);
+    return () => {
+      if (armTimerRef.current) clearTimeout(armTimerRef.current);
+    };
+  }, [armed]);
+  const handleAwardClick = () => {
+    if (armed) {
+      if (armTimerRef.current) clearTimeout(armTimerRef.current);
+      setArmed(false);
+      onAward(resp.vendor);
+    } else {
+      setArmed(true);
+    }
+  };
+
   const total = totalFor(resp);
   const lineRows = lineTotalsFor(resp);
   const subtotal = lineRows.reduce((s, l) => s + l.taxable, 0);
@@ -168,6 +194,30 @@ function VendorCard({
           </div>
         )}
 
+        {/* Vendor voice note — captured at quote submission. Plays inline
+            so the buyer can verify intent or hear context that didn't make
+            it into the transcript. */}
+        {resp.voice_note && (
+          <div className="mt-2 px-3 py-2 bg-info-soft/40 border border-info/20 rounded flex items-center gap-2.5">
+            <span className="w-7 h-7 rounded-full bg-info text-white flex items-center justify-center shrink-0">
+              <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.25}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z M19 10v2a7 7 0 0 1-14 0v-2 M12 19v4 M8 23h8" />
+              </svg>
+            </span>
+            <div className="flex-1 min-w-0">
+              <div className="text-[10px] font-bold uppercase tracking-widest text-info">
+                Voice note from vendor
+              </div>
+              <audio
+                src={resp.voice_note}
+                controls
+                className="w-full mt-1 h-8"
+                preload="metadata"
+              />
+            </div>
+          </div>
+        )}
+
         <div className="flex items-center justify-between gap-3 mt-4">
           <button
             type="button"
@@ -186,15 +236,63 @@ function VendorCard({
             </span>
           ) : isTerminal ? (
             <span className="text-text-subtle text-xs">—</span>
-          ) : canFireAward && isAgreedVendor ? (
-            <button
-              type="button"
-              onClick={() => onAward(resp.vendor)}
-              disabled={acting}
-              className="px-4 py-2 text-[12px] font-bold text-primary-foreground bg-primary hover:brightness-110 rounded-full transition-all shadow-sm disabled:opacity-60 flex items-center gap-1.5"
-            >
-              <Award className="h-3.5 w-3.5" /> Award to {resp.vendor.split(" ")[0]}
-            </button>
+          ) : canFireAward &&
+            (isAgreedVendor ||
+              (!hasAgreedVendor && hasAnyVotes && isVoted) ||
+              (!hasAgreedVendor && !hasAnyVotes)) ? (
+            // Three render paths for the Award button:
+            //   1. Full consensus: only the agreed-vendor card gets it.
+            //   2. Partial consensus (admin override after some HODs voted):
+            //      only vendors with at least one HOD vote get it. Acme with
+            //      zero votes wouldn't show the button even if both vendors
+            //      submitted quotes.
+            //   3. Zero votes (admin pushed chain through with no voting at
+            //      all): every responding vendor gets it so Purchase HOD can
+            //      pick freely.
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={handleAwardClick}
+                disabled={acting}
+                aria-pressed={armed}
+                className={`px-4 py-2 text-[12px] font-bold rounded-full transition-all shadow-sm disabled:opacity-60 flex items-center gap-1.5 ${
+                  armed
+                    ? "text-white bg-warning hover:brightness-110 ring-2 ring-warning/30 animate-pulse"
+                    : "text-primary-foreground bg-primary hover:brightness-110"
+                }`}
+                title={
+                  armed
+                    ? "Click again to confirm — auto-cancels in 5 s"
+                    : isAgreedVendor
+                      ? "Fire award to the consensus-agreed vendor"
+                      : isVoted
+                        ? "HOD(s) voted for this vendor — award them"
+                        : "No consensus vendor — pick this vendor as the winner"
+                }
+              >
+                {armed ? (
+                  <>
+                    <AlertTriangle className="h-3.5 w-3.5" />
+                    Confirm award to {resp.vendor.split(" ")[0]}?
+                  </>
+                ) : (
+                  <>
+                    <Award className="h-3.5 w-3.5" /> Award to {resp.vendor.split(" ")[0]}
+                  </>
+                )}
+              </button>
+              {armed && (
+                <button
+                  type="button"
+                  onClick={() => setArmed(false)}
+                  disabled={acting}
+                  className="px-2 py-1 text-[11px] font-medium text-text-muted hover:text-text underline-offset-2 hover:underline"
+                  title="Cancel"
+                >
+                  Cancel
+                </button>
+              )}
+            </div>
           ) : isAgreedVendor ? (
             <span className="text-[11px] text-text-muted italic">
               Awaiting Purchase HOD
@@ -205,8 +303,8 @@ function VendorCard({
 
       {/* Expanded breakdown */}
       {isExpanded && (
-        <div className="border-t border-border bg-surface-container-low/50">
-          <table className="w-full text-xs">
+        <div className="border-t border-border bg-surface-container-low/50 overflow-x-auto">
+          <table className="w-full text-xs min-w-[520px]">
             <thead>
               <tr className="text-[10px] font-bold text-text-muted uppercase tracking-widest border-b border-border">
                 <th className="px-5 py-2 text-left">Item</th>
@@ -304,7 +402,9 @@ function ComparisonView({
   doAward,
   canFireAward,
   agreedVendor,
+  votedVendors,
 }) {
+  const user = useAuthStore((s) => s.user);
   const totalsByVendor = useMemo(() => {
     const map = new Map();
     for (const r of responses) map.set(r.vendor, totalFor(r));
@@ -406,6 +506,25 @@ function ComparisonView({
         </span>
       </div>
 
+      {/* Award-without-consensus hint — only when the chain reached `done`
+          via admin override (no agreed_vendor on record) and the current
+          user is the one who fires awards. */}
+      {canFireAward && !agreedVendor && !isTerminal && (
+        <div className="mb-3 px-3 py-2 rounded-lg bg-warning-soft/60 border border-warning/30 flex items-start gap-2">
+          <Award className="h-4 w-4 text-warning shrink-0 mt-0.5" strokeWidth={2.25} />
+          <div className="text-xs text-text leading-snug">
+            <span className="font-bold text-warning">
+              No consensus vendor — pick a winner
+            </span>
+            <span className="block text-text-muted mt-0.5">
+              The chain reached approval without HOD consensus (likely an
+              admin override). Click "Award to …" on any vendor below to
+              finalize the RFQ.
+            </span>
+          </div>
+        </div>
+      )}
+
       {/* Vendor cards */}
       {filtered.length === 0 ? (
         <EmptyState
@@ -433,6 +552,9 @@ function ComparisonView({
                 onAward={doAward}
                 canFireAward={canFireAward}
                 isAgreedVendor={agreedVendor === resp.vendor}
+                hasAgreedVendor={!!agreedVendor}
+                hasAnyVotes={votedVendors.size > 0}
+                isVoted={votedVendors.has(resp.vendor)}
                 isTerminal={isTerminal}
                 acting={acting}
                 totalFor={totalFor}
@@ -443,28 +565,67 @@ function ComparisonView({
         </div>
       )}
 
-      {/* Invited but not yet quoted */}
-      {notYetQuoted.length > 0 && (
-        <section className="glass-card rounded-2xl p-5 border-dashed">
-          <h3 className="text-xs font-bold uppercase tracking-widest text-text-muted mb-3 flex items-center gap-2">
-            <Clock className="h-3.5 w-3.5" />
-            Awaiting response from {notYetQuoted.length} vendor
-            {notYetQuoted.length === 1 ? "" : "s"}
-          </h3>
-          <div className="flex flex-wrap gap-2">
-            {notYetQuoted.map((v) => (
-              <span
-                key={v}
-                className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-surface-container-low/60 border border-border text-xs text-text"
-              >
-                <span className="w-1.5 h-1.5 rounded-full bg-warning" />
-                {v}
-              </span>
-            ))}
-          </div>
-        </section>
-      )}
     </div>
+  );
+}
+
+/**
+ * Admin-only panel that lists every vendor the system auto-invited to this
+ * RFQ along with their current response state. Renders at the top of the
+ * detail page regardless of whether any responses have come in, so admin
+ * can verify the auto-selection logic the moment an RFQ is created.
+ */
+function AutoSelectedVendorsPanel({ rfq, vendors, responses }) {
+  if (!Array.isArray(vendors) || vendors.length === 0) return null;
+  const respondedNames = new Set(responses.map((r) => r.vendor));
+  return (
+    <section className="glass-card rounded-2xl p-5">
+      <div className="flex items-baseline justify-between gap-3 mb-3 flex-wrap">
+        <h3 className="text-xs font-bold uppercase tracking-widest text-text-muted flex items-center gap-2">
+          <UserCheck className="h-3.5 w-3.5" />
+          Auto-selected vendors
+          <span className="text-text-subtle font-normal normal-case tracking-normal">
+            ({responses.length}/{vendors.length} responded)
+          </span>
+        </h3>
+        <span className="text-[10px] font-semibold uppercase tracking-widest text-info bg-info-soft px-2 py-0.5 rounded-full border border-info/20">
+          Admin view
+        </span>
+      </div>
+      <div className="flex flex-wrap gap-2">
+        {vendors.map((v) => {
+          const hasResponded = respondedNames.has(v);
+          const isAwarded = rfq.awarded_vendor === v;
+          const cls = isAwarded
+            ? "bg-success text-white border-success"
+            : hasResponded
+              ? "bg-success-soft text-success border-success/30"
+              : "bg-surface-container-low/60 text-text border-border";
+          return (
+            <span
+              key={v}
+              className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium border ${cls}`}
+              title={
+                isAwarded
+                  ? "Awarded"
+                  : hasResponded
+                    ? "Quote submitted"
+                    : "Awaiting response"
+              }
+            >
+              {isAwarded ? (
+                <Award className="h-3 w-3" strokeWidth={2.5} />
+              ) : hasResponded ? (
+                <CheckCircle2 className="h-3 w-3" strokeWidth={2.5} />
+              ) : (
+                <Clock className="h-3 w-3" strokeWidth={2.5} />
+              )}
+              {v}
+            </span>
+          );
+        })}
+      </div>
+    </section>
   );
 }
 
@@ -629,6 +790,16 @@ export default function QuotationComparisonPage() {
   // the Purchase HOD can fire it. Admin retained as override.
   const canFireAward = rfq.chain_stage === "done" && isPurchaseHod(user);
   const agreedVendor = rfq.consents?.agreed_vendor ?? null;
+  // Vendors that received at least one HOD vote during consensus. Used so
+  // the Award button stays scoped to "intended winners" even when admin
+  // overrode the chain without full consensus — e.g. if 2 HODs voted for
+  // Global SCM and admin force-approved, only Global SCM gets the button,
+  // not every responding vendor.
+  const votedVendors = new Set(
+    ["respective", "finance", "purchase"]
+      .map((k) => rfq.consents?.[k]?.vendor)
+      .filter(Boolean),
+  );
   // Vendors that have submitted responses — used by AwardFlowPanel for voting
   const candidateVendors = responses.map((r) => r.vendor);
 
@@ -791,6 +962,30 @@ export default function QuotationComparisonPage() {
         onOpenAssign={() => setAssignOpen(true)}
       />
 
+      {/* Admin reopen — undo a CEO/CFO rejection. RFQs use status='closed'
+          (not 'rejected') as the terminal reject state, so we pass
+          rejectedStatus="closed" here. */}
+      <div className="mb-4">
+        <ReopenRejectedButton
+          endpoint={`/rfqs/${rfq.number}/reopen`}
+          entityLabel="RFQ"
+          status={rfq.status}
+          rejectedStatus="closed"
+          onReopened={(updated) => setFetched(updated)}
+        />
+      </div>
+
+      {/* Admin-only auto-selected vendor panel — renders regardless of
+          whether responses exist yet, so admin can verify the auto-selection
+          immediately after RFQ creation. */}
+      {user?.role === "admin" && (
+        <AutoSelectedVendorsPanel
+          rfq={rfq}
+          vendors={vendors}
+          responses={responses}
+        />
+      )}
+
       {!hasResponses ? (
         <EmptyState
           icon={Clock}
@@ -824,6 +1019,7 @@ export default function QuotationComparisonPage() {
               doAward={doAward}
               canFireAward={canFireAward}
               agreedVendor={agreedVendor}
+              votedVendors={votedVendors}
             />
           </div>
           <aside className="lg:col-span-1">

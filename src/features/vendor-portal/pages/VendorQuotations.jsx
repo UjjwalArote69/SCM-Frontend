@@ -8,6 +8,7 @@ import EmptyState from "../../../components/ui/EmptyState.jsx";
 import Skeleton from "../../../components/feedback/Skeleton.jsx";
 import { useRFQStore } from "../../quotations/store.js";
 import { useVendorIdentity } from "../useVendorIdentity.js";
+import { useNotificationsStore } from "../../notifications/store.js";
 
 function SkRow() {
   return (
@@ -53,10 +54,32 @@ export default function VendorQuotationsPage() {
   const loading = useRFQStore((s) => s.loading);
   const fetchAll = useRFQStore((s) => s.fetchAll);
   const { vendorName, loading: identityLoading } = useVendorIdentity();
+  const pushNotification = useNotificationsStore((s) => s.push);
+  const notifItems = useNotificationsStore((s) => s.items);
 
   useEffect(() => {
     fetchAll();
   }, [fetchAll]);
+
+  // Detect newly-awarded RFQs and push a one-time notification per win.
+  // Dedupes via `key` so re-renders don't spam the bell.
+  useEffect(() => {
+    if (!vendorName || !Array.isArray(rfqs)) return;
+    rfqs.forEach((r) => {
+      if (r.status !== "awarded" || r.awarded_vendor !== vendorName) return;
+      const key = `award-${r.number}`;
+      if (notifItems.some((n) => n.key === key)) return;
+      pushNotification({
+        key,
+        tone: "success",
+        icon: "check",
+        title: `🎉 You won ${r.number}!`,
+        body: `Congratulations — the buyer awarded this RFQ to ${vendorName}. A Purchase Order will be issued soon.`,
+        link: `/vendor/quotations/submit/${r.number}`,
+      });
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rfqs, vendorName]);
 
   // Backend scopes /rfqs to vendors the current user is invited to.
   // We resolve "my response" / "awarded to me" by matching vendor_name
@@ -93,24 +116,26 @@ export default function VendorQuotationsPage() {
 
       {isLoading && rows.length === 0 ? (
         <div className="bg-surface-container-lowest rounded-lg overflow-hidden border border-border">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="bg-surface-container-low text-[10px] font-bold text-text-muted uppercase tracking-widest">
-                <th className="px-6 py-3 text-left">RFQ #</th>
-                <th className="px-6 py-3 text-left">Title</th>
-                <th className="px-6 py-3 text-right">Your Quote</th>
-                <th className="px-6 py-3 text-left">Submitted</th>
-                <th className="px-6 py-3 text-left">Due</th>
-                <th className="px-6 py-3 text-left">Status</th>
-                <th className="px-6 py-3 text-right w-28">Action</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border">
-              {Array.from({ length: 6 }).map((_, i) => (
-                <SkRow key={i} />
-              ))}
-            </tbody>
-          </table>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm min-w-[800px]">
+              <thead>
+                <tr className="bg-surface-container-low text-[10px] font-bold text-text-muted uppercase tracking-widest">
+                  <th className="px-6 py-3 text-left">RFQ #</th>
+                  <th className="px-6 py-3 text-left">Title</th>
+                  <th className="px-6 py-3 text-right">Your Quote</th>
+                  <th className="px-6 py-3 text-left">Submitted</th>
+                  <th className="px-6 py-3 text-left">Due</th>
+                  <th className="px-6 py-3 text-left">Status</th>
+                  <th className="px-6 py-3 text-right w-28">Action</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border">
+                {Array.from({ length: 6 }).map((_, i) => (
+                  <SkRow key={i} />
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       ) : rows.length === 0 ? (
         <EmptyState
@@ -120,7 +145,8 @@ export default function VendorQuotationsPage() {
         />
       ) : (
         <div className="bg-surface-container-lowest rounded-lg overflow-hidden border border-border">
-          <table className="w-full text-sm">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm min-w-[800px]">
             <thead>
               <tr className="bg-surface-container-low text-[10px] font-bold text-text-muted uppercase tracking-widest">
                 <th className="px-6 py-3 text-left">RFQ #</th>
@@ -199,6 +225,7 @@ export default function VendorQuotationsPage() {
               })}
             </tbody>
           </table>
+          </div>
         </div>
       )}
 

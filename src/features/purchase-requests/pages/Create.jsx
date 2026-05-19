@@ -332,6 +332,7 @@ export default function PurchaseRequestCreatePage() {
       next.requester_name = "Requestor name is required.";
     if (!form.business_unit) next.business_unit = "Company is required.";
     if (!form.department) next.department = "Department is required.";
+    if (!form.expected_date) next.expected_date = "Expected delivery date is required.";
 
     const badItems = form.items.some((it) => {
       const qtyNum = Number(it.qty);
@@ -475,6 +476,7 @@ export default function PurchaseRequestCreatePage() {
       },
       { key: "business_unit", label: "Company", ok: !!form.business_unit },
       { key: "department", label: "Department", ok: !!form.department },
+      { key: "expected_date", label: "Expected delivery date", ok: !!form.expected_date },
       {
         key: "items",
         label: `Items (${form.items.length})`,
@@ -489,7 +491,7 @@ export default function PurchaseRequestCreatePage() {
   const allRequiredOk = requiredOkCount === requiredChecks.length;
 
   return (
-    <div className="max-w-[1400px] mx-auto pb-24">
+    <div className="max-w-[1400px] mx-auto pb-32 sm:pb-24">
       <div className="mb-4 sm:mb-6">
         <button
           type="button"
@@ -657,13 +659,15 @@ export default function PurchaseRequestCreatePage() {
                 </select>
               </div>
               <div>
-                <FieldLabel>Expected Delivery Date</FieldLabel>
+                <FieldLabel required error={errors.expected_date}>Expected Delivery Date</FieldLabel>
                 <input
                   type="date"
+                  required
                   value={form.expected_date}
                   onChange={update("expected_date")}
-                  className={inputCls(false)}
+                  className={inputCls(errors.expected_date)}
                 />
+                <FieldError message={errors.expected_date} />
               </div>
             </div>
           </Card>
@@ -1124,11 +1128,11 @@ export default function PurchaseRequestCreatePage() {
           so it never overlaps the nav and resizes when the user toggles it.
           On mobile the sidebar is an off-canvas drawer so left-0 is correct. */}
       <div
-        className={`fixed bottom-0 right-0 left-0 z-30 bg-bg/70 backdrop-blur-xl border-t border-border transition-[left] duration-200 ${
-          sidebarCollapsed ? "md:left-16" : "md:left-64"
+        className={`fixed bottom-0 right-0 left-0 z-30 bg-surface/95 backdrop-blur-xl border-t border-border shadow-[0_-4px_16px_-6px_rgba(0,0,0,0.08)] transition-[left] duration-200 ${
+          sidebarCollapsed ? "md:left-" : "md:left-"
         }`}
       >
-        <div className="max-w-[1400px] mx-auto px-3 sm:px-6 py-3 flex items-center justify-between gap-2 sm:gap-3">
+        <div className="w-full px-3 sm:px-6 md:px-8 py-2.5 sm:py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-3">
           <div className="flex items-center gap-2 text-[12px] text-text-muted min-w-0">
             {allRequiredOk ? (
               <>
@@ -1144,18 +1148,19 @@ export default function PurchaseRequestCreatePage() {
                     {requiredChecks.length - requiredOkCount === 1 ? "" : "s"} missing
                   </span>
                   <span className="sm:hidden">
-                    {requiredChecks.length - requiredOkCount} missing
+                    {requiredChecks.length - requiredOkCount} required field
+                    {requiredChecks.length - requiredOkCount === 1 ? "" : "s"} missing
                   </span>
                 </span>
               </>
             )}
           </div>
-          <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+          <div className="flex items-center justify-end gap-2 sm:gap-3 shrink-0 w-full sm:w-auto">
             <button
               type="button"
               onClick={() => navigate("/app/purchase-requests")}
               disabled={submitting}
-              className="px-4 py-2 text-[12px] font-semibold text-text-muted border border-border bg-surface-container-low/60 rounded-full hover:text-text hover:border-white/20 transition-colors disabled:opacity-60"
+              className="px-3 sm:px-4 py-1.5 sm:py-2 text-[12px] font-semibold text-text-muted border border-border bg-surface-container-low/60 rounded-full hover:text-text hover:border-white/20 transition-colors disabled:opacity-60"
             >
               Cancel
             </button>
@@ -1163,7 +1168,7 @@ export default function PurchaseRequestCreatePage() {
               type="button"
               onClick={saveDraftNow}
               disabled={submitting}
-              className="px-4 py-2 text-[12px] font-semibold text-text border border-border bg-surface-container-low/60 rounded-full hover:bg-surface-container hover:border-white/20 transition-colors disabled:opacity-60 flex items-center gap-1.5 whitespace-nowrap"
+              className="px-3 sm:px-4 py-1.5 sm:py-2 text-[12px] font-semibold text-text border border-border bg-surface-container-low/60 rounded-full hover:bg-surface-container hover:border-white/20 transition-colors disabled:opacity-60 flex items-center gap-1.5 whitespace-nowrap"
               title="Save as draft — keeps your progress without submitting for approval"
             >
               <Save className="h-3.5 w-3.5" />
@@ -1174,7 +1179,7 @@ export default function PurchaseRequestCreatePage() {
               type="button"
               onClick={handleSubmit}
               disabled={submitting}
-              className="px-5 sm:px-6 py-2 text-[12px] font-bold text-primary-foreground bg-primary hover:brightness-110 rounded-full transition-all shadow-sm disabled:opacity-60 flex items-center gap-2 whitespace-nowrap"
+              className="px-4 sm:px-6 py-1.5 sm:py-2 text-[12px] font-bold text-primary-foreground bg-primary hover:brightness-110 rounded-full transition-all shadow-sm disabled:opacity-60 flex items-center gap-2 whitespace-nowrap"
             >
               {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
               <span className="hidden sm:inline">

@@ -2,8 +2,8 @@
  * Skeleton — placeholder block for content that's still loading.
  *
  * Composition over presets: pass `className` for sizing/shape (h-4, w-32,
- * rounded-full, etc). The base styles handle the pulse animation and
- * theme-aware background.
+ * rounded-full, etc). The base styles add a tone-aware shimmer that reads
+ * less plastic than a flat pulse.
  *
  * <Skeleton className="h-4 w-32" />
  * <Skeleton className="h-10 w-10 rounded-full" />
@@ -14,7 +14,7 @@ export default function Skeleton({ className = "", style }) {
     <div
       aria-hidden="true"
       style={style}
-      className={`bg-surface-container animate-pulse rounded ${className}`}
+      className={`scm-shimmer rounded ${className}`}
     />
   );
 }

@@ -1,5 +1,6 @@
 import Sidebar from "../components/nav/Sidebar.jsx";
 import Topbar from "../components/nav/Topbar.jsx";
+import MobilePageBack from "../components/nav/MobilePageBack.jsx";
 import { useUIStore } from "../features/ui/store.js";
 
 export default function AdminLayout({ children }) {
@@ -13,7 +14,10 @@ export default function AdminLayout({ children }) {
         }`}
       >
         <Topbar />
-        <main className="flex-1 overflow-y-auto p-4 sm:p-6 md:p-8">{children}</main>
+        <main className="flex-1 overflow-y-auto p-4 sm:p-6 md:p-8">
+          <MobilePageBack />
+          {children}
+        </main>
       </div>
     </div>
   );

@@ -26,7 +26,9 @@ export default function RefreshButton({
     if (spinning) return;
     setBusy(true);
     try {
-      await onRefresh?.();
+      // Always pass `true` so cache-aware stores bypass their TTL skip and
+      // actually re-hit the API. Non-cached stores ignore the extra arg.
+      await onRefresh?.(true);
     } finally {
       setBusy(false);
     }

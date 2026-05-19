@@ -1,12 +1,18 @@
 import { useState } from "react";
-import { X, Package } from "lucide-react";
+import { X, Package, MessageSquare } from "lucide-react";
+import VoiceRecorder from "../../../components/forms/VoiceRecorder.jsx";
 
 export default function AcceptPOModal({ poNumber, onClose, onAccept, busy = false }) {
   const [terms, setTerms] = useState(false);
+  const [comment, setComment] = useState("");
+  const [voiceNote, setVoiceNote] = useState(null);
 
   const handleAccept = () => {
     if (!terms) return;
-    onAccept?.();
+    onAccept?.({
+      comment: comment.trim() || null,
+      voice_note: voiceNote ?? null,
+    });
   };
 
   return (
@@ -14,7 +20,7 @@ export default function AcceptPOModal({ poNumber, onClose, onAccept, busy = fals
       className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm"
       onClick={(e) => e.target === e.currentTarget && onClose?.()}
     >
-      <div className="w-full max-w-[520px] bg-surface-container-lowest rounded-lg shadow-xl border border-border overflow-hidden">
+      <div className="w-full max-w-[560px] bg-surface-container-lowest rounded-lg shadow-xl border border-border overflow-hidden">
         <div className="px-6 py-5 border-b border-border flex justify-between items-center bg-surface">
           <h2 className="text-lg font-bold text-text">Accept {poNumber}</h2>
           <button
@@ -26,7 +32,7 @@ export default function AcceptPOModal({ poNumber, onClose, onAccept, busy = fals
             <X className="h-5 w-5" />
           </button>
         </div>
-        <div className="p-6 space-y-5">
+        <div className="p-6 space-y-5 max-h-[70vh] overflow-y-auto">
           <div className="flex items-start gap-3 p-3 bg-info-soft text-info rounded">
             <Package className="h-5 w-5 shrink-0 mt-0.5" />
             <p className="text-sm leading-relaxed">
@@ -35,6 +41,33 @@ export default function AcceptPOModal({ poNumber, onClose, onAccept, busy = fals
               is notified immediately.
             </p>
           </div>
+
+          <div>
+            <label className="flex items-center gap-1.5 text-xs font-semibold text-text-muted uppercase tracking-wider mb-2">
+              <MessageSquare className="h-3.5 w-3.5" />
+              Note to buyer
+              <span className="text-text-subtle normal-case font-normal tracking-normal">
+                (optional — speak or type)
+              </span>
+            </label>
+            <VoiceRecorder
+              onTranscript={(text) => setComment(text)}
+              onAudioChange={(b64) => setVoiceNote(b64)}
+              disabled={busy}
+              language="en-IN"
+              maxSeconds={90}
+              className="mb-2"
+            />
+            <textarea
+              rows={3}
+              value={comment}
+              onChange={(e) => setComment(e.target.value)}
+              disabled={busy}
+              placeholder="e.g. Delivery in 5 working days, batch packed and ready for dispatch."
+              className="w-full bg-surface-container-low border border-border focus:border-primary rounded-md px-3 py-2 text-sm text-text outline-none resize-none"
+            />
+          </div>
+
           <label className="flex items-start gap-3 cursor-pointer">
             <input
               type="checkbox"

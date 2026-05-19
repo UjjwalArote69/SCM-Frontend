@@ -70,7 +70,7 @@ export const DEPARTMENTS = [
 /**
  * Business Units. Legacy has a `business_units` table; fresh backend
  * stores a free-text string on app_prs/app_pos. These options match the
- * Meka Group layout.
+ *  layout.
  */
 export const BUSINESS_UNITS = [
   "HQ",

@@ -8,6 +8,7 @@ import { useAuthStore } from "../../auth/store.js";
 import invoiceApi from "../api.js";
 import { useInvoiceStore } from "../store.js";
 import StatusPill from "../../../components/data/StatusPill.jsx";
+import ReopenRejectedButton from "../../../components/admin/ReopenRejectedButton.jsx";
 
 const APPROVER_ROLES = new Set(["cfo", "accountant", "admin"]);
 const STATUS_TONE = {
@@ -116,9 +117,9 @@ export default function InvoiceApprovalPage() {
         <span className="text-text font-mono">{inv.number}</span>
       </nav>
 
-      <div className="flex items-center justify-between mb-8 flex-wrap gap-3">
+      <div className="flex items-center justify-between mb-6 sm:mb-8 flex-wrap gap-3">
         <div>
-          <h1 className="text-3xl font-bold text-text tracking-tight">
+          <h1 className="text-2xl sm:text-3xl font-bold text-text tracking-tight">
             Invoice Approval
           </h1>
           <div className="mt-1 flex items-center gap-2">
@@ -136,6 +137,16 @@ export default function InvoiceApprovalPage() {
         >
           <Download className="h-4 w-4" /> Download PDF
         </button>
+      </div>
+
+      {/* Admin reopen — undo a rejection so the invoice can be re-approved */}
+      <div className="mb-4">
+        <ReopenRejectedButton
+          endpoint={`/invoices/${inv.number}/reopen`}
+          entityLabel="invoice"
+          status={inv.status}
+          onReopened={(updated) => setInv(updated)}
+        />
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
@@ -163,35 +174,37 @@ export default function InvoiceApprovalPage() {
             </div>
 
             {items.length > 0 ? (
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="text-xs font-semibold text-text-muted uppercase border-b border-border">
-                    <th className="py-2 text-left">Description</th>
-                    <th className="py-2 text-right">Qty</th>
-                    <th className="py-2 text-right">Rate</th>
-                    <th className="py-2 text-right">Amount</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border">
-                  {items.map((it, i) => (
-                    <tr key={i}>
-                      <td className="py-3">{it.name ?? it.desc ?? "—"}</td>
-                      <td className="py-3 text-right text-text-muted tabular-nums">{it.qty ?? "—"}</td>
-                      <td className="py-3 text-right text-text-muted tabular-nums">
-                        {it.rate ? formatINR(it.rate) : "—"}
-                      </td>
-                      <td className="py-3 text-right font-medium tabular-nums">
-                        {it.amount ? formatINR(it.amount) : "—"}
-                      </td>
+              <div className="overflow-x-auto -mx-6 px-6">
+                <table className="w-full text-sm min-w-[480px]">
+                  <thead>
+                    <tr className="text-xs font-semibold text-text-muted uppercase border-b border-border">
+                      <th className="py-2 text-left">Description</th>
+                      <th className="py-2 text-right">Qty</th>
+                      <th className="py-2 text-right">Rate</th>
+                      <th className="py-2 text-right">Amount</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody className="divide-y divide-border">
+                    {items.map((it, i) => (
+                      <tr key={i}>
+                        <td className="py-3">{it.name ?? it.desc ?? "—"}</td>
+                        <td className="py-3 text-right text-text-muted tabular-nums">{it.qty ?? "—"}</td>
+                        <td className="py-3 text-right text-text-muted tabular-nums">
+                          {it.rate ? formatINR(it.rate) : "—"}
+                        </td>
+                        <td className="py-3 text-right font-medium tabular-nums">
+                          {it.amount ? formatINR(it.amount) : "—"}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             ) : (
               <p className="text-sm text-text-muted italic">No line items recorded.</p>
             )}
 
-            <div className="mt-6 ml-auto w-72 space-y-2 text-sm">
+            <div className="mt-6 sm:ml-auto sm:w-72 space-y-2 text-sm">
               <div className="flex justify-between">
                 <span className="text-text-muted">Subtotal</span>
                 <span className="tabular-nums">{formatINR(inv.subtotal)}</span>

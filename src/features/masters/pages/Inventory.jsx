@@ -1,13 +1,27 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { Search, Download, Warehouse, Loader2 } from "lucide-react";
+import { Search, Download, Warehouse } from "lucide-react";
 import PageHeader from "../../../components/data/PageHeader.jsx";
 import StatusPill from "../../../components/data/StatusPill.jsx";
 import RefreshButton from "../../../components/data/RefreshButton.jsx";
 import KpiStatCard from "../../../components/data/KpiStatCard.jsx";
+import Skeleton from "../../../components/feedback/Skeleton.jsx";
 import { useToast } from "../../../hooks/useToast.jsx";
 import client from "../../../api/client.js";
 import { TrendingUp, AlertTriangle, CheckCircle2 } from "lucide-react";
+
+function SkInventoryRow() {
+  return (
+    <tr>
+      <td className="px-6 py-4"><Skeleton className="h-4 w-20" /></td>
+      <td className="px-6 py-4"><Skeleton className="h-4 w-44" /></td>
+      <td className="px-6 py-4"><Skeleton className="h-4 w-28" /></td>
+      <td className="px-6 py-4"><Skeleton className="h-4 w-16 ml-auto" /></td>
+      <td className="px-6 py-4"><Skeleton className="h-4 w-10 ml-auto" /></td>
+      <td className="px-6 py-4"><Skeleton className="h-5 w-20 rounded-full" /></td>
+    </tr>
+  );
+}
 
 /**
  * Inventory is computed server-side from approved GRNs (no inventory table).
@@ -135,8 +149,22 @@ export default function InventoryListPage() {
 
       <div className="bg-surface-container-lowest rounded-lg overflow-hidden border border-border">
         {loading ? (
-          <div className="p-12 text-center text-text-muted flex items-center justify-center gap-2">
-            <Loader2 className="h-4 w-4 animate-spin" /> Loading inventory…
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm min-w-[720px]">
+              <thead>
+                <tr className="bg-surface-container-low text-xs font-semibold text-text-muted uppercase">
+                  <th className="px-6 py-3 text-left">Code</th>
+                  <th className="px-6 py-3 text-left">Item</th>
+                  <th className="px-6 py-3 text-left">Category</th>
+                  <th className="px-6 py-3 text-right">On Hand</th>
+                  <th className="px-6 py-3 text-right">Min</th>
+                  <th className="px-6 py-3 text-left">Status</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border">
+                {Array.from({ length: 6 }).map((_, i) => <SkInventoryRow key={i} />)}
+              </tbody>
+            </table>
           </div>
         ) : error ? (
           <div className="p-8 text-center text-danger">{error}</div>
@@ -147,7 +175,8 @@ export default function InventoryListPage() {
               : "No items match the current filter."}
           </div>
         ) : (
-          <table className="w-full text-sm">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm min-w-[720px]">
             <thead>
               <tr className="bg-surface-container-low text-xs font-semibold text-text-muted uppercase">
                 <th className="px-6 py-3 text-left">Code</th>
@@ -189,6 +218,7 @@ export default function InventoryListPage() {
               })}
             </tbody>
           </table>
+          </div>
         )}
       </div>
 

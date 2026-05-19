@@ -1,25 +1,30 @@
 import { create } from "zustand";
 import paymentApi from "./api.js";
+import { makeListFetcher } from "../../utils/storeCache.js";
 
 export const usePaymentStore = create((set, get) => ({
   items: [],
   loading: false,
   error: null,
+  lastFetchedAt: null,
+  _inflight: null,
 
-  fetchAll: async (params) => {
-    set({ loading: true, error: null });
-    try {
-      const data = await paymentApi.list(params);
-      set({ items: data, loading: false });
-    } catch (err) {
-      set({ loading: false, error: err?.message ?? "Failed to load payments" });
-    }
-  },
+  fetchAll: makeListFetcher({
+    get, set,
+    fetcher: () => paymentApi.list(),
+    errorLabel: "Failed to load payments",
+  }),
 
   byNumber: (number) => get().items.find((p) => p.number === number),
 
   create: async (payload) => {
     const record = await paymentApi.create(payload);
+    set((s) => ({ items: [record, ...s.items] }));
+    return record;
+  },
+
+  quickPay: async (payload) => {
+    const record = await paymentApi.quickPay(payload);
     set((s) => ({ items: [record, ...s.items] }));
     return record;
   },

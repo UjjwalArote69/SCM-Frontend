@@ -6,8 +6,13 @@ export const poApi = {
   create: (payload) => client.post("/pos", payload).then((r) => r.data.data),
   updateStatus: (number, payload) =>
     client.post(`/pos/${number}/status`, payload).then((r) => r.data.data),
-  accept: (number) => client.post(`/pos/${number}/accept`).then((r) => r.data.data),
-  reject: (number) => client.post(`/pos/${number}/reject`).then((r) => r.data.data),
+  accept: (number, payload = {}) =>
+    client.post(`/pos/${number}/accept`, payload).then((r) => r.data.data),
+  reject: (number, payload = {}) =>
+    client.post(`/pos/${number}/reject`, payload).then((r) => r.data.data),
+  /** Free-form voice / text note from vendor or admin. Body: { comment?, voice_note? } */
+  vendorNote: (number, payload) =>
+    client.post(`/pos/${number}/vendor-note`, payload).then((r) => r.data.data),
   remove: (number) => client.delete(`/pos/${number}`).then((r) => r.data),
 
   /** Stream PO as PDF; returns a Blob the caller can pipe to a download. */

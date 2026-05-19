@@ -1,0 +1,42 @@
+{
+  "name": "Suppliers First",
+  "short_name": "Suppliers",
+  "description": "Procurement command centre — purchase requests, RFQs, POs, goods receipts and payments for the Meka Group.",
+  "theme_color": "#dc2626",
+  "background_color": "#0a0a0e",
+  "display": "standalone",
+  "orientation": "portrait",
+  "start_url": "/app",
+  "scope": "/",
+  "lang": "en-IN",
+  "categories": ["business", "productivity"],
+  "icons": [
+    { "src": "/pwa-192.png",          "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/pwa-512.png",          "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/pwa-maskable-192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
+    { "src": "/pwa-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    {
+      "name": "New Request",
+      "short_name": "New PR",
+      "description": "Raise a fresh purchase request",
+      "url": "/app/purchase-requests/new",
+      "icons": [{ "src": "/pwa-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Goods Receipts",
+      "short_name": "Receipts",
+      "description": "Log incoming shipments",
+      "url": "/app/grn",
+      "icons": [{ "src": "/pwa-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Payments",
+      "short_name": "Payments",
+      "description": "Vendor payment dashboard",
+      "url": "/app/payments",
+      "icons": [{ "src": "/pwa-192.png", "sizes": "192x192" }]
+    }
+  ]
+}

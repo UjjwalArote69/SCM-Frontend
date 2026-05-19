@@ -14,20 +14,31 @@ import {
   Trash2,
   AlertCircle,
   GitBranch,
+  Banknote,
+  FileText,
+  Info,
+  ListChecks,
 } from "lucide-react";
 import AcceptPOModal from "../components/AcceptPOModal.jsx";
+import RejectPOModal from "../components/RejectPOModal.jsx";
+import AdminVendorOverridePanel from "../components/AdminVendorOverridePanel.jsx";
+import SendVoiceNotePanel from "../components/SendVoiceNotePanel.jsx";
 import StatusPill from "../../../components/data/StatusPill.jsx";
 import ChainStatusModal from "../../../components/feedback/ChainStatusModal.jsx";
+import ReopenRejectedButton from "../../../components/admin/ReopenRejectedButton.jsx";
 import PoDocumentsCard from "../../po-documents/components/PoDocumentsCard.jsx";
 import VendorFeedbackCard from "../../vendor-feedback/components/VendorFeedbackCard.jsx";
 import VendorRatingCard from "../../vendor-rating/components/VendorRatingCard.jsx";
+import VoiceNotesPanel from "../../../components/data/VoiceNotesPanel.jsx";
 import PrintLetterhead from "../../../components/print/PrintLetterhead.jsx";
 import PrintFooter from "../../../components/print/PrintFooter.jsx";
 import { usePOStore } from "../store.js";
 import { useGRNStore } from "../../grn/store.js";
+import { usePoDocumentsStore } from "../../po-documents/store.js";
 import { useToast } from "../../../hooks/useToast.jsx";
 import { useAuthStore } from "../../auth/store.js";
 import poApi from "../api.js";
+import client from "../../../api/client.js";
 
 // PO chain stages now come from po.chain_stages (resolved server-side from
 // the matching approval rule). Legacy fallback covers POs created before
@@ -69,6 +80,12 @@ function display(v) {
   return v === null || v === undefined || v === "" ? "—" : v;
 }
 
+function isEmpty(v) {
+  if (v === null || v === undefined) return true;
+  const s = String(v).trim();
+  return s === "" || s === "null" || s === "—";
+}
+
 function Meta({ label, value }) {
   return (
     <div>
@@ -76,6 +93,29 @@ function Meta({ label, value }) {
         {label}
       </div>
       <div className="text-base font-medium text-text">{display(value)}</div>
+    </div>
+  );
+}
+
+/**
+ * Compact key/value fact shown in the hero card facts strip. Matches the
+ * PR Detail's FactItem visual pattern so the two detail pages read as a
+ * pair. `accent` highlights the value in primary color — used for Grand
+ * Total so the number pops.
+ */
+function PoFact({ label, value, accent = false }) {
+  return (
+    <div className="flex flex-col min-w-0">
+      <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-text-subtle">
+        {label}
+      </span>
+      <span
+        className={`text-[13px] font-semibold truncate ${
+          accent ? "text-primary font-mono" : "text-text"
+        }`}
+      >
+        {value}
+      </span>
     </div>
   );
 }
@@ -109,6 +149,26 @@ function FulfilmentTracker({ po, grns, isVendorView }) {
   const isAccepted = po.status === "accepted" || po.status === "fulfilled";
   const isRejected = po.status === "rejected";
 
+  // Distinguish internal rejection from vendor rejection by walking the
+  // approval_history. Internal rejects (CFO/CEO/HOD/admin via updateStatus)
+  // append a row with action="reject"; vendor rejects via vendorAction()
+  // don't touch history at all, so absence of a reject row = vendor said no.
+  const rejectInfo = (() => {
+    if (!isRejected) return null;
+    const hist = Array.isArray(po.approval_history) ? po.approval_history : [];
+    for (let i = hist.length - 1; i >= 0; i--) {
+      if (hist[i]?.action === "reject") {
+        return {
+          internal: true,
+          role: hist[i].by_role ?? null,
+          stage: hist[i].stage ?? null,
+          actor: hist[i].by_user_name ?? null,
+        };
+      }
+    }
+    return { internal: false, role: null, stage: null, actor: null };
+  })();
+
   const steps = [
     {
       label: "PO issued",
@@ -116,36 +176,40 @@ function FulfilmentTracker({ po, grns, isVendorView }) {
       state: "done",
     },
     {
-      label: isRejected ? "Vendor rejected" : "Vendor acceptance",
+      label: isRejected
+        ? rejectInfo?.internal
+          ? `Rejected at ${rejectInfo.stage ? rejectInfo.stage.replace(/_/g, " ").toUpperCase() : (rejectInfo.role ? rejectInfo.role.toUpperCase() : "approval")}`
+          : "Vendor rejected"
+        : "Vendor acceptance",
       sublabel: isAccepted
         ? `Accepted by ${po.vendor}`
         : isRejected
-          ? "PO will not proceed"
+          ? rejectInfo?.internal
+            ? `Blocked${rejectInfo.actor ? ` by ${rejectInfo.actor}` : ""}`
+            : "PO will not proceed"
           : `Awaiting ${po.vendor}`,
       state: isAccepted ? "done" : isRejected ? "rejected" : "active",
     },
     {
+      // As soon as the site person creates ANY GRN against this PO, this
+      // step flips to "done" — the goods have been received at the gate,
+      // even if PM hasn't approved the GRN yet (PM approval gates payment,
+      // not goods receipt).
       label: "Goods received",
-      sublabel: grnDone
-        ? `Fully received (${poGrns.length} GRN${poGrns.length === 1 ? "" : "s"})`
-        : grnPartial
-          ? `Partial — ${totalReceived} of ${totalOrdered}`
-          : isAccepted
-            ? "Pending delivery"
-            : "Awaits acceptance",
-      state: grnDone
+      sublabel: poGrns.length > 0
+        ? grnDone
+          ? `Fully received (${poGrns.length} GRN${poGrns.length === 1 ? "" : "s"})`
+          : grnPartial
+            ? `Partial — ${totalReceived} of ${totalOrdered} (${poGrns.length} GRN${poGrns.length === 1 ? "" : "s"})`
+            : `${poGrns.length} GRN${poGrns.length === 1 ? "" : "s"} on file`
+        : isAccepted
+          ? "Pending delivery"
+          : "Awaits acceptance",
+      state: poGrns.length > 0
         ? "done"
-        : grnPartial
-          ? "partial"
-          : isAccepted
-            ? "active"
-            : "waiting",
-    },
-    {
-      label: "Invoiced",
-      sublabel: "Coming soon",
-      state: "waiting",
-      muted: true,
+        : isAccepted
+          ? "active"
+          : "waiting",
     },
     {
       label: "Paid",
@@ -156,9 +220,10 @@ function FulfilmentTracker({ po, grns, isVendorView }) {
   ];
 
   return (
-    <section className="bg-surface-container-lowest rounded-md p-6 border border-border print:hidden">
-      <h2 className="text-sm font-bold text-text uppercase tracking-wider mb-5 flex items-center gap-2">
-        <Truck className="h-4 w-4 text-text-muted" /> Procure-to-pay
+    <section className="glass-card rounded-2xl p-3 sm:p-6 print:hidden">
+      <h2 className="text-sm font-semibold text-text mb-4 sm:mb-5 flex items-center gap-2">
+        <Truck className="h-4 w-4 text-text-muted" strokeWidth={2} />
+        Procure-to-pay
       </h2>
       <ol>
         {steps.map((step, idx) => {
@@ -238,10 +303,15 @@ export default function PurchaseOrderDetailPage({ view = "admin" }) {
   const user = useAuthStore((s) => s.user);
   const grns = useGRNStore((s) => s.items);
   const fetchGRNs = useGRNStore((s) => s.fetchAll);
+  const poDocs = usePoDocumentsStore((s) =>
+    number ? (s.byPo[number] ?? null) : null,
+  );
+  const fetchPoDocs = usePoDocumentsStore((s) => s.fetchForPo);
 
   const [fetched, setFetched] = useState(null);
   const [fetchFailed, setFetchFailed] = useState(false);
   const [modal, setModal] = useState(false);
+  const [rejectModal, setRejectModal] = useState(false);
   const [chainModalOpen, setChainModalOpen] = useState(false);
   const [acting, setActing] = useState(false);
   const toast = useToast();
@@ -269,6 +339,13 @@ export default function PurchaseOrderDetailPage({ view = "admin" }) {
     fetchGRNs();
   }, [fetchGRNs]);
 
+  // The PoDocumentsCard below also fetches these, but we need them in this
+  // scope to build the consolidated voice-notes panel. Calling fetchForPo
+  // twice is safe — the store de-dupes by overwriting byPo[number].
+  useEffect(() => {
+    if (number) fetchPoDocs(number).catch(() => {});
+  }, [number, fetchPoDocs]);
+
   if (loading) {
     return (
       <div className="max-w-[1400px] mx-auto flex items-center justify-center py-24 text-text-muted">
@@ -294,6 +371,10 @@ export default function PurchaseOrderDetailPage({ view = "admin" }) {
   const isTerminal =
     po.status === "accepted" || po.status === "rejected" || po.status === "fulfilled";
   const isVendorView = view === "vendor";
+  // GRNs for this PO — used to gate vendor feedback / rating sections so
+  // they only surface once goods have been received. (FulfilmentTracker
+  // re-derives its own copy from `grns` to stay self-contained.)
+  const poGrns = (grns ?? []).filter((g) => g.po_number === po.number);
   const isAdmin = user?.role === "admin";
   const isBackoffice = BACKOFFICE_ROLES.has(user?.role);
 
@@ -323,10 +404,10 @@ export default function PurchaseOrderDetailPage({ view = "admin" }) {
     }
   };
 
-  const doAccept = async () => {
+  const doAccept = async (payload = {}) => {
     setActing(true);
     try {
-      const updated = await accept(po.number);
+      const updated = await accept(po.number, payload);
       setFetched(updated);
       setModal(false);
       toast.success(`${po.number} accepted — buyer has been notified`);
@@ -337,12 +418,12 @@ export default function PurchaseOrderDetailPage({ view = "admin" }) {
     }
   };
 
-  const doReject = async () => {
-    if (!window.confirm(`Reject ${po.number}?`)) return;
+  const doReject = async (payload = {}) => {
     setActing(true);
     try {
-      const updated = await reject(po.number);
+      const updated = await reject(po.number, payload);
       setFetched(updated);
+      setRejectModal(false);
       toast.success(`${po.number} rejected`);
     } catch (err) {
       toast.error(err?.response?.data?.message ?? "Could not reject PO");
@@ -372,142 +453,199 @@ export default function PurchaseOrderDetailPage({ view = "admin" }) {
         subtitle={po.vendor ? `Vendor: ${po.vendor}` : null}
       />
 
-      <nav className="text-sm font-medium text-text-muted mb-2 flex items-center gap-2 print:hidden">
+      <nav className="text-[11px] sm:text-[12px] font-medium text-text-muted mb-3 sm:mb-4 flex items-center gap-1.5 print:hidden">
         <Link
           to={isVendorView ? "/vendor/purchase-orders" : "/app/purchase-orders"}
-          className="hover:text-primary"
+          className="hover:text-primary transition-colors"
         >
-          Purchase Orders
+          <span className="hidden sm:inline">Purchase Orders</span>
+          <span className="sm:hidden">POs</span>
         </Link>
-        <ChevronRight className="h-4 w-4" />
-        <span className="text-text">{po.number}</span>
+        <ChevronRight className="h-3.5 w-3.5 text-text-subtle" />
+        <span className="text-text font-mono truncate">{po.number}</span>
       </nav>
 
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8 print:hidden">
-        <div>
-          <h1 className="text-3xl font-bold text-text tracking-tight flex items-center gap-3 flex-wrap">
-            {po.number}
-            <StatusPill tone={TONE[po.status] ?? "neutral"}>
-              {po.status}
-            </StatusPill>
-          </h1>
-          <div className="flex flex-wrap gap-x-5 gap-y-1 mt-2 text-sm text-text-muted">
-            <span>
-              <strong className="text-text">Vendor:</strong> {display(po.vendor)}
-            </span>
-            {po.po_date && (
-              <span>
-                <strong className="text-text">Issued:</strong> {po.po_date}
-              </span>
+      {/* Hero card — mirrors PR Detail's glass-card hero so the two detail
+          pages feel visually unified. Top section: status + title + facts.
+          Bottom action bar: pill buttons (print/pdf/email) + primary CTAs. */}
+      <div className="mb-4 sm:mb-6 glass-card rounded-2xl overflow-hidden print:hidden">
+        <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-3 sm:gap-6 p-3 sm:p-6">
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 mb-3 flex-wrap">
+              <StatusPill tone={TONE[po.status] ?? "neutral"}>
+                {po.status}
+              </StatusPill>
+              {!chainDone && po.status === "pending" && (
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-info-soft text-info border border-info/20">
+                  <Clock className="h-3 w-3" strokeWidth={2.25} />
+                  {isVendorView ? "Buyer review" : "Internal review"}
+                </span>
+              )}
+            </div>
+            <h1 className="text-[20px] sm:text-[28px] font-bold tracking-tight text-text font-mono break-all leading-tight">
+              {po.number}
+            </h1>
+            {po.pr_number && (
+              <p className="text-text-muted text-[12px] sm:text-[13px] mt-1 inline-flex items-center gap-1.5">
+                <span className="text-text-subtle">from</span>
+                <span className="font-mono font-semibold">{po.pr_number}</span>
+              </p>
             )}
-            {po.expected_delivery && (
-              <span>
-                <strong className="text-text">Expected:</strong>{" "}
-                {po.expected_delivery}
-              </span>
+            {/* Facts strip — 2-col grid on mobile, free-flowing on sm+ */}
+            <div className="grid grid-cols-2 gap-x-3 gap-y-2.5 sm:flex sm:flex-wrap sm:gap-x-6 sm:gap-y-2 mt-3 sm:mt-4 text-xs">
+              <PoFact label="Vendor" value={display(po.vendor)} />
+              <PoFact label="PO Date" value={display(po.po_date)} />
+              <PoFact label="Expected" value={display(po.expected_delivery)} />
+              <PoFact label="Company" value={display(po.business_unit)} />
+              <PoFact
+                label="Grand Total"
+                value={currency(po.total)}
+                accent
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Bottom action bar */}
+        <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-center sm:justify-between gap-3 px-3 sm:px-6 py-3 border-t border-border">
+          <div className="flex items-center gap-2 flex-wrap">
+            <button
+              type="button"
+              onClick={() => window.print()}
+              className="px-3 py-1.5 text-[12px] font-semibold text-text-muted border border-border rounded-full bg-surface-container-low/60 hover:text-text hover:border-white/20 transition-colors flex items-center gap-1.5"
+              aria-label="Print"
+            >
+              <Printer className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Print</span>
+            </button>
+            <button
+              type="button"
+              onClick={async () => {
+                try {
+                  const res = await poApi.downloadPdf(po.number);
+                  const url = URL.createObjectURL(res);
+                  const a = document.createElement("a");
+                  a.href = url;
+                  a.download = `${po.number}.pdf`;
+                  document.body.appendChild(a);
+                  a.click();
+                  document.body.removeChild(a);
+                  setTimeout(() => URL.revokeObjectURL(url), 1000);
+                } catch (err) {
+                  toast.error(err?.response?.data?.message ?? "Could not download PDF");
+                }
+              }}
+              className="px-3 py-1.5 text-[12px] font-semibold text-text-muted border border-border rounded-full bg-surface-container-low/60 hover:text-text hover:border-white/20 transition-colors flex items-center gap-1.5"
+              aria-label="Download PDF"
+            >
+              <Download className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">PDF</span>
+            </button>
+            {isBackoffice && (
+              <button
+                type="button"
+                onClick={() => {
+                  const subject = `Purchase Order ${po.number}`;
+                  const body = encodeURIComponent(
+                    `Please find PO ${po.number} for your review.\n\nOpen in Suppliers First: ${window.location.href}`,
+                  );
+                  window.location.href = `mailto:?subject=${encodeURIComponent(subject)}&body=${body}`;
+                }}
+                className="px-3 py-1.5 text-[12px] font-semibold text-text-muted border border-border rounded-full bg-surface-container-low/60 hover:text-text hover:border-white/20 transition-colors flex items-center gap-1.5"
+                aria-label="Email"
+              >
+                <Mail className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline">Email</span>
+              </button>
+            )}
+          </div>
+
+          <div className="flex items-center gap-2 flex-wrap">
+            {/* Internal approval chain — Update Status for the role at this stage */}
+            {canActOnChain && (
+              <button
+                type="button"
+                onClick={() => setChainModalOpen(true)}
+                disabled={acting}
+                className="px-5 py-2 text-[12px] font-bold text-primary-foreground bg-primary hover:brightness-110 rounded-full transition-all shadow-sm disabled:opacity-60"
+              >
+                Update Status
+              </button>
+            )}
+
+            {/* Accept/Reject — vendor view only, while pending AND chain done */}
+            {isVendorView && po.status === "pending" && (
+              <>
+                <button
+                  type="button"
+                  onClick={() => setRejectModal(true)}
+                  disabled={acting || !chainDone}
+                  title={!chainDone ? "Awaiting buyer approval" : undefined}
+                  className="px-4 py-2 text-[12px] font-bold text-danger border border-danger/30 bg-danger-soft/40 hover:bg-danger-soft rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5"
+                >
+                  <XCircle className="h-3.5 w-3.5" /> Reject
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setModal(true)}
+                  disabled={acting || !chainDone}
+                  title={!chainDone ? "Awaiting buyer approval" : undefined}
+                  className="px-5 py-2 text-[12px] font-bold text-primary-foreground bg-primary hover:brightness-110 rounded-full transition-all shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Accept PO
+                </button>
+              </>
+            )}
+
+            {/* Admin delete — always available */}
+            {isAdmin && !isVendorView && (
+              <button
+                type="button"
+                onClick={doDelete}
+                disabled={acting}
+                className="px-3 py-1.5 text-[12px] font-bold text-danger border border-danger/30 bg-danger-soft/40 hover:bg-danger-soft rounded-full transition-colors disabled:opacity-60 flex items-center gap-1.5"
+              >
+                <Trash2 className="h-3.5 w-3.5" /> Delete
+              </button>
             )}
           </div>
         </div>
-        <div className="flex items-center gap-2 flex-wrap">
-          <button
-            type="button"
-            onClick={() => window.print()}
-            className="px-3 py-1.5 text-xs font-semibold text-text-muted border border-border rounded-md hover:bg-surface-container-low hover:text-text flex items-center gap-1.5"
-          >
-            <Printer className="h-3.5 w-3.5" /> Print
-          </button>
-          <button
-            type="button"
-            onClick={async () => {
-              try {
-                const res = await poApi.downloadPdf(po.number);
-                const url = URL.createObjectURL(res);
-                const a = document.createElement("a");
-                a.href = url;
-                a.download = `${po.number}.pdf`;
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                setTimeout(() => URL.revokeObjectURL(url), 1000);
-              } catch (err) {
-                toast.error(err?.response?.data?.message ?? "Could not download PDF");
-              }
-            }}
-            className="px-3 py-1.5 text-xs font-semibold text-text-muted border border-border rounded-md hover:bg-surface-container-low hover:text-text flex items-center gap-1.5"
-          >
-            <Download className="h-3.5 w-3.5" /> PDF
-          </button>
-          {isBackoffice && (
-            <button
-              type="button"
-              onClick={() => {
-                const subject = `Purchase Order ${po.number}`;
-                const body = encodeURIComponent(
-                  `Please find PO ${po.number} for your review.\n\nOpen in Suppliers First: ${window.location.href}`,
-                );
-                window.location.href = `mailto:?subject=${encodeURIComponent(subject)}&body=${body}`;
-              }}
-              className="px-3 py-1.5 text-xs font-semibold text-text-muted border border-border rounded-md hover:bg-surface-container-low hover:text-text flex items-center gap-1.5"
-            >
-              <Mail className="h-3.5 w-3.5" /> Email
-            </button>
-          )}
-
-          {/* Internal approval chain — Update Status for the role at this stage */}
-          {canActOnChain && (
-            <button
-              type="button"
-              onClick={() => setChainModalOpen(true)}
-              disabled={acting}
-              className="px-5 py-2 text-sm font-bold text-primary-foreground bg-primary hover:brightness-110 rounded-md disabled:opacity-60"
-            >
-              Update Status
-            </button>
-          )}
-
-          {/* Accept/Reject — vendor view only, while pending AND chain done */}
-          {isVendorView && po.status === "pending" && (
-            <>
-              <button
-                type="button"
-                onClick={doReject}
-                disabled={acting || !chainDone}
-                title={!chainDone ? "Awaiting buyer approval" : undefined}
-                className="px-4 py-2 text-sm font-semibold text-danger border border-danger/30 bg-danger-soft/40 rounded-md hover:bg-danger-soft disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-              >
-                <XCircle className="h-4 w-4" /> Reject
-              </button>
-              <button
-                type="button"
-                onClick={() => setModal(true)}
-                disabled={acting || !chainDone}
-                title={!chainDone ? "Awaiting buyer approval" : undefined}
-                className="px-5 py-2 text-sm font-bold text-primary-foreground bg-primary hover:brightness-110 rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Accept PO
-              </button>
-            </>
-          )}
-
-          {/* Admin delete — always available */}
-          {isAdmin && !isVendorView && (
-            <button
-              type="button"
-              onClick={doDelete}
-              disabled={acting}
-              className="px-3 py-1.5 text-xs font-semibold text-danger border border-danger/30 bg-danger-soft/40 rounded-md hover:bg-danger-soft disabled:opacity-60 flex items-center gap-1.5"
-            >
-              <Trash2 className="h-3.5 w-3.5" /> Delete
-            </button>
-          )}
-        </div>
       </div>
+
+      {/* Admin reopen — undo an INTERNAL-chain rejection so the chain can
+          re-flow (chain-stage rewind, status → pending). Distinct from
+          AdminVendorOverridePanel below, which overrides the VENDOR-side
+          accept/reject decision after the chain has reached `done`. */}
+      {!isVendorView && (
+        <div className="mb-4 print:hidden">
+          <ReopenRejectedButton
+            endpoint={`/pos/${po.number}/reopen`}
+            entityLabel="PO"
+            status={po.status}
+            onReopened={(updated) => setFetched(updated)}
+          />
+        </div>
+      )}
+
+      {/* Admin override of the vendor's accept/reject decision. Only
+          surfaces on the buyer/admin view (not /vendor/...), only renders
+          for admin role, and bypasses both terminal-state + chain-done
+          guards on the backend. Every override is tagged admin_override
+          in approval_history. */}
+      {!isVendorView && (
+        <div className="mb-4 print:hidden">
+          <AdminVendorOverridePanel
+            po={po}
+            onUpdated={(updated) => setFetched(updated)}
+          />
+        </div>
+      )}
 
       {/* Internal-chain banner — only for in-org users. Vendors get a
           neutral "awaiting buyer approval" notice (see below) so they
           don't see internal stage / role detail. */}
       {!chainDone && po.status === "pending" && !isVendorView && (
-        <div className="bg-info-soft border border-info/30 rounded-lg px-4 py-3 mb-6 flex flex-col sm:flex-row sm:items-center gap-3 print:hidden">
+        <div className="bg-info-soft border border-info/30 rounded-2xl px-4 py-3 mb-6 flex flex-col sm:flex-row sm:items-center gap-3 print:hidden">
           <div className="flex items-start gap-3 min-w-0 flex-1">
             <GitBranch className="h-5 w-5 text-info shrink-0 mt-0.5" strokeWidth={2.5} />
             <div className="min-w-0">
@@ -548,55 +686,181 @@ export default function PurchaseOrderDetailPage({ view = "admin" }) {
         </div>
       )}
 
-      {/* Vendor-facing notice — neutral wording, no stage / role detail. */}
+      {/* Vendor-facing chain banner — identical visual structure to the
+          buyer's chain banner (same icon, same layout, same step-rail
+          shape). Content is sanitized so internal stages/roles never leak,
+          but the page reads visually identical to what an internal user
+          sees on the same PO. */}
       {!chainDone && po.status === "pending" && isVendorView && (
-        <div className="bg-info-soft border border-info/30 rounded-lg px-4 py-3 mb-6 flex items-center gap-3 print:hidden">
-          <Clock className="h-5 w-5 text-info" strokeWidth={2.5} />
-          <div>
-            <div className="text-sm font-bold text-info">
-              Awaiting buyer approval
+        <div className="bg-info-soft border border-info/30 rounded-2xl px-4 py-3 mb-6 flex flex-col sm:flex-row sm:items-center gap-3 print:hidden">
+          <div className="flex items-start gap-3 min-w-0 flex-1">
+            <GitBranch className="h-5 w-5 text-info shrink-0 mt-0.5" strokeWidth={2.5} />
+            <div className="min-w-0">
+              <div className="text-sm font-bold text-info">
+                Approval in progress — stage:{" "}
+                <span className="capitalize">Buyer review</span>
+              </div>
+              <div className="text-xs text-text-muted mt-0.5">
+                Step 2 of 3 · You'll be able to Accept once the buyer
+                releases this PO.
+              </div>
             </div>
-            <div className="text-xs text-text-muted mt-0.5">
-              You'll be notified once this PO is released. No action is needed
-              from you yet.
-            </div>
+          </div>
+          {/* Compact step rail — same chip pattern as the buyer's banner,
+              just with sanitized labels (no CFO/CEO/HOD role names). */}
+          <div className="flex items-center gap-1 flex-wrap shrink-0">
+            <span className="text-[10px] uppercase tracking-wider font-bold px-2 py-1 rounded bg-success-soft text-success">
+              Issued
+            </span>
+            <span className="text-[10px] uppercase tracking-wider font-bold px-2 py-1 rounded bg-warning-soft text-warning">
+              Review
+            </span>
+            <span className="text-[10px] uppercase tracking-wider font-bold px-2 py-1 rounded bg-surface-container text-text-subtle">
+              Released
+            </span>
           </div>
         </div>
       )}
 
       {/* Terminal-state banners */}
-      {po.status === "accepted" && (
-        <div className="bg-success-soft border border-success/30 rounded-lg px-4 py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6 print:hidden">
-          <div className="flex items-center gap-3">
-            <CheckCircle2 className="h-5 w-5 text-success" strokeWidth={2.5} />
-            <div className="text-sm font-bold text-success">
-              Vendor accepted — goods can now be received.
+      {po.status === "accepted" && (() => {
+        // Surface the vendor's accept note + voice recording (if any) to the
+        // buyer. Vendor portal hides approval_history via scrubForVendor, so
+        // this block only renders for in-org viewers.
+        const hist = Array.isArray(po.approval_history) ? po.approval_history : [];
+        let accept = null;
+        for (let i = hist.length - 1; i >= 0; i--) {
+          if (hist[i]?.stage === "vendor_decision" && hist[i]?.action === "accepted") {
+            accept = hist[i];
+            break;
+          }
+        }
+        return (
+          <div className="bg-success-soft border border-success/30 rounded-lg px-4 py-3 mb-6 print:hidden">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <CheckCircle2 className="h-5 w-5 text-success" strokeWidth={2.5} />
+                <div className="text-sm font-bold text-success">
+                  Vendor accepted — goods can now be received.
+                </div>
+              </div>
+              {!isVendorView && (() => {
+                const isFinHod = user?.role === "hod" && user.department?.code === "FIN";
+                const isAdmin = user?.role === "admin";
+                const isAssignedAccountant =
+                  user?.role === "accountant" && po.payment_creator_id === user.id;
+                return isAdmin || isFinHod || isAssignedAccountant ? (
+                  <Link
+                    to={`/app/payments/new?po=${po.number}`}
+                    className="px-3 py-2 text-xs font-bold text-primary-foreground bg-primary hover:brightness-110 rounded-md whitespace-nowrap inline-flex items-center gap-1.5 self-start sm:self-auto"
+                  >
+                    Create Payment →
+                  </Link>
+                ) : null;
+              })()}
+            </div>
+            {!isVendorView && (accept?.comment || accept?.voice_note) && (
+              <div className="mt-3 pt-3 border-t border-success/20">
+                {accept.comment && (
+                  <div className="text-xs italic text-text mb-2">
+                    <span className="font-semibold not-italic text-success">
+                      {accept.by_user_name ?? "Vendor"}:
+                    </span>{" "}
+                    &ldquo;{accept.comment}&rdquo;
+                  </div>
+                )}
+                {accept.voice_note && (
+                  <div className="bg-success-soft/40 border border-success/20 rounded-md px-2 py-1.5">
+                    <div className="text-[10px] font-bold uppercase tracking-wider text-success mb-1">
+                      Voice note
+                    </div>
+                    <audio
+                      src={accept.voice_note}
+                      controls
+                      preload="metadata"
+                      className="w-full h-8"
+                    />
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        );
+      })()}
+
+      {/* Item 39: Finance HOD / admin assigns an accountant to draft the
+         payment. Only visible after the PO is accepted (otherwise nothing
+         to draft). Accountants viewing the same PO can see who's been
+         assigned but can't change it. */}
+      {!isVendorView && (po.status === "accepted" || po.status === "fulfilled") && (
+        <PaymentCreatorAssignment
+          po={po}
+          user={user}
+          onAssigned={(updated) => setFetched(updated)}
+        />
+      )}
+      {po.status === "rejected" && (() => {
+        // Find the most recent reject entry in approval_history to figure
+        // out WHO rejected — internal chain (CFO/CEO/HOD/admin) writes
+        // action='reject'; vendor reject now writes stage='vendor_decision'
+        // action='rejected'. We pick the most-recent of either to drive the
+        // banner so admin overrides and re-rejects are picked up too.
+        const hist = Array.isArray(po.approval_history) ? po.approval_history : [];
+        let lastInternal = null;
+        let lastVendor = null;
+        for (let i = hist.length - 1; i >= 0; i--) {
+          const h = hist[i];
+          if (!lastInternal && h?.action === "reject") lastInternal = h;
+          if (!lastVendor && h?.stage === "vendor_decision" && h?.action === "rejected") lastVendor = h;
+          if (lastInternal && lastVendor) break;
+        }
+        // Prefer whichever came later (timestamps are ISO).
+        const pickInternal = lastInternal && (!lastVendor || (lastInternal.at ?? "") >= (lastVendor.at ?? ""));
+        const lastReject = pickInternal ? lastInternal : (lastVendor ?? lastInternal);
+        const isInternal = !!pickInternal;
+        const rejectorLabel = lastReject
+          ? (lastReject.by_user_name
+              ? `${lastReject.by_user_name}${lastReject.by_role ? ` (${lastReject.by_role.toUpperCase()})` : ""}`
+              : (lastReject.by_role
+                  ? lastReject.by_role.toUpperCase()
+                  : (lastReject.stage ? lastReject.stage.replace(/_/g, " ").toUpperCase() : "Approver")))
+          : "The vendor";
+        const headline = isInternal
+          ? `${rejectorLabel} rejected this PO`
+          : `${rejectorLabel} rejected this PO`;
+        const sub = isInternal
+          ? "Internal approval was blocked. See the comment + audit history below for the reason."
+          : "Contact procurement to renegotiate.";
+        return (
+          <div className="bg-danger-soft border border-danger/30 rounded-2xl px-4 py-3 flex items-start gap-3 mb-6 print:hidden">
+            <XCircle className="h-5 w-5 text-danger shrink-0 mt-0.5" strokeWidth={2.5} />
+            <div className="min-w-0 flex-1">
+              <div className="text-sm font-bold text-danger">{headline}</div>
+              <div className="text-xs text-text-muted mt-0.5">{sub}</div>
+              {lastReject?.comment && (
+                <div className="mt-2 px-3 py-2 rounded border-l-2 border-danger bg-danger-soft/40 text-xs text-text italic">
+                  &ldquo;{lastReject.comment}&rdquo;
+                </div>
+              )}
+              {lastReject?.voice_note && (
+                <div className="mt-2 bg-danger-soft/40 border border-danger/20 rounded-md px-2 py-1.5">
+                  <div className="text-[10px] font-bold uppercase tracking-wider text-danger mb-1">
+                    Voice note
+                  </div>
+                  <audio
+                    src={lastReject.voice_note}
+                    controls
+                    preload="metadata"
+                    className="w-full h-8"
+                  />
+                </div>
+              )}
             </div>
           </div>
-          {/* Finance / accountant / admin can issue a payment from here */}
-          {!isVendorView &&
-            (user?.role === "admin" ||
-              user?.role === "accountant" ||
-              (user?.role === "hod" && user.department?.code === "FIN")) && (
-              <Link
-                to={`/app/payments/new?po=${po.number}`}
-                className="px-3 py-2 text-xs font-bold text-primary-foreground bg-primary hover:brightness-110 rounded-md whitespace-nowrap inline-flex items-center gap-1.5 self-start sm:self-auto"
-              >
-                Create Payment →
-              </Link>
-            )}
-        </div>
-      )}
-      {po.status === "rejected" && (
-        <div className="bg-danger-soft border border-danger/30 rounded-lg px-4 py-3 flex items-center gap-3 mb-6 print:hidden">
-          <XCircle className="h-5 w-5 text-danger" strokeWidth={2.5} />
-          <div className="text-sm font-bold text-danger">
-            Vendor rejected this PO. Contact procurement to renegotiate.
-          </div>
-        </div>
-      )}
+        );
+      })()}
       {po.status === "pending" && isVendorView && chainDone && (
-        <div className="bg-warning-soft border border-warning/30 rounded-lg px-4 py-3 flex items-center gap-3 mb-6 print:hidden">
+        <div className="bg-warning-soft border border-warning/30 rounded-2xl px-4 py-3 flex items-center gap-3 mb-6 print:hidden">
           <Clock className="h-5 w-5 text-warning" strokeWidth={2.5} />
           <div className="text-sm font-semibold text-warning">
             Action needed — please Accept or Reject this PO.
@@ -604,126 +868,199 @@ export default function PurchaseOrderDetailPage({ view = "admin" }) {
         </div>
       )}
 
-      <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 print:block">
-        <div className="xl:col-span-8 space-y-6">
-          <section className="bg-surface-container-lowest rounded-md p-6 border border-border">
-            <h2 className="text-lg font-bold text-text mb-6 flex items-center gap-2">
-              <Building2 className="h-5 w-5 text-primary print:hidden" /> Vendor &amp;
-              References
+      <div className="grid grid-cols-1 xl:grid-cols-12 gap-4 sm:gap-6 print:block">
+        <div className="xl:col-span-8 space-y-4 sm:space-y-6">
+          <section className="glass-card rounded-2xl p-3 sm:p-6 print-reset print:bg-surface-container-lowest print:border print:border-border print:rounded-md">
+            <h2 className="text-sm font-semibold text-text mb-4 sm:mb-5 flex items-center gap-2">
+              <Info className="h-4 w-4 text-text-muted print:hidden" strokeWidth={2} />
+              Vendor &amp; References
             </h2>
-            <div className="grid grid-cols-2 gap-x-6 gap-y-5">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 sm:gap-x-8 gap-y-4 sm:gap-y-6 print-meta-grid">
               <Meta label="Vendor" value={po.vendor} />
               <Meta label="PR Reference" value={po.pr_number} />
               <Meta label="Business Unit" value={po.business_unit} />
               <Meta label="PO Date" value={po.po_date} />
               <Meta label="Expected Delivery" value={po.expected_delivery} />
+              <Meta
+                label="Transport arranged by"
+                value={
+                  po.transport_arranged_by === "buyer"
+                    ? `Buyer${po.transport_vendor?.vendor_name ? ` · ${po.transport_vendor.vendor_name}` : ""}`
+                    : "Vendor (FOR)"
+                }
+              />
+              {po.notes && (
+                <div className="md:col-span-2 pt-2 border-t border-border">
+                  <Meta label="Notes / Terms" value={po.notes} />
+                </div>
+              )}
             </div>
-            {po.notes && (
-              <div className="mt-6 pt-6 border-t border-border">
-                <div className="text-xs font-semibold text-text-muted uppercase tracking-wider mb-1">
-                  Notes / Terms
-                </div>
-                <div className="text-sm text-text whitespace-pre-line">
-                  {po.notes}
-                </div>
-              </div>
-            )}
           </section>
 
-          <section className="bg-surface-container-lowest rounded-md overflow-hidden border border-border">
-            <div className="p-6 border-b border-border flex items-center justify-between">
-              <h2 className="text-lg font-bold text-text">Line Items</h2>
-              <span className="text-xs text-text-muted">
+          <section className="glass-card rounded-2xl overflow-hidden print-reset print:bg-surface-container-lowest print:border print:border-border print:rounded-md">
+            <div className="px-3 sm:px-6 py-3 sm:py-4 border-b border-border flex justify-between items-center print:p-0 print:border-0 print:mb-2">
+              <h2 className="text-sm font-semibold text-text flex items-center gap-2">
+                <ListChecks className="h-4 w-4 text-text-muted print:hidden" strokeWidth={2} />
+                Line Items
+              </h2>
+              <span className="text-xs text-text-muted print:text-[8pt]">
                 {items.length} line{items.length === 1 ? "" : "s"}
               </span>
             </div>
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm min-w-[800px]">
-                <thead>
-                  <tr className="bg-surface-container-low text-[10px] font-bold text-text-muted uppercase tracking-widest">
-                    <th className="px-4 py-3 text-left">Item</th>
-                    <th className="px-3 py-3 text-left">Code</th>
-                    <th className="px-3 py-3 text-left">HSN</th>
-                    <th className="px-3 py-3 text-right">UOM</th>
-                    <th className="px-3 py-3 text-right">Qty</th>
-                    <th className="px-3 py-3 text-right">Rate</th>
-                    <th className="px-3 py-3 text-right">GST</th>
-                    <th className="px-4 py-3 text-right">Total</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {items.length === 0 ? (
-                    <tr>
-                      <td
-                        colSpan={8}
-                        className="px-6 py-8 text-center text-text-muted"
-                      >
-                        No items on this PO.
-                      </td>
-                    </tr>
-                  ) : (
-                    items.map((it, i) => {
-                      const qty = Number(it.qty) || 0;
-                      const rate =
-                        Number(it.rate) || Number(it.price) || 0;
-                      const gstPct = Number(it.gst) || 0;
-                      const taxable = qty * rate;
-                      const gstAmt = (taxable * gstPct) / 100;
-                      const lineTotal = taxable + gstAmt;
-                      return (
-                        <tr
-                          key={i}
-                          className="border-b border-border hover:bg-surface-container-low"
-                        >
-                          <td className="px-4 py-3 font-medium">
-                            {display(it.name)}
-                          </td>
-                          <td className="px-3 py-3 text-text-muted font-mono text-xs">
-                            {display(it.code)}
-                          </td>
-                          <td className="px-3 py-3 text-text-muted font-mono text-xs">
-                            {display(it.hsn_code)}
-                          </td>
-                          <td className="px-3 py-3 text-right text-text-muted">
-                            {display(it.uom)}
-                          </td>
-                          <td className="px-3 py-3 text-right font-medium">
-                            {qty}
-                          </td>
-                          <td className="px-3 py-3 text-right font-mono">
-                            {currency(rate)}
-                          </td>
-                          <td className="px-3 py-3 text-right text-text-muted text-xs">
-                            {gstPct}%
-                          </td>
-                          <td className="px-4 py-3 text-right font-mono font-semibold">
+
+            {items.length === 0 ? (
+              <div className="px-6 py-12 text-center text-text-muted text-sm">
+                No items on this PO.
+              </div>
+            ) : (
+              <>
+                {/* Mobile cards — cleaner than horizontal-scroll on phones */}
+                <div className="md:hidden divide-y divide-border print:hidden">
+                  {items.map((it, i) => {
+                    const qty = Number(it.qty) || 0;
+                    const rate = Number(it.rate) || Number(it.price) || 0;
+                    const gstPct = Number(it.gst) || 0;
+                    const taxable = qty * rate;
+                    const lineTotal = taxable + (taxable * gstPct) / 100;
+                    return (
+                      <div key={i} className="px-4 py-3.5">
+                        <div className="flex items-start justify-between gap-3 mb-2">
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-2">
+                              <span className="text-[10px] font-bold text-text-muted">
+                                #{i + 1}
+                              </span>
+                              <span className="font-semibold text-text text-sm truncate">
+                                {display(it.name)}
+                              </span>
+                            </div>
+                            {!isEmpty(it.code) && (
+                              <div className="text-xs text-info font-mono mt-0.5">
+                                {it.code}
+                                {!isEmpty(it.hsn_code) && (
+                                  <span className="text-text-muted">
+                                    {" "}· HSN {it.hsn_code}
+                                  </span>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                          <div className="text-right shrink-0">
+                            <div className="text-base font-bold text-text tabular-nums leading-tight">
+                              {qty}
+                            </div>
+                            <div className="text-[10px] uppercase tracking-wider text-text-muted">
+                              {display(it.uom)}
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex items-center justify-between gap-3 pt-2 border-t border-border/40 text-xs">
+                          <div className="text-text-muted">
+                            <span className="font-mono text-text">
+                              {currency(rate)}
+                            </span>{" "}
+                            ×{" "}
+                            <span className="font-mono">{qty}</span>
+                            <span className="text-text-subtle">
+                              {" "}+ {gstPct}% GST
+                            </span>
+                          </div>
+                          <div className="font-mono font-bold text-text tabular-nums text-sm">
                             {currency(lineTotal)}
-                          </td>
-                        </tr>
-                      );
-                    })
-                  )}
-                </tbody>
-              </table>
-            </div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Desktop table */}
+                <div className="hidden md:block overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="bg-surface-container-low/40 text-[10px] font-bold text-text-muted uppercase tracking-[0.16em] border-b border-border">
+                        <th className="px-5 py-3 text-left">Item</th>
+                        <th className="px-3 py-3 text-left">Code / HSN</th>
+                        <th className="px-3 py-3 text-right">UOM</th>
+                        <th className="px-3 py-3 text-right">Qty</th>
+                        <th className="px-3 py-3 text-right">Rate</th>
+                        <th className="px-3 py-3 text-right">GST</th>
+                        <th className="px-5 py-3 text-right">Total</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-border/60">
+                      {items.map((it, i) => {
+                        const qty = Number(it.qty) || 0;
+                        const rate = Number(it.rate) || Number(it.price) || 0;
+                        const gstPct = Number(it.gst) || 0;
+                        const taxable = qty * rate;
+                        const lineTotal = taxable + (taxable * gstPct) / 100;
+                        return (
+                          <tr
+                            key={i}
+                            className="hover:bg-surface-container-low/40 transition-colors"
+                          >
+                            <td className="px-5 py-3.5 font-medium text-text">
+                              {display(it.name)}
+                            </td>
+                            <td className="px-3 py-3.5 font-mono text-xs">
+                              {!isEmpty(it.code) ? (
+                                <span className="text-info">{it.code}</span>
+                              ) : (
+                                <span className="text-text-subtle">—</span>
+                              )}
+                              {!isEmpty(it.hsn_code) && (
+                                <div className="text-text-subtle mt-0.5">
+                                  HSN {it.hsn_code}
+                                </div>
+                              )}
+                            </td>
+                            <td className="px-3 py-3.5 text-right text-text-muted">
+                              {display(it.uom)}
+                            </td>
+                            <td className="px-3 py-3.5 text-right font-medium tabular-nums">
+                              {qty}
+                            </td>
+                            <td className="px-3 py-3.5 text-right font-mono tabular-nums text-text">
+                              {currency(rate)}
+                            </td>
+                            <td className="px-3 py-3.5 text-right text-text-muted text-xs tabular-nums">
+                              {gstPct}%
+                            </td>
+                            <td className="px-5 py-3.5 text-right font-mono font-bold tabular-nums text-text">
+                              {currency(lineTotal)}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </>
+            )}
           </section>
         </div>
 
-        <div className="xl:col-span-4 space-y-6 print:mt-6">
-          <section className="bg-surface-container-lowest rounded-md p-6 border border-border">
-            <h2 className="text-lg font-bold text-text mb-6">Summary</h2>
-            <div className="space-y-3">
+        <div className="xl:col-span-4 space-y-4 sm:space-y-6 print:mt-6">
+          <section className="glass-card rounded-2xl p-3 sm:p-6 print-reset print:bg-surface-container-lowest print:border print:border-border print:rounded-md">
+            <h2 className="text-sm font-semibold text-text mb-4 sm:mb-5 flex items-center gap-2">
+              <Banknote className="h-4 w-4 text-text-muted print:hidden" strokeWidth={2} />
+              Summary
+            </h2>
+            <div className="space-y-2.5">
               <div className="flex justify-between text-sm">
-                <span className="text-text-muted">Taxable Subtotal</span>
-                <span className="font-mono">{currency(po.subtotal)}</span>
+                <span className="text-text-muted">Taxable subtotal</span>
+                <span className="font-mono tabular-nums text-text">{currency(po.subtotal)}</span>
               </div>
               <div className="flex justify-between text-sm">
-                <span className="text-text-muted">GST Total</span>
-                <span className="font-mono">{currency(po.tax)}</span>
+                <span className="text-text-muted">GST total</span>
+                <span className="font-mono tabular-nums text-text">{currency(po.tax)}</span>
               </div>
-              <div className="pt-3 mt-3 border-t border-border flex justify-between items-center">
-                <span className="font-bold text-text">Grand Total</span>
-                <span className="text-xl font-black text-primary font-mono">
+              <div className="pt-3 mt-2 border-t border-border flex justify-between items-baseline">
+                <span className="text-[11px] font-bold uppercase tracking-widest text-text-muted">
+                  Grand total
+                </span>
+                <span className="text-2xl font-black text-primary font-mono tabular-nums">
                   {currency(po.total)}
                 </span>
               </div>
@@ -744,6 +1081,84 @@ export default function PurchaseOrderDetailPage({ view = "admin" }) {
         </div>
       </div>
 
+      {/* Standalone send-voice-note panel. Vendor + admin can leave a
+          free-form text + voice message any time on the PO; the result is
+          appended to approval_history server-side so the consolidated
+          VoiceNotesPanel below + the activity feed pick it up
+          automatically. Other in-org roles can listen but not post — they
+          have their own channels (chain comments, vendor feedback). */}
+      {(isVendorView || isAdmin) && (
+        <div className="mt-6 print:hidden">
+          <SendVoiceNotePanel
+            poNumber={po.number}
+            onSent={(updated) => setFetched(updated)}
+          />
+        </div>
+      )}
+
+      {/* Consolidated voice notes — every recording attached to this PO,
+          in one place. Pulls from:
+            * approval_history entries with voice_note (vendor accept/reject,
+              admin override, free-form vendor_note). Buyer view reads the
+              full history; vendor view reads `vendor_visible_notes` which
+              the backend builds from a vendor-safe subset of history (their
+              own decisions + free-form notes + admin overrides on those —
+              chain-stage approver comments stay hidden).
+            * app_po_document rows with voice_note (dispatch-doc captions) —
+              same data for both audiences; vendor uploaded them.
+          Hidden from employees + customers — they don't see vendor docs. */}
+      {!["employee", "customer"].includes(user?.role) && (() => {
+        const hist = isVendorView
+          ? (Array.isArray(po.vendor_visible_notes) ? po.vendor_visible_notes : [])
+          : (Array.isArray(po.approval_history) ? po.approval_history : []);
+        const docs = Array.isArray(poDocs) ? poDocs : [];
+        const histNotes = hist
+          .filter((h) => h?.voice_note)
+          .map((h) => ({
+            audio: h.voice_note,
+            by: h.by_user_name ?? "Vendor",
+            role: h.by_role ?? null,
+            source: h.stage === "vendor_decision"
+              ? (h.action === "accepted"
+                  ? "Vendor accepted PO"
+                  : h.action === "rejected"
+                    ? "Vendor rejected PO"
+                    : h.admin_override
+                      ? `Admin override (${h.action})`
+                      : `Vendor ${h.action}`)
+              : h.stage === "vendor_note"
+                ? "Voice message"
+                : `Stage: ${(h.stage ?? "").replace(/_/g, " ")}`,
+            at: h.at ?? null,
+            comment: h.comment ?? null,
+          }));
+        const docNotes = docs
+          .filter((d) => d?.voice_note)
+          .map((d) => ({
+            audio: d.voice_note,
+            by: d.uploaded_by?.name ?? "Vendor",
+            role: "vendor",
+            source: `${
+              d.doc_type === "e_way_bill" ? "E-Way Bill"
+                : d.doc_type === "invoice" ? "Invoice"
+                : d.doc_type === "delivery_note" ? "Delivery Note"
+                : "Document"
+            } upload · ${d.original_name}`,
+            at: d.uploaded_at ?? null,
+            comment: d.caption ?? null,
+          }));
+        const notes = [...histNotes, ...docNotes];
+        if (notes.length === 0) return null;
+        return (
+          <div className="mt-6 print:hidden">
+            <VoiceNotesPanel
+              title={isVendorView ? "Your voice notes" : "Voice notes from vendor"}
+              notes={notes}
+            />
+          </div>
+        );
+      })()}
+
       {/* Dispatch documents (FLOW.md item 15) — visible once PO is in a
           state where the vendor would be expected to dispatch. Hidden from
           employees and customers (sensitive vendor invoices / E-way bills).
@@ -760,8 +1175,10 @@ export default function PurchaseOrderDetailPage({ view = "admin" }) {
 
       {/* Vendor feedback — any in-org viewer can leave one against the PO's
           vendor. Hidden in vendor portal view (vendors don't see feedback
-          against themselves yet). */}
-      {!isVendorView && po.vendor && (
+          against themselves yet). Only unlocked once goods have actually
+          been received against this PO (at least one GRN exists) — there's
+          nothing meaningful to score before then. */}
+      {!isVendorView && po.vendor && poGrns.length > 0 && (
         <div className="mt-6 print:hidden">
           <VendorFeedbackCard
             vendorName={po.vendor}
@@ -772,8 +1189,9 @@ export default function PurchaseOrderDetailPage({ view = "admin" }) {
 
       {/* Vendor rating — multi-dimensional scorecard. Each in-org user has
           one row per vendor (upserted). Aggregate is computed server-side
-          and shown at the top of the card. */}
-      {!isVendorView && po.vendor && (
+          and shown at the top of the card. Same gate as the feedback card:
+          unlocked only after the first GRN against this PO. */}
+      {!isVendorView && po.vendor && poGrns.length > 0 && (
         <div className="mt-6 print:hidden">
           <VendorRatingCard vendorName={po.vendor} />
         </div>
@@ -784,6 +1202,15 @@ export default function PurchaseOrderDetailPage({ view = "admin" }) {
           poNumber={po.number}
           onClose={() => setModal(false)}
           onAccept={doAccept}
+          busy={acting}
+        />
+      )}
+
+      {rejectModal && (
+        <RejectPOModal
+          poNumber={po.number}
+          onClose={() => setRejectModal(false)}
+          onReject={doReject}
           busy={acting}
         />
       )}
@@ -805,6 +1232,148 @@ export default function PurchaseOrderDetailPage({ view = "admin" }) {
           { label: "Vendor Acceptance", name: po.vendor },
         ]}
       />
+    </div>
+  );
+}
+
+/**
+ * Finance HOD / admin assigns an accountant to draft the payment for this PO
+ * (FLOW.md item 39). Accountants only see who's currently assigned; the
+ * payment-creator gate itself is enforced server-side in PaymentController.
+ */
+function PaymentCreatorAssignment({ po, user, onAssigned }) {
+  // Hooks must run unconditionally — visibility gates are applied below.
+  const [accountants, setAccountants] = useState(null);
+  const [open, setOpen] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const toast = useToast();
+
+  const isFinHod = user?.role === "hod" && user.department?.code === "FIN";
+  const isAdmin = user?.role === "admin";
+  const canAssign = isFinHod || isAdmin;
+  // Accountants don't need to see the section unless they're assigned (or no
+  // one is, in which case it's irrelevant to them) — keep the rail clean.
+  const isAccountant = user?.role === "accountant";
+  if (!canAssign && !isAccountant) return null;
+  if (isAccountant && !po.payment_creator_id) return null;
+
+  const openPicker = async () => {
+    setOpen(true);
+    if (accountants === null) {
+      try {
+        const r = await client.get("/users/accountants");
+        setAccountants(r.data?.data ?? []);
+      } catch {
+        setAccountants([]);
+        toast.error("Couldn't load accountants list.");
+      }
+    }
+  };
+
+  const assign = async (userId) => {
+    setSaving(true);
+    try {
+      const r = await client.post(`/pos/${po.number}/assign-payment-creator`, { user_id: userId });
+      onAssigned?.(r.data?.data ?? po);
+      setOpen(false);
+      toast.success(userId ? "Payment creator assigned." : "Assignment cleared.");
+    } catch (err) {
+      toast.error(err?.response?.data?.message ?? "Could not assign.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const currentName = po.payment_creator?.name ?? null;
+
+  return (
+    <div className="bg-surface-container-lowest border border-border rounded-lg px-4 py-3 mb-6 print:hidden flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+      <div className="flex items-center gap-3 min-w-0">
+        <Banknote className="h-5 w-5 text-info shrink-0" />
+        <div className="min-w-0">
+          <div className="text-sm font-semibold text-text">Payment creator</div>
+          <div className="text-xs text-text-muted truncate">
+            {currentName
+              ? <>Assigned to <span className="font-semibold text-text">{currentName}</span></>
+              : <>No accountant assigned — only Finance HOD / admin can draft this PO's payment.</>}
+          </div>
+        </div>
+      </div>
+      {canAssign && (
+        <button
+          type="button"
+          onClick={openPicker}
+          disabled={saving}
+          className="px-3 py-2 text-xs font-bold text-info border border-info/30 hover:bg-info-soft rounded-md whitespace-nowrap inline-flex items-center gap-1.5 self-start sm:self-auto disabled:opacity-60"
+        >
+          {currentName ? "Change" : "Assign accountant"}
+        </button>
+      )}
+
+      {open && (
+        <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => !saving && setOpen(false)}>
+          <div className="bg-surface-container-lowest border border-border rounded-lg w-full max-w-md shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <div className="px-5 py-4 border-b border-border">
+              <h3 className="text-lg font-bold text-text">Assign payment creator</h3>
+              <p className="text-xs text-text-muted">
+                Pick an accountant to draft the payment for {po.number}. Only they (or the Finance HOD) will be able to create the payment.
+              </p>
+            </div>
+            <div className="p-3 max-h-[50vh] overflow-y-auto">
+              {accountants === null ? (
+                <div className="py-6 flex items-center justify-center text-text-muted text-sm">
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" /> Loading…
+                </div>
+              ) : accountants.length === 0 ? (
+                <p className="text-sm text-text-muted px-3 py-4">No accountants in this org yet.</p>
+              ) : (
+                <ul className="space-y-1">
+                  {accountants.map((a) => (
+                    <li key={a.id}>
+                      <button
+                        type="button"
+                        onClick={() => assign(a.id)}
+                        disabled={saving}
+                        className={`w-full flex items-center justify-between gap-3 px-3 py-2 rounded-md text-left transition-colors ${
+                          po.payment_creator_id === a.id
+                            ? "bg-info-soft text-info"
+                            : "hover:bg-surface-container-low text-text"
+                        }`}
+                      >
+                        <div className="min-w-0">
+                          <div className="text-sm font-semibold truncate">{a.name}</div>
+                          <div className="text-xs text-text-muted truncate">{a.email}</div>
+                        </div>
+                        {po.payment_creator_id === a.id && (
+                          <CheckCircle2 className="h-4 w-4 text-info shrink-0" />
+                        )}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+            <div className="px-5 py-3 border-t border-border flex justify-between gap-2 bg-surface-container-low">
+              {po.payment_creator_id ? (
+                <button
+                  onClick={() => assign(null)}
+                  disabled={saving}
+                  className="text-xs font-bold text-danger hover:underline"
+                >
+                  Clear assignment
+                </button>
+              ) : <span />}
+              <button
+                onClick={() => setOpen(false)}
+                disabled={saving}
+                className="px-4 py-2 text-sm border border-border rounded-md hover:bg-surface-container-lowest"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

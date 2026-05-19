@@ -22,6 +22,7 @@ import paymentApi from "../api.js";
 import { useAuthStore } from "../../auth/store.js";
 import { useToast } from "../../../hooks/useToast.jsx";
 import ChainStatusModal from "../../../components/feedback/ChainStatusModal.jsx";
+import ReopenRejectedButton from "../../../components/admin/ReopenRejectedButton.jsx";
 import PrintLetterhead from "../../../components/print/PrintLetterhead.jsx";
 import PrintFooter from "../../../components/print/PrintFooter.jsx";
 import PrintActions from "../../../components/print/PrintActions.jsx";
@@ -355,6 +356,16 @@ export default function PaymentDetailPage() {
           pdfFilename={`${payment.number}.pdf`}
           onError={(msg) => toast.error(msg)}
           onPdfHint={(msg) => toast.info(msg)}
+        />
+      </div>
+
+      {/* Admin reopen — undo a rejection so the payment chain can re-flow */}
+      <div className="mb-4 print:hidden">
+        <ReopenRejectedButton
+          endpoint={`/payments/${payment.number}/reopen`}
+          entityLabel="payment"
+          status={payment.status}
+          onReopened={(updated) => setFetched(updated)}
         />
       </div>
 

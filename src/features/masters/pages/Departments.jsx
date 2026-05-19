@@ -1,42 +1,42 @@
 import { useEffect, useMemo, useState } from "react";
 import {
-  Plus,
-  Briefcase,
-  Edit3,
-  Trash2,
-  Search,
-  AlertTriangle,
+  Plus, Briefcase, Edit3, Trash2, Search, AlertTriangle,
+  CheckCircle2, MinusCircle, Users as UsersIcon, BarChart3,
+  UserCircle2, X,
 } from "lucide-react";
 import PageHeader from "../../../components/data/PageHeader.jsx";
 import StatusPill from "../../../components/data/StatusPill.jsx";
 import RefreshButton from "../../../components/data/RefreshButton.jsx";
 import EmptyState from "../../../components/ui/EmptyState.jsx";
+import KpiStatCard from "../../../components/data/KpiStatCard.jsx";
 import EditDepartmentDrawer from "../departments/EditDepartmentDrawer.jsx";
 import Skeleton from "../../../components/feedback/Skeleton.jsx";
 import { useDepartmentsStore } from "../departments/store.js";
 import { useToast } from "../../../hooks/useToast.jsx";
 
-function SkRow() {
+const BUCKETS = {
+  all:      () => true,
+  active:   (d) => !!d.active,
+  inactive: (d) => !d.active,
+  staffed:  (d) => (d.users_count ?? 0) > 0,
+};
+
+function SkDeptCard() {
   return (
-    <tr>
-      <td className="px-6 py-4"><Skeleton className="h-4 w-16" /></td>
-      <td className="px-6 py-4">
+    <div className="bg-surface-container-lowest border border-border rounded-xl p-3 sm:p-4 flex items-center gap-3 sm:gap-4">
+      <Skeleton className="h-11 w-11 rounded-xl shrink-0" />
+      <div className="flex-1 min-w-0 space-y-2">
         <div className="flex items-center gap-2">
-          <Skeleton className="h-4 w-4" />
-          <Skeleton className="h-4 w-32" />
+          <Skeleton className="h-3 w-12" />
+          <Skeleton className="h-4 w-40" />
         </div>
-      </td>
-      <td className="px-6 py-4"><Skeleton className="h-3 w-28" /></td>
-      <td className="px-6 py-4"><Skeleton className="h-3 w-44" /></td>
-      <td className="px-6 py-4 text-right"><Skeleton className="h-4 w-8 ml-auto" /></td>
-      <td className="px-6 py-4"><Skeleton className="h-5 w-16 rounded-full" /></td>
-      <td className="px-6 py-4">
-        <div className="flex items-center justify-end gap-2">
-          <Skeleton className="h-4 w-4" />
-          <Skeleton className="h-4 w-4" />
-        </div>
-      </td>
-    </tr>
+        <Skeleton className="h-3 w-56" />
+      </div>
+      <div className="hidden md:flex items-center gap-2">
+        <Skeleton className="h-5 w-20 rounded" />
+        <Skeleton className="h-5 w-16 rounded-full" />
+      </div>
+    </div>
   );
 }
 
@@ -49,7 +49,7 @@ export default function DepartmentsPage() {
 
   const [editing, setEditing] = useState(null);
   const [query, setQuery] = useState("");
-  const [activeFilter, setActiveFilter] = useState("all");
+  const [bucket, setBucket] = useState("all");
   const [busyCode, setBusyCode] = useState(null);
 
   useEffect(() => {
@@ -57,11 +57,20 @@ export default function DepartmentsPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  const counts = useMemo(
+    () => ({
+      total:    items.length,
+      active:   items.filter(BUCKETS.active).length,
+      inactive: items.filter(BUCKETS.inactive).length,
+      staffed:  items.filter(BUCKETS.staffed).length,
+    }),
+    [items],
+  );
+
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     return items.filter((d) => {
-      if (activeFilter === "active" && !d.active) return false;
-      if (activeFilter === "inactive" && d.active) return false;
+      if (!BUCKETS[bucket](d)) return false;
       if (!q) return true;
       return (
         d.code.toLowerCase().includes(q) ||
@@ -69,13 +78,20 @@ export default function DepartmentsPage() {
         (d.head_name ?? "").toLowerCase().includes(q)
       );
     });
-  }, [items, query, activeFilter]);
+  }, [items, query, bucket]);
 
-  const handleDelete = async (d) => {
+  const toggleBucket = (b) => setBucket((prev) => (prev === b ? "all" : b));
+
+  const clearFilters = () => { setQuery(""); setBucket("all"); };
+
+  const hasFilters = query !== "" || bucket !== "all";
+
+  const handleDelete = async (e, d) => {
+    e.stopPropagation();
     const linked = d.users_count ?? 0;
     const force = linked > 0;
     const msg = force
-      ? `Department "${d.name}" still has ${linked} user(s) assigned. Deleting will leave them without a department. Continue?`
+      ? `Department "${d.name}" still has ${linked} user${linked === 1 ? "" : "s"} assigned. Deleting will leave them without a department. Continue?`
       : `Delete department "${d.name}"?`;
     if (!window.confirm(msg)) return;
 
@@ -86,33 +102,18 @@ export default function DepartmentsPage() {
     } catch (err) {
       const status = err?.response?.status;
       const message = err?.response?.data?.message ?? "Could not delete department";
-      // 409 from controller when users are linked and force not passed —
-      // we already passed force when count>0, so this only fires on race.
-      if (status === 409) {
-        toast.warning(message);
-      } else {
-        toast.error(message);
-      }
+      if (status === 409) toast.warning(message);
+      else toast.error(message);
     } finally {
       setBusyCode(null);
     }
   };
 
-  const counts = useMemo(
-    () => ({
-      total: items.length,
-      active: items.filter((d) => d.active).length,
-      inactive: items.filter((d) => !d.active).length,
-      withUsers: items.filter((d) => (d.users_count ?? 0) > 0).length,
-    }),
-    [items],
-  );
-
   return (
-    <div className="max-w-[1200px] mx-auto">
+    <div className="max-w-[1200px] mx-auto pb-12">
       <PageHeader
         title="Departments"
-        subtitle="Organisational units used for approval routing and reporting. HODs are tied to a department to drive the consensus + approval flows."
+        subtitle="Organisational units used for approval routing and reporting. HODs are tied to a department to drive consensus and approvals."
         actions={
           <>
             <RefreshButton onRefresh={fetchAll} loading={loading} />
@@ -126,173 +127,196 @@ export default function DepartmentsPage() {
         }
       />
 
-      {/* Stats row */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
-        {[
-          { label: "Total", value: counts.total },
-          { label: "Active", value: counts.active },
-          { label: "Inactive", value: counts.inactive },
-          { label: "With members", value: counts.withUsers },
-        ].map((s) => (
-          <div
-            key={s.label}
-            className="glass-card rounded-2xl p-4"
-          >
-            <div className="text-[10px] uppercase tracking-widest font-bold text-text-muted">
-              {s.label}
-            </div>
-            <div className="mt-1">
-              {loading && items.length === 0 ? (
-                <Skeleton className="h-7 w-12" />
-              ) : (
-                <div className="text-2xl font-black tracking-tight">
-                  {s.value}
-                </div>
-              )}
-            </div>
-          </div>
-        ))}
+      {/* KPI strip — clickable buckets */}
+      <div className="-mx-4 sm:mx-0 mb-5">
+        <div className="flex sm:grid sm:grid-cols-4 gap-3 sm:gap-4 px-4 sm:px-0 overflow-x-auto sm:overflow-visible snap-x snap-mandatory pb-1 sm:pb-0">
+          <KpiStatCard
+            label="Total"
+            value={counts.total}
+            icon={BarChart3}
+            tone="info"
+            active={bucket === "all"}
+            onClick={() => setBucket("all")}
+          />
+          <KpiStatCard
+            label="Active"
+            value={counts.active}
+            icon={CheckCircle2}
+            tone="success"
+            active={bucket === "active"}
+            onClick={() => toggleBucket("active")}
+          />
+          <KpiStatCard
+            label="Inactive"
+            value={counts.inactive}
+            icon={MinusCircle}
+            tone="neutral"
+            active={bucket === "inactive"}
+            onClick={() => toggleBucket("inactive")}
+          />
+          <KpiStatCard
+            label="With Members"
+            value={counts.staffed}
+            icon={UsersIcon}
+            tone="warning"
+            active={bucket === "staffed"}
+            onClick={() => toggleBucket("staffed")}
+          />
+        </div>
       </div>
 
       {/* Filters */}
-      <div className="glass-card rounded-2xl p-3 mb-4 flex flex-wrap gap-3 items-center">
+      <div className="bg-surface-container-lowest border border-border rounded-xl p-3 mb-4 flex flex-wrap gap-3 items-center">
         <div className="relative flex-1 min-w-[260px]">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-text-muted" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-text-subtle pointer-events-none" />
           <input
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search by code, name or head…"
-            className="w-full bg-transparent border border-border rounded-md focus:border-primary focus:ring-0 pl-10 pr-3 py-2 text-sm text-text outline-none"
+            className="w-full bg-surface-container-low border border-border rounded-md focus:border-primary focus:ring-0 pl-10 pr-3 py-2 text-sm text-text outline-none"
           />
         </div>
-        <select
-          value={activeFilter}
-          onChange={(e) => setActiveFilter(e.target.value)}
-          className="bg-transparent border border-border rounded-md focus:border-primary focus:ring-0 py-2 pl-3 pr-8 text-sm text-text outline-none"
-        >
-          <option value="all">All</option>
-          <option value="active">Active only</option>
-          <option value="inactive">Inactive only</option>
-        </select>
+        {hasFilters && (
+          <button
+            onClick={clearFilters}
+            className="text-xs text-text-muted hover:text-text inline-flex items-center gap-1 px-2 py-1 rounded hover:bg-surface-container-low"
+          >
+            <X className="h-3 w-3" /> Clear
+          </button>
+        )}
       </div>
 
-      <div className="bg-surface-container-lowest rounded-lg overflow-hidden border border-border shadow-sm">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="bg-surface-container-low text-[10px] font-bold text-text-muted uppercase tracking-widest">
-              <th className="px-6 py-3 text-left">Code</th>
-              <th className="px-6 py-3 text-left">Department</th>
-              <th className="px-6 py-3 text-left">Head</th>
-              <th className="px-6 py-3 text-left">Description</th>
-              <th className="px-6 py-3 text-right">Members</th>
-              <th className="px-6 py-3 text-left">Status</th>
-              <th className="px-6 py-3 w-28 text-right">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-border">
-            {loading && items.length === 0 ? (
-              Array.from({ length: 6 }).map((_, i) => <SkRow key={i} />)
-            ) : filtered.length === 0 ? (
-              <tr>
-                <td colSpan={7} className="px-6 py-16">
-                  <EmptyState
-                    icon={Briefcase}
-                    title={
-                      items.length === 0
-                        ? "No departments yet"
-                        : "No departments match your filters"
-                    }
-                    description={
-                      items.length === 0
-                        ? "Create one to start routing approvals."
-                        : "Try clearing the search or status filter."
-                    }
-                    action={
-                      items.length === 0
-                        ? { onClick: () => setEditing({}), label: "Create your first department" }
-                        : undefined
-                    }
-                  />
-                </td>
-              </tr>
-            ) : (
-              filtered.map((d) => (
-                <tr
+      {/* List */}
+      {loading && items.length === 0 ? (
+        <div className="space-y-2">
+          {Array.from({ length: 6 }).map((_, i) => <SkDeptCard key={i} />)}
+        </div>
+      ) : filtered.length === 0 ? (
+        <EmptyState
+          icon={Briefcase}
+          title={items.length === 0 ? "No departments yet" : "No departments match your filters"}
+          description={
+            items.length === 0
+              ? "Create one to start routing approvals."
+              : "Try clearing the search or filter."
+          }
+          action={
+            items.length === 0
+              ? { onClick: () => setEditing({}), label: "Create your first department" }
+              : { onClick: clearFilters, label: "Clear filters" }
+          }
+        />
+      ) : (
+        <>
+          <div className="space-y-2">
+            {filtered.map((d) => {
+              const memberCount = d.users_count ?? 0;
+              const isBusy = busyCode === d.code;
+              return (
+                <div
                   key={d.code}
-                  className="hover:bg-surface-container-low cursor-pointer"
                   onClick={() => setEditing(d)}
+                  className="group bg-surface-container-lowest border border-border rounded-xl p-3 sm:p-4 flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 cursor-pointer hover:border-primary hover:shadow-md transition-all duration-150"
                 >
-                  <td className="px-6 py-4">
-                    <span className="text-info font-mono font-bold">{d.code}</span>
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="flex items-center gap-2">
-                      <Briefcase className="h-4 w-4 text-primary shrink-0" />
-                      <span className="font-medium">{d.name}</span>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 text-text-muted">
-                    {d.head_name || <span className="text-text-subtle">—</span>}
-                  </td>
-                  <td className="px-6 py-4 text-text-muted text-xs max-w-[280px] truncate" title={d.description ?? ""}>
-                    {d.description || <span className="text-text-subtle">—</span>}
-                  </td>
-                  <td className="px-6 py-4 text-right">
-                    <span
-                      className={
-                        (d.users_count ?? 0) > 0
-                          ? "font-semibold text-text"
-                          : "text-text-subtle"
-                      }
+                  {/* Icon + identity */}
+                  <div className="flex items-center gap-3 sm:gap-4 min-w-0 flex-1">
+                    <div
+                      className={`h-11 w-11 rounded-xl flex items-center justify-center shrink-0 ${
+                        d.active ? "bg-primary-soft text-primary" : "bg-surface-container text-text-muted"
+                      }`}
+                      title={d.active ? "Active department" : "Inactive department"}
                     >
-                      {d.users_count ?? 0}
+                      <Briefcase className="h-5 w-5" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-mono font-bold text-info text-xs px-1.5 py-0.5 rounded bg-info-soft">
+                          {d.code}
+                        </span>
+                        <span className="font-semibold text-text truncate">{d.name}</span>
+                      </div>
+                      <div className="text-xs text-text-muted flex items-center gap-1.5 mt-1 truncate">
+                        {d.head_name ? (
+                          <>
+                            <UserCircle2 className="h-3.5 w-3.5 shrink-0 text-text-subtle" />
+                            <span className="truncate">
+                              <span className="text-text-subtle">Head:</span>{" "}
+                              <span className="text-text">{d.head_name}</span>
+                            </span>
+                          </>
+                        ) : (
+                          <span className="italic text-text-subtle">No head assigned</span>
+                        )}
+                        {d.description && (
+                          <>
+                            <span className="text-text-subtle hidden md:inline">·</span>
+                            <span className="hidden md:inline truncate text-text-subtle" title={d.description}>
+                              {d.description}
+                            </span>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Members count + Status */}
+                  <div className="flex items-center gap-2 sm:gap-3 flex-wrap pl-14 sm:pl-0">
+                    <span
+                      className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[11px] font-semibold ${
+                        memberCount > 0
+                          ? "bg-warning-soft text-warning"
+                          : "bg-surface-container text-text-subtle"
+                      }`}
+                      title={`${memberCount} user${memberCount === 1 ? "" : "s"} assigned`}
+                    >
+                      <UsersIcon className="h-3 w-3" />
+                      {memberCount} {memberCount === 1 ? "member" : "members"}
                     </span>
-                  </td>
-                  <td className="px-6 py-4">
                     <StatusPill tone={d.active ? "success" : "neutral"}>
                       {d.active ? "Active" : "Inactive"}
                     </StatusPill>
-                  </td>
-                  <td className="px-6 py-4 text-right">
-                    <div className="flex items-center justify-end gap-2">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setEditing(d);
-                        }}
-                        className="text-text-muted hover:text-primary p-1"
-                        title="Edit"
-                      >
-                        <Edit3 className="h-4 w-4" />
-                      </button>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleDelete(d);
-                        }}
-                        disabled={busyCode === d.code}
-                        className="text-text-muted hover:text-danger p-1 disabled:opacity-30 disabled:cursor-not-allowed"
-                        title={
-                          (d.users_count ?? 0) > 0
-                            ? `Will orphan ${d.users_count} user(s)`
-                            : "Delete"
-                        }
-                      >
-                        {(d.users_count ?? 0) > 0 ? (
-                          <AlertTriangle className="h-4 w-4 text-warning" />
-                        ) : (
-                          <Trash2 className="h-4 w-4" />
-                        )}
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
+                  </div>
+
+                  {/* Action buttons */}
+                  <div
+                    className="flex items-center gap-1 sm:gap-2 self-end sm:self-auto sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <button
+                      onClick={() => setEditing(d)}
+                      className="text-text-muted hover:text-primary hover:bg-primary-soft p-2 rounded-md transition-colors"
+                      title="Edit"
+                    >
+                      <Edit3 className="h-4 w-4" />
+                    </button>
+                    <button
+                      onClick={(e) => handleDelete(e, d)}
+                      disabled={isBusy}
+                      className="text-text-muted hover:text-danger hover:bg-danger-soft p-2 rounded-md transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                      title={memberCount > 0 ? `Will orphan ${memberCount} user${memberCount === 1 ? "" : "s"}` : "Delete"}
+                    >
+                      {memberCount > 0 ? (
+                        <AlertTriangle className="h-4 w-4 text-warning" />
+                      ) : (
+                        <Trash2 className="h-4 w-4" />
+                      )}
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          <div className="mt-4 text-xs text-text-muted">
+            Showing <strong className="text-text">{filtered.length}</strong>
+            {filtered.length !== counts.total && (
+              <> of <strong className="text-text">{counts.total}</strong></>
+            )}{" "}
+            department{filtered.length === 1 ? "" : "s"}
+          </div>
+        </>
+      )}
 
       <EditDepartmentDrawer
         open={!!editing}

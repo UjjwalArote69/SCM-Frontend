@@ -1,5 +1,5 @@
 // Vendor-focused smoke test. Run: node test/vendor-smoke.mjs
-const BASE = process.env.SCM_API || "http://127.0.0.1:8000/api";
+const BASE = process.env.Suppliers First_API || "http://127.0.0.1:8000/api";
 const PASS = "password";
 
 const tokens = {};
@@ -58,7 +58,7 @@ function section(t) { console.log(`\n=== ${t} ===`); }
   const CFO = tokens["cfo.fin@scm.com"];
   const CEO = tokens["ceo@scm.com"];
   const VA = tokens["vendor@acme.com"];   // Acme Industries
-  const VG = tokens["vendor@scm.com"];    // Global SCM Vendor
+  const VG = tokens["vendor@scm.com"];    // Global Suppliers First Vendor
   if (!A || !VA || !VG) { console.log("Critical tokens missing — abort"); process.exit(1); }
 
   section("VENDOR IDENTITY — /vendors data scoping (potential leak)");

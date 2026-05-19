@@ -1,20 +1,19 @@
 import { create } from "zustand";
 import grnApi from "./api.js";
+import { makeListFetcher } from "../../utils/storeCache.js";
 
 export const useGRNStore = create((set, get) => ({
   items: [],
   loading: false,
   error: null,
+  lastFetchedAt: null,
+  _inflight: null,
 
-  fetchAll: async () => {
-    set({ loading: true, error: null });
-    try {
-      const data = await grnApi.list();
-      set({ items: data, loading: false });
-    } catch (err) {
-      set({ loading: false, error: err?.message ?? "Failed to load GRNs" });
-    }
-  },
+  fetchAll: makeListFetcher({
+    get, set,
+    fetcher: () => grnApi.list(),
+    errorLabel: "Failed to load GRNs",
+  }),
 
   byNumber: (number) => get().items.find((g) => g.number === number),
 
@@ -41,6 +40,26 @@ export const useGRNStore = create((set, get) => ({
 
   acceptReplacement: async (number, payload) => {
     const updated = await grnApi.acceptReplacement(number, payload);
+    set((s) => ({
+      items: s.items.some((g) => g.number === number)
+        ? s.items.map((g) => (g.number === number ? updated : g))
+        : [updated, ...s.items],
+    }));
+    return updated;
+  },
+
+  rejectReplacement: async (number, payload) => {
+    const updated = await grnApi.rejectReplacement(number, payload);
+    set((s) => ({
+      items: s.items.some((g) => g.number === number)
+        ? s.items.map((g) => (g.number === number ? updated : g))
+        : [updated, ...s.items],
+    }));
+    return updated;
+  },
+
+  siteRespondTargetDate: async (number, payload) => {
+    const updated = await grnApi.siteRespondTargetDate(number, payload);
     set((s) => ({
       items: s.items.some((g) => g.number === number)
         ? s.items.map((g) => (g.number === number ? updated : g))

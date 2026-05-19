@@ -1,6 +1,6 @@
-# SCM Backend Reference
+# Suppliers First Backend Reference
 
-Laravel SCM app at `../` (parent directory). Read this only when a task touches backend contracts — routes, models, auth, state machines. For general frontend work, stick to CLAUDE.md.
+Laravel Suppliers First app at `../` (parent directory). Read this only when a task touches backend contracts — routes, models, auth, state machines. For general frontend work, stick to CLAUDE.md.
 
 ## Decision
 
@@ -140,7 +140,7 @@ In `../resources/views/dashboard/` (will stay server-side, not migrated):
 - quotation/emails/qt-mail, quotation/approvel-mail, quotation/rejected-mail
 - invoice/invoice-mail, invoice/proforma-invoice-mail, finance/payment-mail
 
-Mail from: `support@myschoolmanager.in` as "SCM Meka Group". Synchronous (no queue).
+Mail from: `support@myschoolmanager.in` as "Suppliers First ". Synchronous (no queue).
 
 ---
 

@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 /* ============================================================
-   SCM Frontend — Theme Tokens
+   Suppliers First Frontend — Theme Tokens
    ------------------------------------------------------------
    Raw CSS variables on :root / [data-theme="dark"] — swap at runtime
    @theme inline — maps those vars to Tailwind utility names
@@ -47,6 +47,12 @@
 /* Slate scale — faint cool blue tint across surfaces, with cool-grey text
    so the whole app reads on one axis (no more brown-vs-blue hue clash). */
 :root {
+  /* Tells the browser the page is in light mode so native form controls
+     (date pickers, scrollbars, focus rings) render with light-theme colors.
+     Without this, the <input type="date"> calendar indicator can render as
+     white-on-white and disappear in our cream/apricot light theme. */
+  color-scheme: light;
+
   --brand-primary: #dc2626;
   --brand-primary-hover: #b70011;
   --brand-primary-deep: #93000b;
@@ -80,6 +86,10 @@
 /* Near-black canvas with warm orange corner-glow; cards are glass — slightly
    elevated dark surfaces with hairline white borders.                     */
 [data-theme="dark"] {
+  /* Flip native form controls to dark mode so the date-input calendar
+     indicator renders light-on-dark and stays readable. */
+  color-scheme: dark;
+
   --brand-primary: #ff5d3a;
   --brand-primary-hover: #ff7a5c;
   --brand-primary-deep: #c53d1f;
@@ -230,6 +240,40 @@ html,
 body,
 #root {
   height: 100%;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Native date / time picker indicator — Chrome / Edge / Safari.
+   The default ::-webkit-calendar-picker-indicator follows `color-scheme`
+   but renders as a faint glyph that can disappear against the cream
+   light-theme surface. Force it to high-contrast in both themes using a
+   CSS filter — black icon on light bg, white icon on dark.
+   ───────────────────────────────────────────────────────────────────────── */
+input[type="date"]::-webkit-calendar-picker-indicator,
+input[type="time"]::-webkit-calendar-picker-indicator,
+input[type="datetime-local"]::-webkit-calendar-picker-indicator,
+input[type="month"]::-webkit-calendar-picker-indicator,
+input[type="week"]::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  opacity: 0.85;
+  filter: invert(0.15);
+  transition: opacity 0.15s ease;
+}
+input[type="date"]::-webkit-calendar-picker-indicator:hover,
+input[type="time"]::-webkit-calendar-picker-indicator:hover,
+input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover,
+input[type="month"]::-webkit-calendar-picker-indicator:hover,
+input[type="week"]::-webkit-calendar-picker-indicator:hover {
+  opacity: 1;
+}
+[data-theme="dark"] input[type="date"]::-webkit-calendar-picker-indicator,
+[data-theme="dark"] input[type="time"]::-webkit-calendar-picker-indicator,
+[data-theme="dark"] input[type="datetime-local"]::-webkit-calendar-picker-indicator,
+[data-theme="dark"] input[type="month"]::-webkit-calendar-picker-indicator,
+[data-theme="dark"] input[type="week"]::-webkit-calendar-picker-indicator {
+  /* In dark mode the default glyph is already light — just bump opacity. */
+  filter: invert(0.95);
+  opacity: 0.9;
 }
 
 /* ============================================================
@@ -413,5 +457,185 @@ body {
     border-radius: 2px !important;
     padding: 1pt 4pt !important;
     font-size: 8pt !important;
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────────
+ * Custom scrollbar — global
+ *
+ * Slim pill thumb in the muted text tone; brightens to brand red on
+ * hover so the chrome stays calm but signals interactivity. Track is
+ * transparent so it blends into whatever surface it sits on (panels,
+ * drawers, the page itself).
+ *
+ * Firefox uses scrollbar-width + scrollbar-color (no pseudo-elements).
+ * WebKit / Blink uses ::-webkit-scrollbar pseudo-elements. We set both
+ * so every browser gets the same look.
+ *
+ * Specificity is intentionally low (`*` selector) so the existing
+ * Tailwind opt-out utility `[&::-webkit-scrollbar]:hidden` on the
+ * horizontal KPI strips keeps winning and continues to hide its bars.
+ * ─────────────────────────────────────────────────────────────────── */
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--color-text-muted) 35%, transparent) transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+*::-webkit-scrollbar-thumb {
+  background-color: color-mix(in srgb, var(--color-text-muted) 28%, transparent);
+  border-radius: 999px;
+  /* Inset border creates a "floating" thumb that doesn't touch the track edges. */
+  border: 2px solid transparent;
+  background-clip: padding-box;
+  transition: background-color 180ms ease;
+}
+*::-webkit-scrollbar-thumb:hover {
+  background-color: color-mix(in srgb, var(--color-primary) 55%, transparent);
+}
+*::-webkit-scrollbar-thumb:active {
+  background-color: color-mix(in srgb, var(--color-primary) 75%, transparent);
+}
+*::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+/* Avoid layout shift when a scrollbar pops in/out on a panel. */
+html {
+  scrollbar-gutter: stable;
+}
+
+/* ─────────────────────────────────────────────────────────────────────
+ * Micro-interactions pack
+ * ─────────────────────────────────────────────────────────────────── */
+
+/* Skeleton shimmer — replaces the plain `animate-pulse` block. A diagonal
+   highlight slides across so loading states feel alive but still calm.
+   The base tone tracks --color-surface-container so it honours theme. */
+.scm-shimmer {
+  position: relative;
+  overflow: hidden;
+  background-color: var(--color-surface-container, #e5e5e0);
+  isolation: isolate;
+}
+.scm-shimmer::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    100deg,
+    transparent 30%,
+    rgba(255, 255, 255, 0.45) 50%,
+    transparent 70%
+  );
+  transform: translateX(-100%);
+  animation: scm-shimmer-slide 1.6s ease-in-out infinite;
+  z-index: 1;
+}
+[data-theme="dark"] .scm-shimmer::after {
+  background: linear-gradient(
+    100deg,
+    transparent 30%,
+    rgba(255, 255, 255, 0.08) 50%,
+    transparent 70%
+  );
+}
+@keyframes scm-shimmer-slide {
+  0%   { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+/* Press-down feedback on every primary action button. Picks up any
+   element that uses the brand primary background plus an opt-in
+   `.scm-press` class. */
+button[class*="bg-primary"]:not(:disabled),
+a[class*="bg-primary"],
+.scm-press {
+  transition:
+    transform 120ms cubic-bezier(.22, .61, .36, 1),
+    box-shadow 200ms ease,
+    filter 200ms ease;
+  will-change: transform;
+}
+button[class*="bg-primary"]:not(:disabled):active,
+a[class*="bg-primary"]:active,
+.scm-press:active {
+  transform: scale(0.97);
+}
+
+/* Sheen pass on primary CTAs — fires on hover only, brief diagonal
+   highlight reminds the eye there's something tactile under the cursor. */
+button[class*="bg-primary"]:not(:disabled),
+a[class*="bg-primary"] {
+  position: relative;
+  overflow: hidden;
+}
+button[class*="bg-primary"]:not(:disabled)::after,
+a[class*="bg-primary"]::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    115deg,
+    transparent 30%,
+    rgba(255, 255, 255, 0.22) 50%,
+    transparent 70%
+  );
+  transform: translateX(-120%);
+  transition: transform 600ms cubic-bezier(.22, .61, .36, 1);
+  pointer-events: none;
+}
+button[class*="bg-primary"]:not(:disabled):hover::after,
+a[class*="bg-primary"]:hover::after {
+  transform: translateX(120%);
+}
+
+/* Soft mount fade for status pills so they don't pop in jarringly when
+   a list re-renders. Anything that's both fully-rounded AND uses a
+   *-soft tone gets it. */
+@keyframes scm-pill-in {
+  0%   { opacity: 0; transform: translateY(2px) scale(0.95); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+[class~="rounded-full"][class*="-soft"] {
+  animation: scm-pill-in 280ms cubic-bezier(.22, .61, .36, 1) both;
+}
+
+/* Generic section entrance — opt-in via .scm-enter on a wrapper. */
+.scm-enter {
+  animation: scm-enter 380ms cubic-bezier(.22, .61, .36, 1) both;
+}
+@keyframes scm-enter {
+  0%   { opacity: 0; transform: translateY(8px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+/* Subtle hover bob for icon-only buttons (refresh, settings…). */
+.scm-icon-bob {
+  transition: transform 280ms cubic-bezier(.22, .61, .36, 1);
+}
+.scm-icon-bob:hover {
+  transform: rotate(-10deg) scale(1.08);
+}
+
+/* Honour user accessibility preference — kill all custom motion. */
+@media (prefers-reduced-motion: reduce) {
+  .scm-shimmer::after,
+  button[class*="bg-primary"]::after,
+  a[class*="bg-primary"]::after {
+    animation: none !important;
+    transition: none !important;
+    opacity: 0 !important;
+  }
+  [class~="rounded-full"][class*="-soft"],
+  .scm-enter {
+    animation: none !important;
   }
 }

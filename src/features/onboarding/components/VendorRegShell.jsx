@@ -36,7 +36,7 @@ export default function VendorRegShell({
         <Link to="/" className="flex items-center gap-2">
           <Boxes className="h-5 w-5 text-primary" strokeWidth={2.25} />
           <span className="text-primary font-black tracking-tighter text-base uppercase">
-            SCM
+            Suppliers First
           </span>
         </Link>
         <div className="flex items-center gap-3">
@@ -57,7 +57,7 @@ export default function VendorRegShell({
           <Link to="/" className="flex items-center gap-2 mb-12">
             <Boxes className="h-6 w-6 text-primary" strokeWidth={2.25} />
             <span className="text-primary font-black tracking-tighter text-xl uppercase">
-              SCM
+              Suppliers First
             </span>
           </Link>
 
